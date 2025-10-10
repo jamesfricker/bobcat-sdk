@@ -23,6 +23,7 @@ std = [
 	"bobcat-proxy/std",
 	"bobcat-storage/std",
 ]
+borsh = ["bobcat-maths/borsh"]
 alloc = [
 	"bobcat-create/alloc",
 	"bobcat-entry/alloc",

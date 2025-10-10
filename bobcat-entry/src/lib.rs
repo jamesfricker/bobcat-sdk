@@ -31,6 +31,15 @@ mod impls {
     }
 }
 
+#[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
+mod impls {
+    pub(crate) unsafe fn pay_for_memory_grow(_: u16) {}
+
+    pub(crate) unsafe fn write_result(_: *const u8, _: usize) {}
+
+    pub(crate) unsafe fn read_args(_out: *mut u8) {}
+}
+
 #[unsafe(no_mangle)]
 pub unsafe fn mark_used() {
     unsafe { impls::pay_for_memory_grow(0) }

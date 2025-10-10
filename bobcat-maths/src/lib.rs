@@ -7,6 +7,9 @@ use core::{
 
 use num_traits::{One, Zero};
 
+#[cfg(feature = "borsh")]
+use borsh::{BorshDeserialize, BorshSerialize};
+
 pub type Address = [u8; 20];
 
 #[link(wasm_import_module = "vm_hooks")]

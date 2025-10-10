@@ -12,10 +12,11 @@ pub type Address = [u8; 32];
 #[cfg(target_arch = "wasm32")]
 unsafe extern "C" {
     fn storage_load_bytes32(key: *const u8, out: *mut u8);
-    fn storage_store_bytes32(key: *const u8, from: *const u8);
+    fn storage_cache_bytes32(key: *const u8, from: *const u8);
     fn transient_load_bytes32(key: *const u8, dest: *mut u8);
     fn transient_store_bytes32(key: *const u8, value: *const u8);
     fn native_keccak256(bytes: *const u8, len: usize, output: *mut u8);
+    fn storage_flush_cache(clear: bool);
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
@@ -54,7 +55,7 @@ mod host {
         unsafe { write_word(out, value) };
     }
 
-    pub(crate) unsafe fn storage_store_bytes32(key: *const u8, value: *const u8) {
+    pub(crate) unsafe fn storage_cache_bytes32(key: *const u8, value: *const u8) {
         let k = unsafe { read_word(key) };
         let v = unsafe { read_word(value) };
         STORAGE.with(|s| s.borrow_mut().insert(k, v));
@@ -74,6 +75,8 @@ mod host {
         let v = unsafe { read_word(value) };
         TRANSIENT.with(|s| s.borrow_mut().insert(k, v));
     }
+
+    pub(crate) unsafe fn storage_flush_cache(_: bool) {}
 }
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
@@ -92,10 +95,6 @@ macro_rules! storage_ops {
                     U(b)
                 }
 
-                pub fn [<$prefix _store>](x: &U, y: &U) {
-                    unsafe { [<$prefix _store_bytes32>](x.0.as_ptr(), y.0.as_ptr()) }
-                }
-
                 pub fn [<$prefix _exchange>](k: &U, exp: &U, new: &U) -> Result<(), U> {
                     let t = [<$prefix _load>](k);
                     if &t != exp {
@@ -112,6 +111,18 @@ macro_rules! storage_ops {
             }
         )*
     };
+}
+
+pub fn storage_store(x: &U, y: &U) {
+    unsafe { storage_cache_bytes32(x.0.as_ptr(), y.0.as_ptr()) }
+}
+
+pub fn transient_store(x: &U, y: &U) {
+    unsafe { transient_store_bytes32(x.0.as_ptr(), y.0.as_ptr()) }
+}
+
+pub fn flush_cache(clear: bool) {
+    unsafe { storage_flush_cache(clear) }
 }
 
 storage_ops!(storage, transient);
