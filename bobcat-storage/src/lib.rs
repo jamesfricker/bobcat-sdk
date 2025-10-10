@@ -4,6 +4,8 @@ use bobcat_maths::U;
 
 use keccak_const::Keccak256;
 
+use array_concat::concat_arrays;
+
 #[link(wasm_import_module = "vm_hooks")]
 #[cfg(target_arch = "wasm32")]
 unsafe extern "C" {
@@ -11,7 +13,7 @@ unsafe extern "C" {
     fn storage_store_bytes32(key: *const u8, from: *const u8);
     fn transient_load_bytes32(key: *const u8, dest: *mut u8);
     fn transient_store_bytes32(key: *const u8, value: *const u8);
-    fn native_keccak256(pre: *const u8, out: *mut u8);
+    fn native_keccak256(bytes: *const u8, len: usize, output: *mut u8);
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
@@ -138,6 +140,26 @@ pub const fn get_keccak256(b: &[u8]) -> U {
 
 pub fn reentrancy_guard_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
     reentrancy_guard(&get_keccak256(k).0, f)
+}
+
+/// Find the storage map slot using keccak_const. Don't do this during
+/// your runtime code, unless you want to pay the codesize price.
+pub const fn const_storage_map_slot(k: &U, p: &U) -> U {
+    let a: [u8; 32 * 2] = concat_arrays!(k.0, p.0);
+    get_keccak256(&a)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn storage_map_slot(k: &U, p: &U) -> U {
+    let b: [u8; 32 * 2] = concat_arrays!(k.0, p.0);
+    let mut out = [0u8; 32];
+    unsafe { native_keccak256(b.as_ptr(), 32 * 2, out.as_mut_ptr()); }
+    U(out)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn storage_map_slot(k: &U, p: &U) -> U {
+    const_storage_map_slot(k, p)
 }
 
 #[cfg(all(feature = "std", test))]

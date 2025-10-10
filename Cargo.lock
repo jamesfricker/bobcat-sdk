@@ -95,6 +95,7 @@ dependencies = [
 name = "bobcat-storage"
 version = "0.1.0"
 dependencies = [
+ "array-concat",
  "bobcat-maths",
  "keccak-const",
  "proptest",

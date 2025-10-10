@@ -309,7 +309,7 @@ impl TryFrom<&[u8]> for U {
             return Err("too large");
         }
         let mut b = [0u8; 32];
-        b[32-v.len()..].copy_from_slice(v);
+        b[32 - v.len()..].copy_from_slice(v);
         Ok(U(b))
     }
 }
@@ -398,6 +398,22 @@ from_slices!(
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
     27, 28, 29, 30, 31
 );
+
+macro_rules! from_ints {
+    ($($t:ty),+ $(,)?) => {
+        $(
+            impl From<$t> for U {
+                fn from(x: $t) -> Self {
+                    let mut b = [0u8; 32];
+                    b[32 - core::mem::size_of::<$t>()..].copy_from_slice(&x.to_be_bytes());
+                    U(b)
+                }
+            }
+        )+
+    };
+}
+
+from_ints! { u8, u16, u32, u64, u128 }
 
 impl From<I> for [u8; 32] {
     fn from(x: I) -> Self {
@@ -671,6 +687,41 @@ mod test {
             let ex = I256::from_be_bytes(x.0);
             let ey = I256::from_be_bytes(y.0);
             assert_eq!(ex.cmp(&ey), x.cmp(&y));
+        }
+
+        #[test]
+        fn test_u_u8(x in any::<u8>()) {
+            let mut b = [0u8; 32];
+            b[32-std::mem::size_of::<u8>()..].copy_from_slice(&x.to_be_bytes());
+            assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
+        }
+
+        #[test]
+        fn test_u_u16(x in any::<u16>()) {
+            let mut b = [0u8; 32];
+            b[32-std::mem::size_of::<u16>()..].copy_from_slice(&x.to_be_bytes());
+            assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
+        }
+
+        #[test]
+        fn test_u_u32(x in any::<u32>()) {
+            let mut b = [0u8; 32];
+            b[32-std::mem::size_of::<u32>()..].copy_from_slice(&x.to_be_bytes());
+            assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
+        }
+
+        #[test]
+        fn test_u_u64(x in any::<u64>()) {
+            let mut b = [0u8; 32];
+            b[32-std::mem::size_of::<u64>()..].copy_from_slice(&x.to_be_bytes());
+            assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
+        }
+
+        #[test]
+        fn test_u_u128(x in any::<u128>()) {
+            let mut b = [0u8; 32];
+            b[32-std::mem::size_of::<u128>()..].copy_from_slice(&x.to_be_bytes());
+            assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
         }
     }
 }

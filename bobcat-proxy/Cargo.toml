@@ -7,6 +7,6 @@ edition = "2024"
 name = "bobcat_proxy"
 
 [dependencies]
-array-concat = "0.5.5"
+array-concat = { workspace = true }
 const-hex = { workspace = true }
 bobcat-maths = { path = "../bobcat-maths" }
