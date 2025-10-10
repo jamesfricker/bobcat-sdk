@@ -1,9 +1,12 @@
+#![no_std]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+
+use bobcat_maths::U;
 
 pub type Address = [u8; 20];
 
@@ -36,7 +39,7 @@ mod impls {
 mod impls {
     // Sorry -- on the host, these don't do anything.
 
-    pub(crate) fn create1(
+    pub(crate) unsafe fn create1(
         _code: *const u8,
         _code_len: usize,
         _endowment: *const u8,
@@ -45,7 +48,7 @@ mod impls {
     ) {
     }
 
-    pub(crate) fn create2(
+    pub(crate) unsafe fn create2(
         _code: *const u8,
         _code_len: usize,
         _endowment: *const u8,
@@ -63,13 +66,15 @@ mod impls {
 pub fn create1_partial(code: &[u8], endowment: U) -> Result<Address, usize> {
     let mut addr = [0u8; 20];
     let mut revert_len = 0;
-    impls::create1(
-        code.as_ptr(),
-        code.len(),
-        endowment.0.as_ptr(),
-        addr.as_mut_ptr(),
-        &mut revert_len as *mut usize,
-    );
+    unsafe {
+        impls::create1(
+            code.as_ptr(),
+            code.len(),
+            endowment.0.as_ptr(),
+            addr.as_mut_ptr(),
+            &mut revert_len as *mut usize,
+        )
+    }
     if revert_len > 0 {
         Err(revert_len)
     } else {
@@ -83,7 +88,7 @@ pub fn create1_slice<const REVERT_CAP: usize>(
 ) -> Result<Address, ([u8; REVERT_CAP], usize)> {
     create1_partial(code, endowment).map_err(|i| {
         let mut b = [0u8; REVERT_CAP];
-        let l = impls::read_return_data(b.as_mut_ptr(), 0, i);
+        let l = unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) };
         (b, l)
     })
 }

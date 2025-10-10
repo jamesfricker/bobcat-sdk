@@ -1,3 +1,5 @@
+#![no_std]
+
 pub use bobcat_create as create;
 pub use bobcat_entry as entry;
 pub use bobcat_maths as maths;
