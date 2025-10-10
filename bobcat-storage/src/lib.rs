@@ -6,6 +6,8 @@ use keccak_const::Keccak256;
 
 use array_concat::concat_arrays;
 
+pub type Address = [u8; 32];
+
 #[link(wasm_import_module = "vm_hooks")]
 #[cfg(target_arch = "wasm32")]
 unsafe extern "C" {
@@ -80,40 +82,70 @@ compile_error!("std needs to be enabled for non-wasm");
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
 use host::*;
 
-pub fn storage_load(x: U) -> U {
-    let mut b = [0u8; 32];
-    unsafe { storage_load_bytes32(x.0.as_ptr(), b.as_mut_ptr()) }
-    U(b)
+macro_rules! storage_ops {
+    ($($prefix:ident),* $(,)?) => {
+        $(
+            paste::paste! {
+                pub fn [<$prefix _load>](x: &U) -> U {
+                    let mut b = [0u8; 32];
+                    unsafe { [<$prefix _load_bytes32>](x.0.as_ptr(), b.as_mut_ptr()) }
+                    U(b)
+                }
+
+                pub fn [<$prefix _load_addr>](x: Address) -> U {
+                    let x = U::from(x);
+                    let mut b = [0u8; 32];
+                    unsafe { [<$prefix _load_bytes32>](x.0.as_ptr(), b.as_mut_ptr()) }
+                    U(b)
+                }
+
+                pub fn [<$prefix _store>](x: &U, y: &U) {
+                    unsafe { [<$prefix _store_bytes32>](x.0.as_ptr(), y.0.as_ptr()) }
+                }
+
+                pub fn [<$prefix _exchange>](k: &U, exp: &U, new: &U) -> Result<(), U> {
+                    let t = [<$prefix _load>](k);
+                    if &t != exp {
+                        return Err(t);
+                    }
+                    [<$prefix _store>](k, new);
+                    Ok(())
+                }
+
+                pub fn [<$prefix _exchange_bool>](k: &U, exp: bool) -> Result<(), bool> {
+                    [<$prefix _exchange>](k, &U::from(exp), &U::from(!exp))
+                        .map_err(|x| x.is_true())
+                }
+            }
+        )*
+    };
 }
 
-pub fn storage_store(x: &U, y: &U) {
-    unsafe { storage_store_bytes32(x.0.as_ptr(), y.0.as_ptr()) }
+storage_ops!(storage, transient);
+
+macro_rules! storage_mutate_ops {
+    ($prefix:ident, $($op:ident),* $(,)?) => {
+        $(
+            paste::paste! {
+                pub fn [<$prefix _ $op>](x: &U, new: &U) {
+                    [<$prefix _store>](x, &bobcat_maths::$op(&[<$prefix _load>](x), new))
+                }
+            }
+        )*
+    };
 }
 
-pub fn transient_load(x: &U) -> U {
-    let mut b = [0u8; 32];
-    unsafe { transient_load_bytes32(x.0.as_ptr(), b.as_mut_ptr()) }
-    U(b)
-}
+storage_mutate_ops!(storage, add, sub, mul, div);
+storage_mutate_ops!(transient, add, sub, mul, div);
 
-pub fn transient_store(x: &U, y: &U) {
-    unsafe { transient_store_bytes32(x.0.as_ptr(), y.0.as_ptr()) }
-}
-
-pub fn transient_exchange(x: &U, exp: bool) -> Result<(), bool> {
-    let set: [u8; 32] = transient_load(x).into();
-    let set = set[31] == 1;
-    if exp != set {
-        return Err(set);
-    }
-    let b = [!exp as u8; 32];
-    transient_store(x, &U(b));
-    Ok(())
+#[cfg(not(target_arch = "wasm32"))]
+pub fn slot_map_slot(k: &U, p: &U) -> U {
+    const_slot_map(k, p)
 }
 
 pub fn reentrancy_guard_entry(x: &[u8]) -> Result<(), bool> {
     assert!(x.len() <= 32, "too large");
-    transient_exchange(&U::try_from(x).unwrap(), false)
+    transient_exchange_bool(&U::try_from(x).unwrap(), false)
 }
 
 pub fn reentrancy_guard_exit(x: &[u8]) {
@@ -130,36 +162,64 @@ pub fn reentrancy_guard<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
 
 /// Compute the slot for a slice, and take it off the curve. Useful for
 /// storage slot accesses (and more).
-pub const fn get_slot_off_curve(b: &[u8]) -> U {
-    bobcat_maths::sub(&get_keccak256(b), &U::ONE)
+pub const fn const_slot_off_curve(b: &[u8]) -> U {
+    bobcat_maths::sub(&const_keccak256(b), &U::ONE)
 }
 
-pub const fn get_keccak256(b: &[u8]) -> U {
+pub fn slot_off_curve(b: &[u8]) -> U {
+    bobcat_maths::sub(&keccak256(b), &U::ONE)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn keccak256(b: &[u8]) -> U {
+    let mut out = [0u8; 32];
+    unsafe {
+        native_keccak256(b.as_ptr(), b.len(), out.as_mut_ptr());
+    }
+    U(out)
+}
+
+pub const fn const_keccak256(b: &[u8]) -> U {
     U(Keccak256::new().update(b).finalize())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub fn keccak256(b: &[u8]) -> U {
+    const_keccak256(b)
+}
+
+pub fn reentrancy_guard_const_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
+    reentrancy_guard(&const_keccak256(k).0, f)
+}
+
 pub fn reentrancy_guard_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
-    reentrancy_guard(&get_keccak256(k).0, f)
+    reentrancy_guard(&keccak256(k).0, f)
 }
 
 /// Find the storage map slot using keccak_const. Don't do this during
 /// your runtime code, unless you want to pay the codesize price.
-pub const fn const_storage_map_slot(k: &U, p: &U) -> U {
+pub const fn const_slot_map(k: &U, p: &U) -> U {
     let a: [u8; 32 * 2] = concat_arrays!(k.0, p.0);
-    get_keccak256(&a)
+    const_keccak256(&a)
 }
 
 #[cfg(target_arch = "wasm32")]
-pub fn storage_map_slot(k: &U, p: &U) -> U {
+pub fn slot_map(k: &U, p: &U) -> U {
     let b: [u8; 32 * 2] = concat_arrays!(k.0, p.0);
-    let mut out = [0u8; 32];
-    unsafe { native_keccak256(b.as_ptr(), 32 * 2, out.as_mut_ptr()); }
-    U(out)
+    keccak256(&b)
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub fn storage_map_slot(k: &U, p: &U) -> U {
-    const_storage_map_slot(k, p)
+#[test]
+fn test_slot_edd25519_count() {
+    assert_eq!(
+        U::from(
+            const_hex::const_decode_to_array::<32>(
+                b"709318ac04e7c3155ef66c30be7220b3243d7e2378fa4153b5f14ebd3ea771ab"
+            )
+            .unwrap()
+        ),
+        const_slot_off_curve(b"superposition.passport.ed25519_count")
+    );
 }
 
 #[cfg(all(feature = "std", test))]

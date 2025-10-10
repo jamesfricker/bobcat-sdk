@@ -97,7 +97,9 @@ version = "0.1.0"
 dependencies = [
  "array-concat",
  "bobcat-maths",
+ "const-hex",
  "keccak-const",
+ "paste",
  "proptest",
 ]
 

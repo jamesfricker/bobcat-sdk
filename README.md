@@ -110,6 +110,28 @@ mul_div_widening_round_up. The former two functions are preferable for a loss of
 precision, but a tiny impact on codesize (using the native functions where it can), making
 it acceptable for fee collection.
 
+We don't support anything other than the native type for storage access, except [u8; 20]
+for addresses. This is to encourage thoughtful use of the storage and the types.
+
+## Constant functions
+
+Some functions are available in a const form. These are implemented inline, avoiding using
+the host features. These functions should not be used at runtime, instead using the
+non-const functions. This will reduce the amount of codesize in the generated code by
+preferring to use the host implementations of these functions.
+
+I imagine it's okay to use the constant functions inside a function that does the
+calculation, like so:
+
+```rust
+pub fn get_ed25519_count() -> U {
+    storage_load(const_slot_off_curve("superposition.passport.ed25519_count"))
+}
+```
+
+Since I assume Rust is smart enough to know to inline the result of the function, without
+actually adding the code to the end result.
+
 ## Philosophy
 
 This SDK strives to be like the bobcat, nimble, stalking its prey in winter, conserving

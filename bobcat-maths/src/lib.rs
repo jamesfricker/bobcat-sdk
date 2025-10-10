@@ -2,10 +2,12 @@
 
 use core::{
     cmp::{Eq, Ordering},
-    ops::{Add, Div, Index, Mul, Rem, Sub},
+    ops::{Add, Div, Index, Mul, Rem, Sub, Deref},
 };
 
 use num_traits::{One, Zero};
+
+pub type Address = [u8; 20];
 
 #[link(wasm_import_module = "vm_hooks")]
 #[cfg(not(feature = "alloy-enabled"))]
@@ -77,13 +79,13 @@ pub struct U(pub [u8; 32]);
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct I(pub [u8; 32]);
 
-fn div(x: &U, y: &U) -> U {
+pub fn div(x: &U, y: &U) -> U {
     let mut b = [0u8; 32];
     unsafe { math_div(x.0.as_ptr(), y.0.as_ptr(), b.as_mut_ptr()) }
     U(b)
 }
 
-fn modd(x: &U, y: &U) -> U {
+pub fn modd(x: &U, y: &U) -> U {
     let mut b = [0u8; 32];
     unsafe { math_mod(x.0.as_ptr(), y.0.as_ptr(), b.as_mut_ptr()) }
     U(b)
@@ -298,6 +300,26 @@ impl From<U> for [u8; 32] {
 impl From<[u8; 32]> for U {
     fn from(x: [u8; 32]) -> Self {
         U(x)
+    }
+}
+
+impl Deref for U {
+    type Target = [u8; 32];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<bool> for U {
+    fn from(x: bool) -> Self {
+        U::from(&[x as u8])
+    }
+}
+
+impl From<U> for Address {
+    fn from(x: U) -> Self {
+        unsafe { *(x.0.as_ptr().add(32 - 20) as *const [u8; 20]) }
     }
 }
 
@@ -722,6 +744,12 @@ mod test {
             let mut b = [0u8; 32];
             b[32-std::mem::size_of::<u128>()..].copy_from_slice(&x.to_be_bytes());
             assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
+        }
+
+        #[test]
+        fn test_to_and_from_addrs(x in any::<Address>()) {
+            let y: [u8; 20] = U::from(x).into();
+            assert_eq!(x, y)
         }
     }
 }

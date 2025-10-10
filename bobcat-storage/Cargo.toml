@@ -11,6 +11,10 @@ bobcat-maths = { path = "../bobcat-maths" }
 keccak-const = "0.2.0"
 proptest = { workspace = true, optional = true }
 array-concat = { workspace = true }
+paste = "1.0.15"
+
+[dev-dependencies]
+const-hex = { workspace = true }
 
 [features]
 std = ["proptest"]
