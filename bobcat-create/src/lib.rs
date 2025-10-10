@@ -1,0 +1,98 @@
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
+pub type Address = [u8; 20];
+
+#[cfg(target_arch = "wasm32")]
+mod impls {
+    #[link(wasm_import_module = "vm_hooks")]
+    unsafe extern "C" {
+        pub(crate) fn create1(
+            code: *const u8,
+            code_len: usize,
+            endowment: *const u8,
+            contract: *mut u8,
+            revert_data_len: *mut usize,
+        );
+
+        pub(crate) fn create2(
+            code: *const u8,
+            code_len: usize,
+            endowment: *const u8,
+            salt: *const u8,
+            contract: *mut u8,
+            revert_data_len: *mut usize,
+        );
+
+        pub(crate) fn read_return_data(dest: *mut u8, offset: usize, size: usize) -> usize;
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+mod impls {
+    // Sorry -- on the host, these don't do anything.
+
+    pub(crate) fn create1(
+        _code: *const u8,
+        _code_len: usize,
+        _endowment: *const u8,
+        _contract: *mut u8,
+        _revert_data_len: *mut usize,
+    ) {
+    }
+
+    pub(crate) fn create2(
+        _code: *const u8,
+        _code_len: usize,
+        _endowment: *const u8,
+        _salt: *const u8,
+        _contract: *mut u8,
+        _revert_data_len: *mut usize,
+    ) {
+    }
+
+    pub(crate) fn read_return_data(_dest: *mut u8, _offset: usize, _size: usize) -> usize {
+        0
+    }
+}
+
+pub fn create1_partial(code: &[u8], endowment: U) -> Result<Address, usize> {
+    let mut addr = [0u8; 20];
+    let mut revert_len = 0;
+    impls::create1(
+        code.as_ptr(),
+        code.len(),
+        endowment.0.as_ptr(),
+        addr.as_mut_ptr(),
+        &mut revert_len as *mut usize,
+    );
+    if revert_len > 0 {
+        Err(revert_len)
+    } else {
+        Ok(addr)
+    }
+}
+
+pub fn create1_slice<const REVERT_CAP: usize>(
+    code: &[u8],
+    endowment: U,
+) -> Result<Address, ([u8; REVERT_CAP], usize)> {
+    create1_partial(code, endowment).map_err(|i| {
+        let mut b = [0u8; REVERT_CAP];
+        let l = impls::read_return_data(b.as_mut_ptr(), 0, i);
+        (b, l)
+    })
+}
+
+#[cfg(feature = "alloc")]
+pub fn create1_vec(code: &[u8], endowment: U) -> Result<Address, Vec<u8>> {
+    create1_partial(code, endowment).map_err(|i| {
+        let mut b = Vec::with_capacity(i);
+        b.set_len(unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) });
+        b
+    })
+}

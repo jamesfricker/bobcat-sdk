@@ -1,0 +1,14 @@
+[workspace]
+resolver = "3"
+
+members = [
+	"bobcat-maths",
+	"bobcat-storage",
+	"bobcat-entry",
+	"bobcat-panic",
+	"bobcat-proxy"
+]
+
+[workspace.dependencies]
+proptest = { version = "1.8.0" }
+const-hex = { version = "1.16.0", default-features = false }

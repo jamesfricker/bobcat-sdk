@@ -1,0 +1,12 @@
+[package]
+name = "bobcat-proxy"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "bobcat_proxy"
+
+[dependencies]
+array-concat = "0.5.5"
+const-hex = { workspace = true }
+bobcat-maths = { path = "../bobcat-maths" }

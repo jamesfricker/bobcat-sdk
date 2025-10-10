@@ -1,0 +1,15 @@
+[package]
+name = "bobcat-storage"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "bobcat_storage"
+
+[dependencies]
+bobcat-maths = { path = "../bobcat-maths" }
+keccak-const = "0.2.0"
+proptest = { workspace = true, optional = true }
+
+[features]
+std = ["proptest"]

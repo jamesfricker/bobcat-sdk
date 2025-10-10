@@ -1,0 +1,12 @@
+[package]
+name = "bobcat-panic"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "bobcat_panic"
+
+[features]
+alloc = []
+console = ["alloc"]
+std = []
