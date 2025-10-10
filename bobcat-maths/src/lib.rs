@@ -72,11 +72,13 @@ use alloy::*;
 #[derive(Copy, Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
 pub struct U(pub [u8; 32]);
 
 #[derive(Copy, Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
 pub struct I(pub [u8; 32]);
 
 pub fn div(x: &U, y: &U) -> U {
