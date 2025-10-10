@@ -92,13 +92,6 @@ macro_rules! storage_ops {
                     U(b)
                 }
 
-                pub fn [<$prefix _load_addr>](x: Address) -> U {
-                    let x = U::from(x);
-                    let mut b = [0u8; 32];
-                    unsafe { [<$prefix _load_bytes32>](x.0.as_ptr(), b.as_mut_ptr()) }
-                    U(b)
-                }
-
                 pub fn [<$prefix _store>](x: &U, y: &U) {
                     unsafe { [<$prefix _store_bytes32>](x.0.as_ptr(), y.0.as_ptr()) }
                 }
@@ -143,17 +136,17 @@ pub fn slot_map_slot(k: &U, p: &U) -> U {
     const_slot_map(k, p)
 }
 
-pub fn reentrancy_guard_entry(x: &[u8]) -> Result<(), bool> {
+pub fn reentrancy_guard_entry(x: &U) -> Result<(), bool> {
     assert!(x.len() <= 32, "too large");
-    transient_exchange_bool(&U::try_from(x).unwrap(), false)
+    transient_exchange_bool(x, false)
 }
 
-pub fn reentrancy_guard_exit(x: &[u8]) {
+pub fn reentrancy_guard_exit(x: &U) {
     assert!(x.len() <= 32, "too large");
-    transient_store(&U::try_from(x).unwrap(), &U::ZERO);
+    transient_store(x, &U::ZERO);
 }
 
-pub fn reentrancy_guard<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
+pub fn reentrancy_guard<R>(k: &U, f: impl FnOnce() -> R) -> Result<R, bool> {
     reentrancy_guard_entry(k)?;
     let v = f();
     reentrancy_guard_exit(k);
@@ -189,11 +182,11 @@ pub fn keccak256(b: &[u8]) -> U {
 }
 
 pub fn reentrancy_guard_const_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
-    reentrancy_guard(&const_keccak256(k).0, f)
+    reentrancy_guard(&const_keccak256(k), f)
 }
 
 pub fn reentrancy_guard_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
-    reentrancy_guard(&keccak256(k).0, f)
+    reentrancy_guard(&keccak256(k), f)
 }
 
 /// Find the storage map slot using keccak_const. Don't do this during
@@ -231,7 +224,7 @@ mod test {
     proptest! {
         #[test]
         fn test_reentrancy_guard(x in any::<[u8; 8]>()) {
-            reentrancy_guard(&x, || {
+            reentrancy_guard(&U::from(x), || {
                 assert!(transient_load(&U::from(x)).is_true());
             })
             .unwrap();

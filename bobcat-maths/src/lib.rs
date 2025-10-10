@@ -323,19 +323,6 @@ impl From<U> for Address {
     }
 }
 
-impl TryFrom<&[u8]> for U {
-    type Error = &'static str;
-
-    fn try_from(v: &[u8]) -> Result<Self, Self::Error> {
-        if v.len() > 32 {
-            return Err("too large");
-        }
-        let mut b = [0u8; 32];
-        b[32 - v.len()..].copy_from_slice(v);
-        Ok(U(b))
-    }
-}
-
 impl Zero for U {
     fn zero() -> Self {
         U::ZERO
