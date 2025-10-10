@@ -1,0 +1,50 @@
+[package]
+name = "bobcat-sdk"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "bobcat_sdk"
+
+[dependencies]
+bobcat-create = { path = "../bobcat-create" }
+bobcat-entry = { path = "../bobcat-entry" }
+bobcat-maths = { path = "../bobcat-maths" }
+bobcat-panic = { path = "../bobcat-panic" }
+bobcat-proxy = { path = "../bobcat-proxy" }
+bobcat-storage = { path = "../bobcat-storage" }
+bobcat-storage-proc = { path = "../bobcat-storage-proc" }
+
+[features]
+std = [
+	"bobcat-create/std",
+	"bobcat-entry/std",
+	"bobcat-maths/std",
+	"bobcat-panic/std",
+	"bobcat-proxy/std",
+	"bobcat-storage/std",
+]
+alloc = [
+	"bobcat-create/alloc",
+	"bobcat-entry/alloc",
+	"bobcat-maths/alloc",
+	"bobcat-panic/alloc",
+	"bobcat-proxy/alloc",
+	"bobcat-storage/alloc",
+]
+arbitrary-enabled = [
+	"bobcat-create/arbitrary-enabled",
+	"bobcat-entry/arbitrary-enabled",
+	"bobcat-maths/arbitrary-enabled",
+	"bobcat-panic/arbitrary-enabled",
+	"bobcat-proxy/arbitrary-enabled",
+	"bobcat-storage/arbitrary-enabled",
+]
+proptest-enabled = [
+	"bobcat-create/proptest-enabled",
+	"bobcat-entry/proptest-enabled",
+	"bobcat-maths/proptest-enabled",
+	"bobcat-panic/proptest-enabled",
+	"bobcat-proxy/proptest-enabled",
+	"bobcat-storage/proptest-enabled",
+]
