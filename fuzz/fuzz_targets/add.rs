@@ -18,7 +18,16 @@ struct Add {
 }
 
 fuzz_target!(|data: Add| {
-    let v = data.x + data.y;
-    let e = U256::from_be_bytes(data.x.0).wrapping_add(U256::from_be_bytes(data.y.0));
-    assert_eq!(v.0, e.to_be_bytes(), "{e} != {v}");
+    let v = bobcat_maths::checked_add(&data.x, &data.y);
+    match (
+        U256::from_be_bytes(data.x.0).checked_add(U256::from_be_bytes(data.y.0)),
+        v,
+    ) {
+        (None, None) => (),
+        (Some(x), Some(y)) => {
+            //dbg!((U::MAX - y).to_string(), y.to_string());
+            assert_eq!(x.to_be_bytes(), y.0, "{x} != {y} ({}, {})", data.x, data.y)
+        },
+        (x, y) => panic!("bad checked, {x:?} != {y:?}")
+    }
 });

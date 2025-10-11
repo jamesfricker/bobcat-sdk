@@ -134,11 +134,18 @@ pub fn flush_guard<R, F: FnOnce() -> R>(f: F) -> R {
 storage_ops!(storage, transient);
 
 macro_rules! storage_mutate_ops {
-    ($prefix:ident, $($op:ident),* $(,)?) => {
+    ($prefix:ident, $($op:expr),* $(,)?) => {
         $(
             paste::paste! {
-                pub fn [<$prefix _ $op>](x: &U, new: &U) {
-                    [<$prefix _store>](x, &bobcat_maths::$op(&[<$prefix _load>](x), new))
+                pub fn [<$prefix _wrapping_ $op>](x: &U, new: &U) {
+                    [<$prefix _store>](x, &bobcat_maths::[<wrapping_ $op>](&[<$prefix _load>](x), new))
+                }
+
+                pub fn [<$prefix _checking_ $op>](x: &U, new: &U) -> Result<(), U> {
+                    let y = [<$prefix _load>](x);
+                    let u = bobcat_maths::[<checked_ $op>](&y, new).ok_or(y)?;
+                    [<$prefix _store>](x, &u);
+                    Ok(())
                 }
             }
         )*
@@ -173,11 +180,13 @@ pub fn reentrancy_guard<R>(k: &U, f: impl FnOnce() -> R) -> Result<R, bool> {
 /// Compute the slot for a slice, and take it off the curve. Useful for
 /// storage slot accesses (and more).
 pub const fn const_slot_off_curve(b: &[u8]) -> U {
-    bobcat_maths::sub(&const_keccak256(b), &U::ONE)
+    bobcat_maths::wrapping_sub(&const_keccak256(b), &U::ONE)
 }
 
 pub fn slot_off_curve(b: &[u8]) -> U {
-    bobcat_maths::sub(&keccak256(b), &U::ONE)
+    // This won't result in 0 from the keccak, so we can use checked_sub to
+    // use the code the host gives us for a slightly lower codesize profile.
+    bobcat_maths::checked_sub(&keccak256(b), &U::ONE).unwrap()
 }
 
 #[cfg(target_arch = "wasm32")]

@@ -69,7 +69,7 @@ mod alloy {
             let x = U256::from_be_slice(&*(a as *const [u8; 32]));
             let y = U256::from_be_slice(&*(b as *const [u8; 32]));
             let z = U256::from_be_slice(&*(c as *const [u8; 32]));
-            let x = x.add_mod(y, z);
+            let x = x.mul_mod(y, z);
             copy_nonoverlapping(x.to_be_bytes::<32>().as_ptr(), a, 32);
         }
     }
@@ -92,10 +92,14 @@ pub struct U(pub [u8; 32]);
 #[repr(transparent)]
 pub struct I(pub [u8; 32]);
 
-pub fn div(x: &U, y: &U) -> U {
+pub fn wrapping_div(x: &U, y: &U) -> U {
     let mut b = [0u8; 32];
     unsafe { math_div(x.0.as_ptr(), y.0.as_ptr(), b.as_mut_ptr()) }
     U(b)
+}
+
+pub fn checked_div(x: &U, y: &U) -> Option<U> {
+    todo!()
 }
 
 pub fn modd(x: &U, y: &U) -> U {
@@ -104,14 +108,14 @@ pub fn modd(x: &U, y: &U) -> U {
     U(b)
 }
 
-pub const fn const_add(x: &U, y: &U) -> U {
+pub const fn wrapping_add(x: &U, y: &U) -> U {
     let mut r = [0u8; 32];
     let mut c = 0;
     let mut i = 31;
     loop {
-        let sum = x.0[i] as u16 + y.0[i] as u16 + c;
-        r[i] = sum as u8;
-        c = sum >> 8;
+        let s = x.0[i] as u16 + y.0[i] as u16 + c;
+        r[i] = s as u8;
+        c = s >> 8;
         if i == 0 {
             break;
         }
@@ -120,16 +124,20 @@ pub const fn const_add(x: &U, y: &U) -> U {
     U(r)
 }
 
-pub fn add(x: &U, y: &U) -> U {
-    let sum = x.add_mod(y, &U::MAX);
+pub fn checked_add(x: &U, y: &U) -> Option<U> {
     if x > &(U::MAX - *y) {
-        sum - U::ONE
+        None
     } else {
-        sum
+        let z = x.add_mod(y, &U::MAX);
+        if z.is_zero() && (x.is_some() || y.is_some()) {
+            Some(U::MAX)
+        } else {
+            Some(z)
+        }
     }
 }
 
-pub const fn sub(x: &U, y: &U) -> U {
+pub const fn wrapping_sub(x: &U, y: &U) -> U {
     let mut neg_y = y.0;
     let mut i = 0;
     while i < 32 {
@@ -147,10 +155,14 @@ pub const fn sub(x: &U, y: &U) -> U {
         }
         i -= 1;
     }
-    const_add(x, &U(neg_y))
+    wrapping_add(x, &U(neg_y))
 }
 
-pub const fn mul(x: &U, y: &U) -> U {
+pub fn checked_sub(x: &U, y: &U) -> Option<U> {
+    todo!()
+}
+
+pub const fn wrapping_mul(x: &U, y: &U) -> U {
     let mut r = [0u8; 32];
     let mut i = 0;
     while i < 32 {
@@ -178,11 +190,15 @@ pub const fn mul(x: &U, y: &U) -> U {
     U(r)
 }
 
+pub fn checked_mul(x: &U, y: &U) -> Option<U> {
+    todo!()
+}
+
 impl Add for U {
     type Output = U;
 
     fn add(self, rhs: U) -> U {
-        add(&self, &rhs)
+        wrapping_add(&self, &rhs)
     }
 }
 
@@ -190,7 +206,7 @@ impl Add for &U {
     type Output = U;
 
     fn add(self, rhs: &U) -> U {
-        add(self, rhs)
+        wrapping_add(&self, rhs)
     }
 }
 
@@ -198,7 +214,7 @@ impl Sub for U {
     type Output = U;
 
     fn sub(self, rhs: U) -> U {
-        sub(&self, &rhs)
+        wrapping_sub(&self, &rhs)
     }
 }
 
@@ -206,7 +222,7 @@ impl Sub for &U {
     type Output = U;
 
     fn sub(self, rhs: &U) -> U {
-        sub(self, rhs)
+        wrapping_sub(self, rhs)
     }
 }
 
@@ -214,7 +230,7 @@ impl Mul for U {
     type Output = U;
 
     fn mul(self, rhs: U) -> U {
-        mul(&self, &rhs)
+        wrapping_mul(&self, &rhs)
     }
 }
 
@@ -222,7 +238,7 @@ impl Mul for &U {
     type Output = U;
 
     fn mul(self, rhs: &U) -> U {
-        mul(self, rhs)
+        wrapping_mul(self, rhs)
     }
 }
 
@@ -230,7 +246,7 @@ impl Div for U {
     type Output = U;
 
     fn div(self, rhs: U) -> U {
-        div(&self, &rhs)
+        wrapping_div(&self, &rhs)
     }
 }
 
@@ -238,7 +254,7 @@ impl Div for &U {
     type Output = U;
 
     fn div(self, rhs: &U) -> U {
-        div(self, rhs)
+        wrapping_div(self, rhs)
     }
 }
 
@@ -296,6 +312,10 @@ impl U {
 
     pub fn as_slice(&self) -> &[u8; 32] {
         &self.0
+    }
+
+    pub fn checked_add(&self, y: &Self) -> Option<Self> {
+        checked_add(self, y)
     }
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
@@ -437,7 +457,7 @@ impl I {
     }
 
     fn neg(&self) -> Self {
-        let x = const_add(&U(self.0.map(|b| !b)), &U::ONE);
+        let x = wrapping_add(&U(self.0.map(|b| !b)), &U::ONE);
         I(x.0)
     }
 
@@ -504,20 +524,20 @@ impl From<[u8; 32]> for I {
 }
 
 fn i_add(x: &I, y: &I) -> I {
-    I(add(&U(x.0), &U(y.0)).0)
+    I(wrapping_add(&U(x.0), &U(y.0)).0)
 }
 
 fn i_sub(x: &I, y: &I) -> I {
-    I(sub(&U(x.0), &U(y.0)).0)
+    I(wrapping_sub(&U(x.0), &U(y.0)).0)
 }
 
 fn i_mul(x: &I, y: &I) -> I {
-    let result = mul(&U(x.0), &U(y.0));
+    let result = wrapping_mul(&U(x.0), &U(y.0));
     I(result.0)
 }
 
 fn i_div(x: &I, y: &I) -> I {
-    let r = div(&x.abs(), &y.abs());
+    let r = wrapping_div(&x.abs(), &y.abs());
     if x.is_neg() ^ y.is_neg() {
         I(r.0).neg()
     } else {
@@ -813,4 +833,18 @@ mod test {
             assert_eq!(x, y)
         }
     }
+}
+
+#[test]
+fn test_fml() {
+    let x = U([255; 32]);
+    let y = U([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    ]);
+    let diff = U::MAX - y;
+    println!("y = {:?}", y);
+    println!("MAX - y = {:?}", diff);
+    println!("x > diff = {}", x > diff);
+    println!("checked_add result: {:?}", checked_add(&x, &y));
 }
