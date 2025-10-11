@@ -19,6 +19,7 @@ std = []
 proptest-enabled = ["std", "proptest", "proptest-derive"]
 arbitrary-enabled = ["std", "arbitrary"]
 alloy-enabled = ["alloy-primitives"]
+alloc = []
 
 [dev-dependencies]
 proptest = { workspace = true }

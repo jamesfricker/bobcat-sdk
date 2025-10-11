@@ -2,13 +2,19 @@
 
 use core::{
     cmp::{Eq, Ordering},
-    ops::{Add, Div, Index, Mul, Rem, Sub, Deref},
+    ops::{Add, Deref, Div, Index, Mul, Rem, Sub},
 };
 
 use num_traits::{One, Zero};
 
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "alloc")]
+use core::fmt::{Display, Formatter};
 
 pub type Address = [u8; 20];
 
@@ -98,11 +104,7 @@ pub fn modd(x: &U, y: &U) -> U {
     U(b)
 }
 
-pub const fn add(x: &U, y: &U) -> U {
-    // Implemented like this since unfortunately ruint (which the node
-    // uses) does not have special behaviour for mod being 0, except
-    // returning zero. So we need to implement this ourselves.
-    // TODO: if wasm ever sees SIMD or something, try that too.
+pub const fn const_add(x: &U, y: &U) -> U {
     let mut r = [0u8; 32];
     let mut c = 0;
     let mut i = 31;
@@ -116,6 +118,15 @@ pub const fn add(x: &U, y: &U) -> U {
         i -= 1;
     }
     U(r)
+}
+
+pub fn add(x: &U, y: &U) -> U {
+    let sum = x.add_mod(y, &U::MAX);
+    if x > &(U::MAX - *y) {
+        sum - U::ONE
+    } else {
+        sum
+    }
 }
 
 pub const fn sub(x: &U, y: &U) -> U {
@@ -136,7 +147,7 @@ pub const fn sub(x: &U, y: &U) -> U {
         }
         i -= 1;
     }
-    add(x, &U(neg_y))
+    const_add(x, &U(neg_y))
 }
 
 pub const fn mul(x: &U, y: &U) -> U {
@@ -293,10 +304,42 @@ impl U {
         Self(b)
     }
 
-    pub fn add_mod(x: &Self, y: &Self, z: &Self) -> Self {
-        let mut b = x.0;
+    pub fn add_mod(&self, y: &Self, z: &Self) -> Self {
+        let mut b = self.0;
         unsafe { math_add_mod(b.as_mut_ptr(), y.0.as_ptr(), z.0.as_ptr()) }
         Self(b)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl Display for U {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut result = vec![0u8];
+        for &byte in &self.0 {
+            let mut carry = byte as u32;
+            for digit in result.iter_mut() {
+                let temp = (*digit as u32) * 256 + carry;
+                *digit = (temp % 10) as u8;
+                carry = temp / 10;
+            }
+            while carry > 0 {
+                result.push((carry % 10) as u8);
+                carry /= 10;
+            }
+        }
+        if result.iter().all(|&d| d == 0) {
+            return write!(f, "0");
+        }
+        write!(
+            f,
+            "{}",
+            result
+                .iter()
+                .rev()
+                .skip_while(|&&d| d == 0)
+                .map(|&d| (d + b'0') as char)
+                .collect::<String>()
+        )
     }
 }
 
@@ -394,7 +437,8 @@ impl I {
     }
 
     fn neg(&self) -> Self {
-        I((U(self.0.map(|b| !b)) + U::ONE).0)
+        let x = const_add(&U(self.0.map(|b| !b)), &U::ONE);
+        I(x.0)
     }
 
     fn abs(self) -> U {
@@ -656,7 +700,8 @@ mod test {
         fn test_u_add(x in any::<U>(), y in any::<U>()) {
             let ex = U256::from_be_bytes(x.0);
             let ey = U256::from_be_bytes(y.0);
-            assert_eq!((ex.wrapping_add(ey)).to_be_bytes(), (x + y).0);
+            let e = U::from(ex.wrapping_add(ey).to_be_bytes::<32>());
+            assert_eq!(e, x + y, "{e} != {}", x + y);
         }
 
         #[test]
@@ -671,6 +716,12 @@ mod test {
             let ex = U256::from_be_bytes(x.0);
             let ey = U256::from_be_bytes(y.0);
             assert_eq!(ex.cmp(&ey), x.cmp(&y));
+        }
+
+        #[test]
+        #[cfg(feature = "alloc")]
+        fn test_u_str(x in any::<U>()) {
+            assert_eq!(U256::from_be_bytes(x.0).to_string(), x.to_string());
         }
 
         #[test]

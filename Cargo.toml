@@ -1,6 +1,5 @@
 [workspace]
 resolver = "3"
-
 members = [
 	"bobcat-maths",
 	"bobcat-storage",
@@ -9,6 +8,7 @@ members = [
 	"bobcat-proxy",
 	"bobcat-cd"
 ]
+exclude = ["fuzz"]
 
 [workspace.dependencies]
 proptest = { version = "1.8.0" }

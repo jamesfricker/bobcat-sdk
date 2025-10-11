@@ -14,8 +14,8 @@ official stylus-sdk repo.
 // main.rs
 use bobcat_storage::{storage, StorageU};
 use bobcat_maths::U;
-use bobcat_cd::{register, ToError, RevertMsg};
-use bobcat_entry::{read_args, exit_contract};
+use bobcat_cd::{ToError, RevertMsg, bobcat_entrypoints};
+use bobcat_entry::{read_args, exit_contract, BobcatEntrypoint};
 
 pub use bobcat_entry::mark_used;
 pub use bobcat_panic::panic_handler;
@@ -31,14 +31,13 @@ enum Error {
     CountOverflow,
 }
 
+#[derive(BobcatEntrypoint)]
 impl Storage {
-    #[bobcat_gen(addCount)]
     pub fn add_count(&mut self, c: U) -> Result<(), Error> {
         self.counter.chk_add(c).ok_or(Error::CountOverflow)?;
         Ok(())
     }
 
-    #[bobcat_gen]
     pub fn get_counter(&self) -> U {
         self.counter.get()
     }
@@ -47,7 +46,7 @@ impl Storage {
 #[no_mangle]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let c = StorageCounter::default();
-    exit_contract(pick_entrypoint!(c))
+    exit_contract(c.bobcat_pick_entry(args_len))
 }
 ```
 
@@ -106,9 +105,8 @@ a different format.
 The native integer types here use the native Stylus functions where possible for math,
 keeping codesize (and gas I imagine) super low. Some functions we use frequently in web3
 are also provided, including mul_div, mul_div_round_up, mul_div_widening, and
-mul_div_widening_round_up. The former two functions are preferable for a loss of
-precision, but a tiny impact on codesize (using the native functions where it can), making
-it acceptable for fee collection.
+mul_div_widening_round_up. The functions use the native vm operations for minimal codesize
+impact.
 
 We don't support anything other than the native type for storage access, except [u8; 20]
 for addresses. This is to encourage thoughtful use of the storage and the types.
