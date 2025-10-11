@@ -141,11 +141,13 @@ macro_rules! storage_mutate_ops {
                     [<$prefix _store>](x, &bobcat_maths::[<wrapping_ $op>](&[<$prefix _load>](x), new))
                 }
 
-                pub fn [<$prefix _checking_ $op>](x: &U, new: &U) -> Result<(), U> {
+                pub fn [<$prefix _checking_ $op>](x: &U, new: &U) -> Option<()> {
                     let y = [<$prefix _load>](x);
-                    let u = bobcat_maths::[<checked_ $op>](&y, new).ok_or(y)?;
-                    [<$prefix _store>](x, &u);
-                    Ok(())
+                    let Some(v) = bobcat_maths::[<checked_ $op>](&y, new) else {
+                        return None
+                    };
+                    [<$prefix _store>](x, &v);
+                    Some(())
                 }
             }
         )*
