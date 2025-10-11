@@ -76,12 +76,14 @@ use alloy::*;
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
+#[repr(transparent)]
 pub struct U(pub [u8; 32]);
 
 #[derive(Copy, Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
+#[repr(transparent)]
 pub struct I(pub [u8; 32]);
 
 pub fn div(x: &U, y: &U) -> U {
@@ -262,6 +264,8 @@ impl Ord for U {
 impl U {
     pub const ZERO: Self = U([0u8; 32]);
 
+    pub const MAX: Self = U([u8::MAX; 32]);
+
     pub const ONE: Self = U([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 1,
@@ -299,6 +303,20 @@ impl U {
 impl From<U> for [u8; 32] {
     fn from(x: U) -> Self {
         x.0
+    }
+}
+
+impl From<&[u8; 32]> for U {
+    fn from(x: &[u8; 32]) -> Self {
+        let mut b = [0u8; 32];
+        b.copy_from_slice(x);
+        U(b)
+    }
+}
+
+impl From<&[u8; 32]> for &U {
+    fn from(x: &[u8; 32]) -> Self {
+        unsafe { &*(x as *const [u8; 32] as *const U) }
     }
 }
 

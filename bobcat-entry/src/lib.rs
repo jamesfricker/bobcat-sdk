@@ -57,6 +57,14 @@ pub fn read_args<const CAP: usize>(len: usize) -> ([u8; CAP], usize) {
     (b, len)
 }
 
+#[macro_export]
+macro_rules! read_args_safe {
+    ($len:expr, $max_len:expr) => {{
+        assert!($max_len >= $len);
+        $crate::read_args::<$max_len>($len).0
+    }}
+}
+
 #[cfg(feature = "alloc")]
 pub fn read_args_vec(len: usize) -> (Vec<u8>, usize) {
     let mut b = Vec::with_capacity(len);

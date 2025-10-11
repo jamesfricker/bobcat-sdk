@@ -6,7 +6,8 @@ members = [
 	"bobcat-storage",
 	"bobcat-entry",
 	"bobcat-panic",
-	"bobcat-proxy"
+	"bobcat-proxy",
+	"bobcat-cd"
 ]
 
 [workspace.dependencies]

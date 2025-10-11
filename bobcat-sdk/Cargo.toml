@@ -13,6 +13,7 @@ bobcat-maths = { path = "../bobcat-maths" }
 bobcat-panic = { path = "../bobcat-panic" }
 bobcat-proxy = { path = "../bobcat-proxy" }
 bobcat-storage = { path = "../bobcat-storage" }
+bobcat-cd = { path = "../bobcat-cd" }
 
 [features]
 std = [

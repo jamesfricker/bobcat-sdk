@@ -31,14 +31,14 @@ enum Error {
     CountOverflow,
 }
 
-#[register]
 impl Storage {
+    #[bobcat_gen(addCount)]
     pub fn add_count(&mut self, c: U) -> Result<(), Error> {
         self.counter.chk_add(c).ok_or(Error::CountOverflow)?;
         Ok(())
     }
 
-    #[selector("counter()")]
+    #[bobcat_gen]
     pub fn get_counter(&self) -> U {
         self.counter.get()
     }
@@ -47,7 +47,7 @@ impl Storage {
 #[no_mangle]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let c = StorageCounter::default();
-    exit_contract(c.pick_entrypoint(read_args(args_len)))
+    exit_contract(pick_entrypoint!(c))
 }
 ```
 
