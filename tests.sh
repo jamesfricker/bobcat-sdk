@@ -2,10 +2,12 @@
 
 features=std,proptest-enabled,alloy-enabled,alloc
 
-#cargo mutants --features $features
-
 cargo test --features $features -- --nocapture $@
 
+cargo mutants --features $features
+
 cd examples
+
+cargo build --target wasm32-unknown-unknown --release
 
 ./check-codesize.sh

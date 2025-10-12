@@ -38,11 +38,11 @@ mod impls {
     }
 
     pub(crate) unsafe fn msg_sender(out: *mut u8) {
-        copy_nonoverlapping([0u8; 32].as_ptr(), out, 32)
+        unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
     }
 
     pub(crate) unsafe fn msg_value(out: *mut u8) {
-        copy_nonoverlapping([0u8; 32].as_ptr(), out, 32)
+        unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
     }
 
     pub(crate) unsafe fn msg_reentrant() -> bool {

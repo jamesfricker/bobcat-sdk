@@ -41,6 +41,7 @@ dependencies = [
 name = "bobcat-maths"
 version = "0.1.0"
 dependencies = [
+ "mutants",
  "num-traits",
 ]
 
@@ -123,6 +124,12 @@ name = "libc"
 version = "0.2.177"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2874a2af47a2325c2001a6e6fad9b16a53b802102b528163885171cf92b15976"
+
+[[package]]
+name = "mutants"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc0287524726960e07b119cebd01678f852f147742ae0d925e6a520dca956126"
 
 [[package]]
 name = "num-traits"

@@ -1,7 +1,5 @@
 #!/usr/bin/env -S bash -e
 
-cargo build --release --target wasm32-unknown-unknown
-
 release_dir=target/wasm32-unknown-unknown/release
 
 files="bobcat_sdk_examples_001.wasm"
@@ -13,7 +11,7 @@ err() {
 
 check_size() {
 	s="$(du -b $1 | cut -f1)"
-	[ $s -gt $2 ] && err $1 $2 $s
+	if [ $s -gt $2 ]; then err $1 $2 $s; fi
 }
 
 for n in $files; do

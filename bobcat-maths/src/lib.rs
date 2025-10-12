@@ -103,6 +103,7 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
     U(b)
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub fn checked_div(x: &U, y: &U) -> Option<U> {
     if y.is_zero() {
         None
@@ -133,6 +134,7 @@ pub const fn wrapping_add(x: &U, y: &U) -> U {
     U(r)
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub fn checked_add(x: &U, y: &U) -> Option<U> {
     if x > &(U::MAX - *y) {
         None
@@ -167,6 +169,7 @@ pub const fn wrapping_sub(x: &U, y: &U) -> U {
     wrapping_add(x, &U(neg_y))
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub fn checked_sub(x: &U, y: &U) -> Option<U> {
     if x < y {
         None
@@ -203,6 +206,7 @@ pub const fn wrapping_mul(x: &U, y: &U) -> U {
     U(r)
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub fn checked_mul(x: &U, y: &U) -> Option<U> {
     if x.is_zero() || y.is_zero() {
         return Some(U::zero());
@@ -707,7 +711,8 @@ mod test {
 
     proptest! {
         #[test]
-        fn test_u_is_zero(x in any::<U>()) {
+        fn test_u_is_zero(x in any::<[u8; 32]>()) {
+            let x = U::from(x);
             let ex = U256::from_be_bytes(x.0);
             assert_eq!(ex.is_zero(), x.is_zero());
         }
