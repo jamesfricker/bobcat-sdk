@@ -3,17 +3,17 @@
 #define constant SLOT_BEACON = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50
 
 #define macro IMPL_ADDR() = takes(0) returns(1) {
-   0x5c60da1b 0x00 mstore
-   0x20 0x00 0x4 0x1c [SLOT_BEACON] sload gas staticcall
-   0x20 0x0 0x0 returndatacopy 0x00 mload
+   0x5c60da1b 0x20 mstore
+   0x20 0x20 0x4 0x3c [SLOT_BEACON] sload gas staticcall
+   pop 0x20 mload
 }
 
 #define macro MAIN() = takes(0) returns(0) {
-    IMPL_ADDR() calldatasize 0x0 0x0 calldatacopy
-    0x0 0x0 calldatasize 0x0 dup5 gas delegatecall
+    calldatasize 0x0 0x0 calldatacopy
+    0x0 0x0 calldatasize 0x0 IMPL_ADDR() gas delegatecall
     0x0 returndatasize 0x0 0x0 returndatacopy
-    returndatasize swap2 iszero REVERT jumpi return
-    REVERT: revert
+    returndatasize swap2 RETURN jumpi revert
+    RETURN: return
 }
 
 #define macro CONSTRUCTOR() = takes(0) returns(0) {

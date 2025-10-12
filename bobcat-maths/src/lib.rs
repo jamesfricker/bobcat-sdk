@@ -36,9 +36,9 @@ mod alloy {
     #[cfg(test)]
     pub(crate) use alloy_primitives::I256;
 
-    pub(crate) unsafe fn math_div(x: *mut u8, y: *const u8) {
+    pub(crate) unsafe fn math_div(out: *mut u8, y: *const u8) {
         unsafe {
-            let x = U256::from_be_slice(&*(x as *const [u8; 32]));
+            let x = U256::from_be_slice(&*(out as *const [u8; 32]));
             let y = U256::from_be_slice(&*(y as *const [u8; 32]));
             let z = if y.is_zero() {
                 // TODO: I think the node returns 0 when this is the case.
@@ -46,16 +46,16 @@ mod alloy {
             } else {
                 x / y
             };
-            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), x.as_mut_ptr(), 32);
+            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), out, 32);
         }
     }
 
-    pub(crate) unsafe fn math_mod(x: *mut u8, y: *const u8) {
+    pub(crate) unsafe fn math_mod(out: *mut u8, y: *const u8) {
         unsafe {
-            let x = U256::from_be_slice(&*(x as *const [u8; 32]));
+            let x = U256::from_be_slice(&*(out as *const [u8; 32]));
             let y = U256::from_be_slice(&*(y as *const [u8; 32]));
             let z = x % y;
-            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), x.as_mut_ptr(), 32);
+            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), out, 32);
         }
     }
 
@@ -387,7 +387,7 @@ impl U {
         (out_high, out_low)
     }
 
-    pub fn mul_div(&self, y: &U, denom_and_rem: &U) -> Option<(U, bool)> {
+    pub fn mul_div(&self, y: &U, denom: &U) -> Option<(U, bool)> {
         todo!()
     }
 

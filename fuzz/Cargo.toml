@@ -10,7 +10,6 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
 ruint = { version = "1.12.4" }
-array-concat = "0.5.5"
 
 [dependencies.bobcat-maths]
 path = "../bobcat-maths"

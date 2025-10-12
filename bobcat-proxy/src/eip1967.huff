@@ -4,10 +4,10 @@
     calldatasize 0x0 0x0 calldatacopy
     0x0 0x0 calldatasize 0x0 [SLOT_IMPL] sload gas delegatecall
     0x0 returndatasize 0x0 0x0 returndatacopy
-    returndatasize swap2 iszero REVERT jumpi return
-    REVERT: revert
+    returndatasize swap2 RETURN jumpi revert
+    RETURN: return
 }
 
 #define macro CONSTRUCTOR() = takes(0) returns(0) {
-    0x6442954C9C5e73266Fb3F0a665fbB77C439e01ce [SLOT_IMPL] sstore
+    0x90b75E378f50a871E4125ba9D1Ef9a3826CEdF41 [SLOT_IMPL] sstore
 }
