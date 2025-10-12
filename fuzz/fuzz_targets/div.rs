@@ -12,16 +12,15 @@ use ruint::Uint;
 type U256 = Uint<256, 4>;
 
 #[derive(Arbitrary, Debug)]
-struct Sub {
+struct Div {
     x: U,
     y: U,
 }
 
-fuzz_target!(|data: Sub| {
-    let v = bobcat_maths::checked_sub(&data.x, &data.y);
+fuzz_target!(|data: Div| {
     match (
-        U256::from_be_bytes(data.x.0).checked_sub(U256::from_be_bytes(data.y.0)),
-        v,
+        U256::from_be_bytes(data.x.0).checked_div(U256::from_be_bytes(data.y.0)),
+        bobcat_maths::checked_div(&data.x, &data.y),
     ) {
         (None, None) => (),
         (Some(x), Some(y)) => {

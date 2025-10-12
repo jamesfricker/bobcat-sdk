@@ -25,7 +25,6 @@ fuzz_target!(|data: Add| {
     ) {
         (None, None) => (),
         (Some(x), Some(y)) => {
-            //dbg!((U::MAX - y).to_string(), y.to_string());
             assert_eq!(x.to_be_bytes(), y.0, "{x} != {y} ({}, {})", data.x, data.y)
         },
         (x, y) => panic!("bad checked, {x:?} != {y:?}")

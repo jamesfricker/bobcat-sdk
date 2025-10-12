@@ -40,7 +40,12 @@ mod alloy {
         unsafe {
             let x = U256::from_be_slice(&*(x as *const [u8; 32]));
             let y = U256::from_be_slice(&*(y as *const [u8; 32]));
-            let z = x / y;
+            let z = if y.is_zero() {
+                // TODO: I think the node returns 0 when this is the case.
+                U256::ZERO
+            } else {
+                x / y
+            };
             copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), out, 32);
         }
     }
@@ -99,7 +104,11 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
 }
 
 pub fn checked_div(x: &U, y: &U) -> Option<U> {
-    todo!()
+    if y.is_zero() {
+        None
+    } else {
+        Some(x / y)
+    }
 }
 
 pub fn modd(x: &U, y: &U) -> U {
@@ -159,7 +168,11 @@ pub const fn wrapping_sub(x: &U, y: &U) -> U {
 }
 
 pub fn checked_sub(x: &U, y: &U) -> Option<U> {
-    todo!()
+    if x < y {
+        None
+    } else {
+        Some(x - y)
+    }
 }
 
 pub const fn wrapping_mul(x: &U, y: &U) -> U {
@@ -191,7 +204,19 @@ pub const fn wrapping_mul(x: &U, y: &U) -> U {
 }
 
 pub fn checked_mul(x: &U, y: &U) -> Option<U> {
-    todo!()
+    if x.is_zero() || y.is_zero() {
+        return Some(U::zero());
+    }
+    if x > &(U::MAX / *y) {
+        None
+    } else {
+        let z = x.mul_mod(y, &U::MAX);
+        if z.is_zero() {
+            Some(U::MAX)
+        } else {
+            Some(z)
+        }
+    }
 }
 
 impl Add for U {
@@ -833,18 +858,4 @@ mod test {
             assert_eq!(x, y)
         }
     }
-}
-
-#[test]
-fn test_fml() {
-    let x = U([255; 32]);
-    let y = U([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-        255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-    ]);
-    let diff = U::MAX - y;
-    println!("y = {:?}", y);
-    println!("MAX - y = {:?}", diff);
-    println!("x > diff = {}", x > diff);
-    println!("checked_add result: {:?}", checked_add(&x, &y));
 }

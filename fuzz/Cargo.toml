@@ -28,3 +28,17 @@ path = "fuzz_targets/sub.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "mul"
+path = "fuzz_targets/mul.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "div"
+path = "fuzz_targets/div.rs"
+test = false
+doc = false
+bench = false
