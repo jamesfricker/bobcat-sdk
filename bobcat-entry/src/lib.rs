@@ -6,6 +6,10 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+use bobcat_maths::U;
+
+pub type Address = [u8; 20];
+
 #[cfg(target_arch = "wasm32")]
 mod impls {
     #[link(wasm_import_module = "vm_hooks")]
@@ -13,12 +17,15 @@ mod impls {
         pub(crate) fn pay_for_memory_grow(pages: u16);
         pub(crate) fn write_result(d: *const u8, l: usize);
         pub(crate) fn read_args(out: *mut u8);
+        pub(crate) fn msg_sender(addr: *mut u8);
+        pub(crate) fn msg_value(value: *mut u8);
+        pub(crate) fn msg_reentrant() -> bool;
     }
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
 mod impls {
-    use std::slice::from_raw_parts;
+    use std::{ptr::copy_nonoverlapping, slice::from_raw_parts};
 
     pub(crate) unsafe fn pay_for_memory_grow(_: u16) {}
 
@@ -29,6 +36,18 @@ mod impls {
     pub(crate) unsafe fn read_args(_out: *mut u8) {
         unimplemented!("read from stdin separately. todo");
     }
+
+    pub(crate) unsafe fn msg_sender(out: *mut u8) {
+        copy_nonoverlapping([0u8; 32].as_ptr(), out, 32)
+    }
+
+    pub(crate) unsafe fn msg_value(out: *mut u8) {
+        copy_nonoverlapping([0u8; 32].as_ptr(), out, 32)
+    }
+
+    pub(crate) unsafe fn msg_reentrant() -> bool {
+        false
+    }
 }
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
@@ -38,6 +57,10 @@ mod impls {
     pub(crate) unsafe fn write_result(_: *const u8, _: usize) {}
 
     pub(crate) unsafe fn read_args(_out: *mut u8) {}
+
+    pub(crate) unsafe fn msg_reentrant() -> bool {
+        false
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -62,7 +85,7 @@ macro_rules! read_args_safe {
     ($len:expr, $max_len:expr) => {{
         assert!($max_len >= $len);
         $crate::read_args::<$max_len>($len).0
-    }}
+    }};
 }
 
 #[cfg(feature = "alloc")]
@@ -73,4 +96,20 @@ pub fn read_args_vec(len: usize) -> (Vec<u8>, usize) {
         b.set_len(len);
     };
     (b, len)
+}
+
+pub fn msg_sender() -> Address {
+    let mut b = [0u8; 20];
+    unsafe { impls::msg_sender(b.as_mut_ptr()) }
+    b
+}
+
+pub fn msg_value() -> U {
+    let mut b = [0u8; 32];
+    unsafe { impls::msg_value(b.as_mut_ptr()) }
+    U(b)
+}
+
+pub fn msg_reentrant() -> bool {
+    unsafe { impls::msg_reentrant() }
 }

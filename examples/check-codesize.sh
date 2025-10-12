@@ -1,0 +1,25 @@
+#!/usr/bin/env -S bash -e
+
+cargo build --release --target wasm32-unknown-unknown
+
+release_dir=target/wasm32-unknown-unknown/release
+
+files="bobcat_sdk_examples_001.wasm"
+
+err() {
+	>&2 echo "$1 size regression (expected $2, is $3)"
+	exit 1
+}
+
+check_size() {
+	s="$(du -b $1 | cut -f1)"
+	[ $s -gt $2 ] && err $1 $2 $s
+}
+
+for n in $files; do
+	f="$release_dir/$n"
+	size="$(du -b $f)"
+	case $n in
+		bobcat_sdk_examples_001.wasm) check_size $f 8908 ;;
+	esac
+done

@@ -11,4 +11,5 @@ alloc = []
 std = ["alloc"]
 
 [dependencies]
+bobcat-maths = { path = "../bobcat-maths" }
 const-hex = { workspace = true }

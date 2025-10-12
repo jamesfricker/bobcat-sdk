@@ -125,12 +125,6 @@ pub fn flush_cache(clear: bool) {
     unsafe { storage_flush_cache(clear) }
 }
 
-pub fn flush_guard<R, F: FnOnce() -> R>(f: F) -> R {
-    let r = f();
-    flush_cache(false);
-    r
-}
-
 storage_ops!(storage, transient);
 
 macro_rules! storage_mutate_ops {

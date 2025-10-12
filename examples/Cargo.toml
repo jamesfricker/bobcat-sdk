@@ -1,0 +1,8 @@
+[workspace]
+resolver = "3"
+members = [
+	"001-counter"
+]
+
+[workspace.dependencies]
+bobcat-sdk = { path = "../bobcat-sdk" }

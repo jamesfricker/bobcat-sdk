@@ -73,6 +73,7 @@ dependencies = [
 name = "bobcat-entry"
 version = "0.1.0"
 dependencies = [
+ "bobcat-maths",
  "const-hex",
 ]
 

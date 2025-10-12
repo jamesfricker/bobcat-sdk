@@ -394,14 +394,6 @@ impl From<U> for [u8; 32] {
     }
 }
 
-impl From<&[u8; 32]> for U {
-    fn from(x: &[u8; 32]) -> Self {
-        let mut b = [0u8; 32];
-        b.copy_from_slice(x);
-        U(b)
-    }
-}
-
 impl From<&[u8; 32]> for &U {
     fn from(x: &[u8; 32]) -> Self {
         unsafe { &*(x as *const [u8; 32] as *const U) }
