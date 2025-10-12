@@ -2,7 +2,7 @@
 
 use core::{
     cmp::{Eq, Ordering},
-    ops::{Add, Deref, Div, Index, Mul, Rem, Sub},
+    ops::{Add, Deref, DerefMut, Div, Index, Mul, Rem, Sub},
 };
 
 use num_traits::{One, Zero};
@@ -21,8 +21,8 @@ pub type Address = [u8; 20];
 #[link(wasm_import_module = "vm_hooks")]
 #[cfg(not(feature = "alloy-enabled"))]
 unsafe extern "C" {
-    fn math_div(x: *const u8, y: *const u8, out: *mut u8);
-    fn math_mod(x: *const u8, y: *const u8, out: *mut u8);
+    fn math_div(x: *mut u8, y: *const u8);
+    fn math_mod(x: *mut u8, y: *const u8);
     fn math_add_mod(a: *mut u8, b: *const u8, c: *const u8);
     fn math_mul_mod(a: *mut u8, b: *const u8, c: *const u8);
 }
@@ -36,7 +36,7 @@ mod alloy {
     #[cfg(test)]
     pub(crate) use alloy_primitives::I256;
 
-    pub(crate) unsafe fn math_div(x: *const u8, y: *const u8, out: *mut u8) {
+    pub(crate) unsafe fn math_div(x: *mut u8, y: *const u8) {
         unsafe {
             let x = U256::from_be_slice(&*(x as *const [u8; 32]));
             let y = U256::from_be_slice(&*(y as *const [u8; 32]));
@@ -46,16 +46,16 @@ mod alloy {
             } else {
                 x / y
             };
-            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), out, 32);
+            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), x.as_mut_ptr(), 32);
         }
     }
 
-    pub(crate) unsafe fn math_mod(x: *const u8, y: *const u8, out: *mut u8) {
+    pub(crate) unsafe fn math_mod(x: *mut u8, y: *const u8) {
         unsafe {
             let x = U256::from_be_slice(&*(x as *const [u8; 32]));
             let y = U256::from_be_slice(&*(y as *const [u8; 32]));
             let z = x % y;
-            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), out, 32);
+            copy_nonoverlapping(z.to_be_bytes::<32>().as_ptr(), x.as_mut_ptr(), 32);
         }
     }
 
@@ -98,9 +98,9 @@ pub struct U(pub [u8; 32]);
 pub struct I(pub [u8; 32]);
 
 pub fn wrapping_div(x: &U, y: &U) -> U {
-    let mut b = [0u8; 32];
-    unsafe { math_div(x.0.as_ptr(), y.0.as_ptr(), b.as_mut_ptr()) }
-    U(b)
+    let mut b = *x;
+    unsafe { math_div(b.as_mut_ptr(), y.as_ptr()) }
+    b
 }
 
 #[cfg_attr(test, mutants::skip)]
@@ -113,9 +113,9 @@ pub fn checked_div(x: &U, y: &U) -> Option<U> {
 }
 
 pub fn modd(x: &U, y: &U) -> U {
-    let mut b = [0u8; 32];
-    unsafe { math_mod(x.0.as_ptr(), y.0.as_ptr(), b.as_mut_ptr()) }
-    U(b)
+    let mut b = *x;
+    unsafe { math_mod(b.as_mut_ptr(), y.as_ptr()) }
+    b
 }
 
 pub const fn wrapping_add(x: &U, y: &U) -> U {
@@ -349,14 +349,51 @@ impl U {
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
         let mut b = self.0;
-        unsafe { math_mul_mod(b.as_mut_ptr(), y.0.as_ptr(), z.0.as_ptr()) }
+        unsafe { math_mul_mod(b.as_mut_ptr(), y.as_ptr(), z.as_ptr()) }
         Self(b)
     }
 
     pub fn add_mod(&self, y: &Self, z: &Self) -> Self {
         let mut b = self.0;
-        unsafe { math_add_mod(b.as_mut_ptr(), y.0.as_ptr(), z.0.as_ptr()) }
+        unsafe { math_add_mod(b.as_mut_ptr(), y.as_ptr(), z.as_ptr()) }
         Self(b)
+    }
+
+    pub fn widening_mul(&self, y: &U) -> (U, U) {
+        let shift_128 = &U([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ]);
+        let x_hi = self / shift_128;
+        let x_lo = self % shift_128;
+        let y_hi = y / shift_128;
+        let y_lo = y % shift_128;
+        let t0 = x_lo.mul_mod(&y_lo, &U::MAX);
+        let t1 = x_hi.mul_mod(&y_lo, &U::MAX);
+        let t2 = x_lo.mul_mod(&y_hi, &U::MAX);
+        let t3 = x_hi.mul_mod(&y_hi, &U::MAX);
+        let t0_hi = &t0 / shift_128;
+        let t0_lo = &t0 % shift_128;
+        let t1_hi = &t1 / shift_128;
+        let t1_lo = &t1 % shift_128;
+        let t2_hi = &t2 / shift_128;
+        let t2_lo = &t2 % shift_128;
+        let mid = (t0_hi + t1_lo) + t2_lo;
+        let mid_hi = &mid / shift_128;
+        let mid_lo = &mid % shift_128;
+        let mid_lo_shifted = mid_lo.mul_mod(&shift_128, &U::MAX);
+        let out_low = t0_lo + mid_lo_shifted;
+        let out_high = t3 + t1_hi + t2_hi + mid_hi;
+        (out_high, out_low)
+    }
+
+    pub fn mul_div(&self, y: &U, denom_and_rem: &U) -> Option<(U, bool)> {
+        todo!()
+    }
+
+    pub fn mul_div_round_up(&self, y: &U, denom_and_rem: &U) -> Option<U> {
+        let (x, y) = self.mul_div(y, denom_and_rem)?;
+        Some(if y { x + U::ONE } else { x })
     }
 }
 
@@ -418,6 +455,12 @@ impl Deref for U {
     }
 }
 
+impl DerefMut for U {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl From<bool> for U {
     fn from(x: bool) -> Self {
         U::from(&[x as u8])
@@ -426,7 +469,7 @@ impl From<bool> for U {
 
 impl From<U> for Address {
     fn from(x: U) -> Self {
-        unsafe { *(x.0.as_ptr().add(32 - 20) as *const [u8; 20]) }
+        unsafe { *(x.as_ptr().add(32 - 20) as *const [u8; 20]) }
     }
 }
 

@@ -1,21 +1,18 @@
 [package]
-name = "bobcat-sdk-examples-001"
-version = "0.1.11"
+name = "bobcat-examples-002"
+version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 bobcat-sdk = { workspace = true }
 
 [[bin]]
-name = "bobcat-sdk-examples-001"
+name = "bobcat-sdk-examples-002"
 path = "src/main.rs"
-
-[lib]
-crate-type = ["lib", "cdylib"]
 
 [profile.release]
 codegen-units = 1
 strip = true
 lto = true
 panic = "abort"
-opt-level = "s"
+opt-level = "z"

@@ -70,7 +70,7 @@ pub fn create1_partial(code: &[u8], endowment: U) -> Result<Address, usize> {
         impls::create1(
             code.as_ptr(),
             code.len(),
-            endowment.0.as_ptr(),
+            endowment.as_ptr(),
             addr.as_mut_ptr(),
             &mut revert_len as *mut usize,
         )

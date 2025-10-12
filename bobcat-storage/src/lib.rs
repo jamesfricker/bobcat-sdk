@@ -42,7 +42,7 @@ mod host {
 
     unsafe fn write_word(key: *mut u8, val: U) {
         unsafe {
-            copy_nonoverlapping(val.0.as_ptr(), key, 32);
+            copy_nonoverlapping(val.as_ptr(), key, 32);
         }
     }
 
@@ -91,7 +91,7 @@ macro_rules! storage_ops {
             paste::paste! {
                 pub fn [<$prefix _load>](x: &U) -> U {
                     let mut b = [0u8; 32];
-                    unsafe { [<$prefix _load_bytes32>](x.0.as_ptr(), b.as_mut_ptr()) }
+                    unsafe { [<$prefix _load_bytes32>](x.as_ptr(), b.as_mut_ptr()) }
                     U(b)
                 }
 
@@ -114,11 +114,11 @@ macro_rules! storage_ops {
 }
 
 pub fn storage_store(x: &U, y: &U) {
-    unsafe { storage_cache_bytes32(x.0.as_ptr(), y.0.as_ptr()) }
+    unsafe { storage_cache_bytes32(x.as_ptr(), y.as_ptr()) }
 }
 
 pub fn transient_store(x: &U, y: &U) {
-    unsafe { transient_store_bytes32(x.0.as_ptr(), y.0.as_ptr()) }
+    unsafe { transient_store_bytes32(x.as_ptr(), y.as_ptr()) }
 }
 
 pub fn flush_cache(clear: bool) {

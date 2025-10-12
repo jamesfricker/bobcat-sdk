@@ -7,9 +7,7 @@ use libfuzzer_sys::{
 
 use bobcat_maths::U;
 
-use ruint::Uint;
-
-type U256 = Uint<256, 4>;
+use ruint::aliases::U256;
 
 #[derive(Arbitrary, Debug)]
 struct Div {

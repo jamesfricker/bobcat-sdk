@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cargo +nightly fuzz run sub
+cargo +nightly fuzz run $@
