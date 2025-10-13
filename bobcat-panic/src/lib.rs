@@ -5,7 +5,7 @@ extern crate alloc;
 
 #[cfg(all(target_arch = "wasm32", feature = "console"))]
 mod wasm {
-    #[link(wasm_import_module = "console")]
+    #[link(wasm_import_module = "vm_hooks")]
     unsafe extern "C" {
         pub(crate) fn log_txt(ptr: *const u8, len: usize);
     }

@@ -6,7 +6,9 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use bobcat_maths::U;
+use bobcat_storage::const_keccak256;
+
+pub use bobcat_maths::U;
 
 pub type Address = [u8; 20];
 
@@ -58,12 +60,12 @@ mod impls {
     ) {
     }
 
-    pub(crate) fn read_return_data(_dest: *mut u8, _offset: usize, _size: usize) -> usize {
+    pub(crate) unsafe fn read_return_data(_dest: *mut u8, _offset: usize, _size: usize) -> usize {
         0
     }
 }
 
-pub fn create1_partial(code: &[u8], endowment: U) -> Result<Address, usize> {
+fn create1_partial(code: &[u8], endowment: U) -> Result<Address, usize> {
     let mut addr = [0u8; 20];
     let mut revert_len = 0;
     unsafe {
@@ -97,7 +99,69 @@ pub fn create1_slice<const REVERT_CAP: usize>(
 pub fn create1_vec(code: &[u8], endowment: U) -> Result<Address, Vec<u8>> {
     create1_partial(code, endowment).map_err(|i| {
         let mut b = Vec::with_capacity(i);
-        b.set_len(unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) });
+        let l = unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) };
+        unsafe { b.set_len(l) }
         b
     })
+}
+
+fn create2_partial(code: &[u8], endowment: U, salt: U) -> Result<Address, usize> {
+    let mut addr = [0u8; 20];
+    let mut revert_len = 0;
+    unsafe {
+        impls::create2(
+            code.as_ptr(),
+            code.len(),
+            endowment.as_ptr(),
+            salt.as_ptr(),
+            addr.as_mut_ptr(),
+            &mut revert_len as *mut usize,
+        )
+    }
+    if revert_len > 0 {
+        Err(revert_len)
+    } else {
+        Ok(addr)
+    }
+}
+
+pub fn create2_slice<const REVERT_CAP: usize>(
+    code: &[u8],
+    endowment: U,
+    salt: U,
+) -> Result<Address, ([u8; REVERT_CAP], usize)> {
+    create2_partial(code, endowment, salt).map_err(|i| {
+        let mut b = [0u8; REVERT_CAP];
+        let l = unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) };
+        (b, l)
+    })
+}
+
+#[cfg(feature = "alloc")]
+pub fn create2_vec(code: &[u8], endowment: U, salt: U) -> Result<Address, Vec<u8>> {
+    create2_partial(code, endowment, salt).map_err(|i| {
+        let mut b = Vec::with_capacity(i);
+        let l = unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) };
+        unsafe {
+            b.set_len(l);
+        }
+        b
+    })
+}
+
+pub fn create2_slice_salt_keccak256<const REVERT_CAP: usize>(
+    code: &[u8],
+    endowment: U,
+    salt: &[u8],
+) -> Result<Address, ([u8; REVERT_CAP], usize)> {
+    create2_slice::<REVERT_CAP>(code, endowment, const_keccak256(salt))
+}
+
+#[cfg(feature = "alloc")]
+pub fn create2_vec_salt_keccak256(
+    code: &[u8],
+    endowment: U,
+    salt: &[u8],
+) -> Result<Address, Vec<u8>> {
+    create2_vec(code, endowment, const_keccak256(salt))
 }

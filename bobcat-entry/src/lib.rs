@@ -6,7 +6,7 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use bobcat_maths::U;
+pub use bobcat_maths::U;
 
 pub type Address = [u8; 20];
 
@@ -14,7 +14,9 @@ pub type Address = [u8; 20];
 mod impls {
     #[link(wasm_import_module = "vm_hooks")]
     unsafe extern "C" {
+        #[allow(unused)]
         pub(crate) fn pay_for_memory_grow(pages: u16);
+
         pub(crate) fn write_result(d: *const u8, l: usize);
         pub(crate) fn read_args(out: *mut u8);
         pub(crate) fn msg_sender(addr: *mut u8);
@@ -68,6 +70,7 @@ mod impls {
 }
 
 #[unsafe(no_mangle)]
+#[cfg(not(feature = "dont-define-symbols"))]
 pub unsafe fn mark_used() {
     unsafe { impls::pay_for_memory_grow(0) }
     panic!();

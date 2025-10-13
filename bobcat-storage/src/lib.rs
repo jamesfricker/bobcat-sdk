@@ -1,10 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use bobcat_maths::U;
-
 use keccak_const::Keccak256;
 
 use array_concat::concat_arrays;
+
+pub use bobcat_maths::U;
 
 pub type Address = [u8; 32];
 
@@ -159,6 +159,10 @@ macro_rules! storage_mutate_ops {
                     [<$prefix _store>](x, &v);
                     Some(())
                 }
+
+                pub fn [<$prefix _checking_ $op _res>](x: &U, y: &U) -> Result<(), (U, U)> {
+                    [<$prefix _checking_ $op>](x, y).ok_or((*x, *y))
+                }
             }
         )*
     };
@@ -238,6 +242,11 @@ pub const fn const_slot_map(k: &U, p: &U) -> U {
 pub fn slot_map(k: &U, p: &U) -> U {
     let b: [u8; 32 * 2] = concat_arrays!(k.0, p.0);
     keccak256(&b)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn slot_map(k: &U, p: &U) -> U {
+    const_slot_map(k, p)
 }
 
 #[test]

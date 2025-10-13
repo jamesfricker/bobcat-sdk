@@ -387,7 +387,7 @@ impl U {
         (out_high, out_low)
     }
 
-    pub fn mul_div(&self, y: &U, denom: &U) -> Option<(U, bool)> {
+    pub fn mul_div(&self, _y: &U, _denom: &U) -> Option<(U, bool)> {
         todo!()
     }
 
@@ -467,12 +467,6 @@ impl From<bool> for U {
     }
 }
 
-impl From<U> for Address {
-    fn from(x: U) -> Self {
-        unsafe { *(x.as_ptr().add(32 - 20) as *const [u8; 20]) }
-    }
-}
-
 impl Zero for U {
     fn zero() -> Self {
         U::ZERO
@@ -548,6 +542,12 @@ macro_rules! from_slices {
             impl From<[u8; $n]> for U {
                 fn from(x: [u8; $n]) -> Self {
                     U::from(&x)
+                }
+            }
+
+            impl From<U> for [u8; $n] {
+                fn from(x: U) -> Self {
+                    unsafe { *(x.as_ptr().add(32 - $n) as *const [u8; $n]) }
                 }
             }
         )+
