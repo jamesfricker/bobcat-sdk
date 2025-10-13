@@ -42,7 +42,7 @@ pub const fn make_beacon_proxy(beacon: Address) -> [u8; 1 + 20 + 123] {
         beacon,
         match const_hex::const_decode_to_array::<123>(b"7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d505560508060403d393df3365f5f375f5f365f635c60da1b602052602060206004603c7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50545afa506020515af45f3d5f5f3e3d9161004e57fd5bf3") {
             Ok(v) => v,
-            Err(_) => panic!()
+            Err(_) => panic!("bad beacon proxy")
         }
     )
 }

@@ -72,9 +72,13 @@ simple functions for unpacking the results.
 
 9. Support for every precompile.
 
-10. Reentrancy guard using a Vyper-like exchange method.
+10. Reentrancy guard using a Vyper-like exchange method of protecting the method id for
+per-function reentrancy guards.
 
-## Non goals
+11. Support for every interface Vyper provides (these are the most common), with the
+exception of eip2612.
+
+## Non-goals
 
 1. Test mocking features (like setting the sender). Use ArbOS-Foundry for e2e testing!
 These functions will be provided, but you can't set to them.
@@ -92,6 +96,15 @@ These functions will be provided, but you can't set to them.
 7. Payable designation to functions.
 
 8. Trait inheritance.
+
+9. Code that does a high level execution of interface calldata. For example, code that
+calls erc20 on other tokens for you using static_call. The reason is that in our
+experience, you will always be defining a per-application mock for the native host for
+these calls. The mock will usually resemble thread local storage for balances. So we don't
+want to generate code like that for users, since we find the approach in the OZ repo too
+cumbersome for our (Superposition) uses. We want to encourage users with this repo to use
+arbos-foundry for e2e mocking, while providing the basics to simply compile the program
+for everything else. Though, we will provide decoding functions for the interfaces.
 
 ## Maths
 

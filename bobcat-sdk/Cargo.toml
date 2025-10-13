@@ -18,6 +18,8 @@ bobcat-panic = { version = "0.2.0", path = "../bobcat-panic", optional = true }
 bobcat-proxy = { version = "0.2.0", path = "../bobcat-proxy" }
 bobcat-storage = { version = "0.2.0", path = "../bobcat-storage" }
 bobcat-cd = { version = "0.2.0", path = "../bobcat-cd" }
+bobcat-interfaces = { version = "0.2.0", path = "../bobcat-interfaces" }
+bobcat-call = { version = "0.2.0", path = "../bobcat-call" }
 
 [features]
 std = [

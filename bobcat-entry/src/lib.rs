@@ -23,6 +23,7 @@ mod impls {
         pub(crate) fn msg_value(value: *mut u8);
         pub(crate) fn msg_reentrant() -> bool;
         pub fn chain_id() -> u64;
+        pub(crate) fn account_code_size(address: *const u8) -> usize;
     }
 }
 
@@ -59,6 +60,10 @@ mod impls {
     pub fn chain_id() -> u64 {
         0
     }
+
+    pub(crate) unsafe fn account_code_size(_: *const u8) -> usize {
+        0
+    }
 }
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
@@ -80,6 +85,10 @@ mod impls {
     }
 
     pub fn chain_id() -> u64 {
+        0
+    }
+
+    pub(crate) unsafe fn account_code_size(_: *const u8) -> usize {
         0
     }
 }
@@ -142,4 +151,8 @@ pub fn msg_value() -> U {
 
 pub fn msg_reentrant() -> bool {
     unsafe { impls::msg_reentrant() }
+}
+
+pub fn code_size(addr: Address) -> usize {
+    unsafe { impls::account_code_size(addr.as_ptr()) }
 }

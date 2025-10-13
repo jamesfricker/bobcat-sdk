@@ -1,6 +1,6 @@
 #![no_std]
 
-pub use bobcat_maths::{U};
+pub use bobcat_maths::U;
 
 #[macro_export]
 macro_rules! read_word_slices {

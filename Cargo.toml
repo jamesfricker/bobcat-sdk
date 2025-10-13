@@ -7,7 +7,9 @@ members = [
 	"bobcat-panic",
 	"bobcat-proxy",
 	"bobcat-cd",
-	"bobcat-sdk"
+	"bobcat-sdk",
+	"bobcat-interfaces",
+	"bobcat-call"
 ]
 exclude = ["fuzz"]
 

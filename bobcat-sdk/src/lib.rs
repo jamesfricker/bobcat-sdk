@@ -6,6 +6,8 @@ pub use bobcat_maths as maths;
 pub use bobcat_proxy as proxy;
 pub use bobcat_storage as storage;
 pub use bobcat_cd as cd;
+pub use bobcat_interfaces as interfaces;
+pub use bobcat_call as call;
 
 #[cfg(feature = "panic")]
 pub use bobcat_panic as panic;
