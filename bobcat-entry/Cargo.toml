@@ -11,7 +11,7 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 name = "bobcat_entry"
 
 [features]
-alloc = []
+alloc = ["const-hex/alloc"]
 std = ["alloc"]
 
 [dependencies]

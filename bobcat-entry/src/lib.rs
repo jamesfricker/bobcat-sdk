@@ -25,7 +25,7 @@ mod impls {
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
 mod impls {
-    use std::{ptr::copy_nonoverlapping, slice::from_raw_parts};
+    use core::{ptr::copy_nonoverlapping, slice::from_raw_parts};
 
     pub(crate) unsafe fn pay_for_memory_grow(_: u16) {}
 
@@ -57,6 +57,12 @@ mod impls {
     pub(crate) unsafe fn write_result(_: *const u8, _: usize) {}
 
     pub(crate) unsafe fn read_args(_out: *mut u8) {}
+
+    pub(crate) unsafe fn msg_reentrant() -> bool {
+        false
+    }
+
+    pub(crate) unsafe fn msg_value(_: *mut u8) {}
 
     pub(crate) unsafe fn msg_reentrant() -> bool {
         false
