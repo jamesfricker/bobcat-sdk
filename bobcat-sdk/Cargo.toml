@@ -25,7 +25,6 @@ std = [
 	"bobcat-entry/std",
 	"bobcat-maths/std",
 	"bobcat-panic/std",
-	"bobcat-proxy/std",
 	"bobcat-storage/std",
 ]
 borsh = ["bobcat-maths/borsh"]
@@ -34,22 +33,6 @@ alloc = [
 	"bobcat-entry/alloc",
 	"bobcat-maths/alloc",
 	"bobcat-panic/alloc",
-	"bobcat-proxy/alloc",
-	"bobcat-storage/alloc",
 ]
-arbitrary-enabled = [
-	"bobcat-create/arbitrary-enabled",
-	"bobcat-entry/arbitrary-enabled",
-	"bobcat-maths/arbitrary-enabled",
-	"bobcat-panic/arbitrary-enabled",
-	"bobcat-proxy/arbitrary-enabled",
-	"bobcat-storage/arbitrary-enabled",
-]
-proptest-enabled = [
-	"bobcat-create/proptest-enabled",
-	"bobcat-entry/proptest-enabled",
-	"bobcat-maths/proptest-enabled",
-	"bobcat-panic/proptest-enabled",
-	"bobcat-proxy/proptest-enabled",
-	"bobcat-storage/proptest-enabled",
-]
+arbitrary-enabled = ["bobcat-maths/arbitrary-enabled"]
+proptest-enabled = ["bobcat-maths/proptest-enabled"]

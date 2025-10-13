@@ -70,6 +70,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bobcat-create"
+version = "0.1.0"
+dependencies = [
+ "bobcat-maths",
+ "bobcat-proxy",
+]
+
+[[package]]
 name = "bobcat-entry"
 version = "0.1.0"
 dependencies = [
@@ -101,6 +109,19 @@ dependencies = [
  "array-concat",
  "bobcat-maths",
  "const-hex",
+]
+
+[[package]]
+name = "bobcat-sdk"
+version = "0.1.0"
+dependencies = [
+ "bobcat-cd",
+ "bobcat-create",
+ "bobcat-entry",
+ "bobcat-maths",
+ "bobcat-panic",
+ "bobcat-proxy",
+ "bobcat-storage",
 ]
 
 [[package]]
