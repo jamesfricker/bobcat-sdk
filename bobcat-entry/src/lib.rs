@@ -16,12 +16,13 @@ mod impls {
     unsafe extern "C" {
         #[allow(unused)]
         pub(crate) fn pay_for_memory_grow(pages: u16);
-
         pub(crate) fn write_result(d: *const u8, l: usize);
         pub(crate) fn read_args(out: *mut u8);
         pub(crate) fn msg_sender(addr: *mut u8);
+        pub(crate) fn contract_address(addr: *mut u8);
         pub(crate) fn msg_value(value: *mut u8);
         pub(crate) fn msg_reentrant() -> bool;
+        pub fn chain_id() -> u64;
     }
 }
 
@@ -43,12 +44,20 @@ mod impls {
         unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
     }
 
+    pub(crate) unsafe fn contract_address(out: *mut u8) {
+        unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
+    }
+
     pub(crate) unsafe fn msg_value(out: *mut u8) {
         unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
     }
 
     pub(crate) unsafe fn msg_reentrant() -> bool {
         false
+    }
+
+    pub fn chain_id() -> u64 {
+        0
     }
 }
 
@@ -62,12 +71,20 @@ mod impls {
 
     pub(crate) unsafe fn msg_sender(_: *mut u8) {}
 
+    pub(crate) unsafe fn contract_address(_: *mut u8) {}
+
     pub(crate) unsafe fn msg_value(_: *mut u8) {}
 
     pub(crate) unsafe fn msg_reentrant() -> bool {
         false
     }
+
+    pub fn chain_id() -> u64 {
+        0
+    }
 }
+
+pub use impls::chain_id;
 
 #[unsafe(no_mangle)]
 #[cfg(not(feature = "dont-define-symbols"))]
@@ -108,6 +125,12 @@ pub fn read_args_vec(len: usize) -> (Vec<u8>, usize) {
 pub fn msg_sender() -> Address {
     let mut b = [0u8; 20];
     unsafe { impls::msg_sender(b.as_mut_ptr()) }
+    b
+}
+
+pub fn contract_address() -> Address {
+    let mut b = [0u8; 20];
+    unsafe { impls::contract_address(b.as_mut_ptr()) }
     b
 }
 

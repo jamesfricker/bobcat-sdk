@@ -13,7 +13,10 @@ use borsh::{BorshDeserialize, BorshSerialize};
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "std")]
+use alloc::vec;
+
+#[cfg(feature = "std")]
 use core::fmt::{Display, Formatter};
 
 pub type Address = [u8; 20];
@@ -104,11 +107,11 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_div(x: &U, y: &U) -> Option<U> {
+pub fn checking_div(x: &U, y: &U) -> Option<U> {
     if y.is_zero() {
         None
     } else {
-        Some(x / y)
+        Some(wrapping_div(x, y))
     }
 }
 
@@ -135,7 +138,7 @@ pub const fn wrapping_add(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_add(x: &U, y: &U) -> Option<U> {
+pub fn checking_add(x: &U, y: &U) -> Option<U> {
     if x > &(U::MAX - *y) {
         None
     } else {
@@ -170,11 +173,11 @@ pub const fn wrapping_sub(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_sub(x: &U, y: &U) -> Option<U> {
+pub fn checking_sub(x: &U, y: &U) -> Option<U> {
     if x < y {
         None
     } else {
-        Some(x - y)
+        Some(wrapping_sub(x, y))
     }
 }
 
@@ -207,7 +210,7 @@ pub const fn wrapping_mul(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_mul(x: &U, y: &U) -> Option<U> {
+pub fn checking_mul(x: &U, y: &U) -> Option<U> {
     if x.is_zero() || y.is_zero() {
         return Some(U::zero());
     }
@@ -227,7 +230,13 @@ impl Add for U {
     type Output = U;
 
     fn add(self, rhs: U) -> U {
-        wrapping_add(&self, &rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_add(&self, &rhs).expect("overflow when add")
+            } else {
+                wrapping_add(&self, &rhs)
+            }
+        }
     }
 }
 
@@ -235,7 +244,13 @@ impl Add for &U {
     type Output = U;
 
     fn add(self, rhs: &U) -> U {
-        wrapping_add(&self, rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_add(self, rhs).expect("overflow when add")
+            } else {
+                wrapping_add(self, rhs)
+            }
+        }
     }
 }
 
@@ -243,7 +258,13 @@ impl Sub for U {
     type Output = U;
 
     fn sub(self, rhs: U) -> U {
-        wrapping_sub(&self, &rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_sub(&self, &rhs).expect("overflow when sub")
+            } else {
+                wrapping_sub(&self, &rhs)
+            }
+        }
     }
 }
 
@@ -251,7 +272,13 @@ impl Sub for &U {
     type Output = U;
 
     fn sub(self, rhs: &U) -> U {
-        wrapping_sub(self, rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_sub(self, rhs).expect("overflow when sub")
+            } else {
+                wrapping_sub(self, rhs)
+            }
+        }
     }
 }
 
@@ -259,7 +286,13 @@ impl Mul for U {
     type Output = U;
 
     fn mul(self, rhs: U) -> U {
-        wrapping_mul(&self, &rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_mul(&self, &rhs).expect("overflow when mul")
+            } else {
+                wrapping_mul(&self, &rhs)
+            }
+        }
     }
 }
 
@@ -267,7 +300,13 @@ impl Mul for &U {
     type Output = U;
 
     fn mul(self, rhs: &U) -> U {
-        wrapping_mul(self, rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_mul(self, rhs).expect("overflow when mul")
+            } else {
+                wrapping_mul(self, rhs)
+            }
+        }
     }
 }
 
@@ -275,7 +314,13 @@ impl Div for U {
     type Output = U;
 
     fn div(self, rhs: U) -> U {
-        wrapping_div(&self, &rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_div(&self, &rhs).expect("overflow when div")
+            } else {
+                wrapping_div(&self, &rhs)
+            }
+        }
     }
 }
 
@@ -283,7 +328,13 @@ impl Div for &U {
     type Output = U;
 
     fn div(self, rhs: &U) -> U {
-        wrapping_div(self, rhs)
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                checking_div(self, rhs).expect("overflow when div")
+            } else {
+                wrapping_div(self, rhs)
+            }
+        }
     }
 }
 
@@ -343,8 +394,36 @@ impl U {
         &self.0
     }
 
-    pub fn checked_add(&self, y: &Self) -> Option<Self> {
-        checked_add(self, y)
+    pub fn wrapping_add(&self, y: &Self) -> U {
+        wrapping_add(self, y)
+    }
+
+    pub fn checking_add(&self, y: &Self) -> Option<Self> {
+        checking_add(self, y)
+    }
+
+    pub fn wrapping_sub(&self, y: &Self) -> U {
+        wrapping_sub(self, y)
+    }
+
+    pub fn checking_sub(&self, y: &Self) -> Option<Self> {
+        checking_sub(self, y)
+    }
+
+    pub fn wrapping_mul(&self, y: &Self) -> U {
+        wrapping_mul(self, y)
+    }
+
+    pub fn checking_mul(&self, y: &Self) -> Option<Self> {
+        checking_mul(self, y)
+    }
+
+    pub fn wrapping_div(&self, y: &Self) -> U {
+        wrapping_div(self, y)
+    }
+
+    pub fn checking_div(&self, y: &Self) -> Option<Self> {
+        checking_div(self, y)
     }
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
@@ -381,7 +460,7 @@ impl U {
         let mid = (t0_hi + t1_lo) + t2_lo;
         let mid_hi = &mid / shift_128;
         let mid_lo = &mid % shift_128;
-        let mid_lo_shifted = mid_lo.mul_mod(&shift_128, &U::MAX);
+        let mid_lo_shifted = mid_lo.mul_mod(shift_128, &U::MAX);
         let out_low = t0_lo + mid_lo_shifted;
         let out_high = t3 + t1_hi + t2_hi + mid_hi;
         (out_high, out_low)
@@ -397,7 +476,7 @@ impl U {
     }
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "std")]
 impl Display for U {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = vec![0u8];
@@ -567,6 +646,12 @@ macro_rules! from_ints {
                     let mut b = [0u8; 32];
                     b[32 - core::mem::size_of::<$t>()..].copy_from_slice(&x.to_be_bytes());
                     U(b)
+                }
+            }
+
+            impl From<U> for $t {
+                fn from(x: U) -> Self {
+                    Self::from_be_bytes(x.into())
                 }
             }
         )+
@@ -764,14 +849,14 @@ mod test {
         fn test_u_div(x in any::<U>(), y in any::<U>()) {
             let ex = U256::from_be_bytes(x.0);
             let ey = U256::from_be_bytes(y.0);
-            assert_eq!((ex.wrapping_div(ey)).to_be_bytes(), (x / y).0);
+            assert_eq!((ex.wrapping_div(ey)).to_be_bytes(), x.wrapping_div(&y).0);
         }
 
         #[test]
         fn test_u_mul(x in any::<U>(), y in any::<U>()) {
             let ex = U256::from_be_bytes(x.0);
             let ey = U256::from_be_bytes(y.0);
-            assert_eq!((ex.wrapping_mul(ey)).to_be_bytes(), (x * y).0);
+            assert_eq!((ex.wrapping_mul(ey)).to_be_bytes(), wrapping_mul(&x,  &y).0);
         }
 
         #[test]
@@ -786,14 +871,14 @@ mod test {
             let ex = U256::from_be_bytes(x.0);
             let ey = U256::from_be_bytes(y.0);
             let e = U::from(ex.wrapping_add(ey).to_be_bytes::<32>());
-            assert_eq!(e, x + y, "{e} != {}", x + y);
+            assert_eq!(e, x.wrapping_add(&y), "{e} != {}", x + y);
         }
 
         #[test]
         fn test_u_sub(x in any::<U>(), y in any::<U>()) {
             let ex = U256::from_be_bytes(x.0);
             let ey = U256::from_be_bytes(y.0);
-            assert_eq!((ex.wrapping_sub(ey)).to_be_bytes(), (x - y).0);
+            assert_eq!((ex.wrapping_sub(ey)).to_be_bytes(), x.wrapping_sub(&y).0);
         }
 
         #[test]
@@ -896,6 +981,11 @@ mod test {
         fn test_to_and_from_addrs(x in any::<Address>()) {
             let y: [u8; 20] = U::from(x).into();
             assert_eq!(x, y)
+        }
+
+        #[test]
+        fn test_u_conv_to_and_from_u8(x in any::<u8>()) {
+            assert_eq!(x.wrapping_add(1), U::from(x).wrapping_add(&U::ONE).into());
         }
     }
 }

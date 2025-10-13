@@ -62,7 +62,7 @@ checksum = "2261d10cca569e4643e526d8dc2e62e433cc8aba21ab764233731f8d369bf394"
 
 [[package]]
 name = "bobcat-cd"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bobcat-maths",
  "const-hex",
@@ -71,15 +71,16 @@ dependencies = [
 
 [[package]]
 name = "bobcat-create"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bobcat-maths",
  "bobcat-proxy",
+ "bobcat-storage",
 ]
 
 [[package]]
 name = "bobcat-entry"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bobcat-maths",
  "const-hex",
@@ -87,11 +88,12 @@ dependencies = [
 
 [[package]]
 name = "bobcat-maths"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "alloy-primitives",
  "arbitrary",
  "borsh",
+ "cfg-if",
  "mutants",
  "num-traits",
  "proptest",
@@ -100,11 +102,11 @@ dependencies = [
 
 [[package]]
 name = "bobcat-panic"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -113,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bobcat-cd",
  "bobcat-create",
@@ -126,7 +128,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-storage"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "array-concat",
  "bobcat-maths",

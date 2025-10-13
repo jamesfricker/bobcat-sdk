@@ -12,11 +12,11 @@ pub fn set_number(x: &U) {
 }
 
 pub fn mul_number(x: &U) {
-    storage_checking_mul(&U::ZERO, x).unwrap()
+    storage_wrapping_mul(&U::ZERO, x)
 }
 
 pub fn add_number(x: &U) {
-    storage_checking_add(&U::ZERO, x).unwrap()
+    storage_wrapping_add(&U::ZERO, x)
 }
 
 #[unsafe(no_mangle)]

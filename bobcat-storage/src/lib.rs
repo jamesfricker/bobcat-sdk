@@ -16,7 +16,7 @@ unsafe extern "C" {
     fn transient_load_bytes32(key: *const u8, dest: *mut u8);
     fn transient_store_bytes32(key: *const u8, value: *const u8);
     fn native_keccak256(bytes: *const u8, len: usize, output: *mut u8);
-    fn storage_flush_cache(clear: bool);
+    pub fn storage_flush_cache(clear: bool);
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
@@ -76,7 +76,7 @@ mod host {
         TRANSIENT.with(|s| s.borrow_mut().insert(k, v));
     }
 
-    pub(crate) unsafe fn storage_flush_cache(_: bool) {}
+    pub unsafe fn storage_flush_cache(_: bool) {}
 }
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
@@ -89,11 +89,14 @@ mod host {
 
     pub(crate) unsafe fn transient_store_bytes32(_: *const u8, _: *const u8) {}
 
-    pub(crate) unsafe fn storage_flush_cache(_: bool) {}
+    pub unsafe fn storage_flush_cache(_: bool) {}
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 use host::*;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use host::storage_flush_cache;
 
 macro_rules! storage_ops {
     ($($prefix:ident),* $(,)?) => {
@@ -131,13 +134,13 @@ pub fn transient_store(x: &U, y: &U) {
     unsafe { transient_store_bytes32(x.as_ptr(), y.as_ptr()) }
 }
 
-pub fn flush_cache(clear: bool) {
-    unsafe { storage_flush_cache(clear) }
+pub fn flush_cache() {
+    unsafe { storage_flush_cache(false) }
 }
 
 pub fn flush_guard<R, F: FnOnce() -> R>(f: F) -> R {
     let r = f();
-    flush_cache(false);
+    flush_cache();
     r
 }
 
@@ -153,15 +156,18 @@ macro_rules! storage_mutate_ops {
 
                 pub fn [<$prefix _checking_ $op>](x: &U, new: &U) -> Option<()> {
                     let y = [<$prefix _load>](x);
-                    let Some(v) = bobcat_maths::[<checked_ $op>](&y, new) else {
-                        return None
-                    };
+                    let v = bobcat_maths::[<checking_ $op>](&y, new)?;
                     [<$prefix _store>](x, &v);
                     Some(())
                 }
 
-                pub fn [<$prefix _checking_ $op _res>](x: &U, y: &U) -> Result<(), (U, U)> {
-                    [<$prefix _checking_ $op>](x, y).ok_or((*x, *y))
+                pub fn [<$prefix _checking_ $op _res>](x: &U, new: &U) -> Result<U, (U, U)> {
+                    let y = [<$prefix _load>](x);
+                    let Some(v) = bobcat_maths::[<checking_ $op>](&y, new) else {
+                        return Err((y, *new));
+                    };
+                    [<$prefix _store>](x, &v);
+                    Ok(v)
                 }
             }
         )*
@@ -200,9 +206,9 @@ pub const fn const_slot_off_curve(b: &[u8]) -> U {
 }
 
 pub fn slot_off_curve(b: &[u8]) -> U {
-    // This won't result in 0 from the keccak, so we can use checked_sub to
+    // This won't result in 0 from the keccak, so we can use checking_sub to
     // use the code the host gives us for a slightly lower codesize profile.
-    bobcat_maths::checked_sub(&keccak256(b), &U::ONE).unwrap()
+    bobcat_maths::checking_sub(&keccak256(b), &U::ONE).unwrap()
 }
 
 #[cfg(target_arch = "wasm32")]
