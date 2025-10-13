@@ -2,6 +2,9 @@
 name = "bobcat-panic"
 version = "0.1.0"
 edition = "2024"
+description = "Bobcat utilities with a panic handler on Arbitrum Stylus."
+homepage = "https://bobcat.so"
+repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
 [lib]
 name = "bobcat_panic"

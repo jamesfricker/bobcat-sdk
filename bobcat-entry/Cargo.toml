@@ -2,6 +2,10 @@
 name = "bobcat-entry"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Bobcat SDK utilities for building contract entrypoints on Arbitrum Stylus."
+homepage = "https://bobcat.so"
+repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
 [lib]
 name = "bobcat_entry"
@@ -11,5 +15,5 @@ alloc = []
 std = ["alloc"]
 
 [dependencies]
-bobcat-maths = { path = "../bobcat-maths" }
+bobcat-maths = { version = "0.1.0", path = "../bobcat-maths" }
 const-hex = { workspace = true }

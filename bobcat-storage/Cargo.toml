@@ -2,12 +2,16 @@
 name = "bobcat-storage"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Bobcat SDK utilities for accessing storage on Arbitrum Stylus."
+homepage = "https://bobcat.so"
+repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
 [lib]
 name = "bobcat_storage"
 
 [dependencies]
-bobcat-maths = { path = "../bobcat-maths" }
+bobcat-maths = { version = "0.1.0", path = "../bobcat-maths" }
 keccak-const = "0.2.0"
 proptest = { workspace = true, optional = true }
 array-concat = { workspace = true }

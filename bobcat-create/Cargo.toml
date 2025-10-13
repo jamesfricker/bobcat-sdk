@@ -2,6 +2,10 @@
 name = "bobcat-create"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Bobcat SDK utilities for using CREATE1 and CREATE2 on Arbitrum Stylus."
+homepage = "https://bobcat.so"
+repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
 [lib]
 name = "bobcat_create"

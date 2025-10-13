@@ -2,12 +2,16 @@
 name = "bobcat-cd"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Bobcat SDK utilities for accessing calldata on Arbitrum Stylus."
+homepage = "https://bobcat.so"
+repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
 [lib]
 name = "bobcat_cd"
 
 [dependencies]
-bobcat-maths = { path = "../bobcat-maths" }
+bobcat-maths = { version = "0.1.0", path = "../bobcat-maths" }
 proptest = { workspace = true, optional = true }
 
 [dev-dependencies]

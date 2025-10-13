@@ -2,6 +2,10 @@
 name = "bobcat-sdk"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Bobcat SDK is a codesize efficent SDK for developing on Arbitrum Stylus."
+homepage = "https://bobcat.so"
+repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
 [lib]
 name = "bobcat_sdk"
