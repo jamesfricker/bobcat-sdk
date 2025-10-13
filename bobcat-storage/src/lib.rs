@@ -154,16 +154,16 @@ macro_rules! storage_mutate_ops {
                     [<$prefix _store>](x, &bobcat_maths::[<wrapping_ $op>](&[<$prefix _load>](x), new))
                 }
 
-                pub fn [<$prefix _checking_ $op>](x: &U, new: &U) -> Option<()> {
+                pub fn [<$prefix _checked_ $op>](x: &U, new: &U) -> Option<()> {
                     let y = [<$prefix _load>](x);
-                    let v = bobcat_maths::[<checking_ $op>](&y, new)?;
+                    let v = bobcat_maths::[<checked_ $op>](&y, new)?;
                     [<$prefix _store>](x, &v);
                     Some(())
                 }
 
-                pub fn [<$prefix _checking_ $op _res>](x: &U, new: &U) -> Result<U, (U, U)> {
+                pub fn [<$prefix _checked_ $op _res>](x: &U, new: &U) -> Result<U, (U, U)> {
                     let y = [<$prefix _load>](x);
-                    let Some(v) = bobcat_maths::[<checking_ $op>](&y, new) else {
+                    let Some(v) = bobcat_maths::[<checked_ $op>](&y, new) else {
                         return Err((y, *new));
                     };
                     [<$prefix _store>](x, &v);
@@ -206,9 +206,9 @@ pub const fn const_slot_off_curve(b: &[u8]) -> U {
 }
 
 pub fn slot_off_curve(b: &[u8]) -> U {
-    // This won't result in 0 from the keccak, so we can use checking_sub to
+    // This won't result in 0 from the keccak, so we can use checked_sub to
     // use the code the host gives us for a slightly lower codesize profile.
-    bobcat_maths::checking_sub(&keccak256(b), &U::ONE).unwrap()
+    bobcat_maths::checked_sub(&keccak256(b), &U::ONE).unwrap()
 }
 
 #[cfg(target_arch = "wasm32")]

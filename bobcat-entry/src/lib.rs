@@ -31,6 +31,7 @@ mod impls {
 mod impls {
     use core::{ptr::copy_nonoverlapping, slice::from_raw_parts};
 
+    #[allow(unused)]
     pub(crate) unsafe fn pay_for_memory_grow(_: u16) {}
 
     pub(crate) unsafe fn write_result(d: *const u8, l: usize) {
@@ -57,7 +58,7 @@ mod impls {
         false
     }
 
-    pub fn chain_id() -> u64 {
+    pub(crate) unsafe fn chain_id() -> u64 {
         0
     }
 
@@ -120,13 +121,13 @@ macro_rules! read_args_safe {
 }
 
 #[cfg(feature = "alloc")]
-pub fn read_args_vec(len: usize) -> (Vec<u8>, usize) {
+pub fn read_args_vec(len: usize) -> Vec<u8> {
     let mut b = Vec::with_capacity(len);
     unsafe {
         impls::read_args(b.as_mut_ptr());
         b.set_len(len);
     };
-    (b, len)
+    b
 }
 
 pub fn msg_sender() -> Address {

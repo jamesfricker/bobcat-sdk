@@ -107,7 +107,7 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checking_div(x: &U, y: &U) -> Option<U> {
+pub fn checked_div(x: &U, y: &U) -> Option<U> {
     if y.is_zero() {
         None
     } else {
@@ -138,7 +138,7 @@ pub const fn wrapping_add(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checking_add(x: &U, y: &U) -> Option<U> {
+pub fn checked_add(x: &U, y: &U) -> Option<U> {
     if x > &(U::MAX - *y) {
         None
     } else {
@@ -173,7 +173,7 @@ pub const fn wrapping_sub(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checking_sub(x: &U, y: &U) -> Option<U> {
+pub fn checked_sub(x: &U, y: &U) -> Option<U> {
     if x < y {
         None
     } else {
@@ -210,7 +210,7 @@ pub const fn wrapping_mul(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checking_mul(x: &U, y: &U) -> Option<U> {
+pub fn checked_mul(x: &U, y: &U) -> Option<U> {
     if x.is_zero() || y.is_zero() {
         return Some(U::zero());
     }
@@ -232,7 +232,7 @@ impl Add for U {
     fn add(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_add(&self, &rhs).expect("overflow when add")
+                checked_add(&self, &rhs).expect("overflow when add")
             } else {
                 wrapping_add(&self, &rhs)
             }
@@ -246,7 +246,7 @@ impl Add for &U {
     fn add(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_add(self, rhs).expect("overflow when add")
+                checked_add(self, rhs).expect("overflow when add")
             } else {
                 wrapping_add(self, rhs)
             }
@@ -260,7 +260,7 @@ impl Sub for U {
     fn sub(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_sub(&self, &rhs).expect("overflow when sub")
+                checked_sub(&self, &rhs).expect("overflow when sub")
             } else {
                 wrapping_sub(&self, &rhs)
             }
@@ -274,7 +274,7 @@ impl Sub for &U {
     fn sub(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_sub(self, rhs).expect("overflow when sub")
+                checked_sub(self, rhs).expect("overflow when sub")
             } else {
                 wrapping_sub(self, rhs)
             }
@@ -288,7 +288,7 @@ impl Mul for U {
     fn mul(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_mul(&self, &rhs).expect("overflow when mul")
+                checked_mul(&self, &rhs).expect("overflow when mul")
             } else {
                 wrapping_mul(&self, &rhs)
             }
@@ -302,7 +302,7 @@ impl Mul for &U {
     fn mul(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_mul(self, rhs).expect("overflow when mul")
+                checked_mul(self, rhs).expect("overflow when mul")
             } else {
                 wrapping_mul(self, rhs)
             }
@@ -316,7 +316,7 @@ impl Div for U {
     fn div(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_div(&self, &rhs).expect("overflow when div")
+                checked_div(&self, &rhs).expect("overflow when div")
             } else {
                 wrapping_div(&self, &rhs)
             }
@@ -330,7 +330,7 @@ impl Div for &U {
     fn div(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checking_div(self, rhs).expect("overflow when div")
+                checked_div(self, rhs).expect("overflow when div")
             } else {
                 wrapping_div(self, rhs)
             }
@@ -398,32 +398,32 @@ impl U {
         wrapping_add(self, y)
     }
 
-    pub fn checking_add(&self, y: &Self) -> Option<Self> {
-        checking_add(self, y)
+    pub fn checked_add(&self, y: &Self) -> Option<Self> {
+        checked_add(self, y)
     }
 
     pub fn wrapping_sub(&self, y: &Self) -> U {
         wrapping_sub(self, y)
     }
 
-    pub fn checking_sub(&self, y: &Self) -> Option<Self> {
-        checking_sub(self, y)
+    pub fn checked_sub(&self, y: &Self) -> Option<Self> {
+        checked_sub(self, y)
     }
 
     pub fn wrapping_mul(&self, y: &Self) -> U {
         wrapping_mul(self, y)
     }
 
-    pub fn checking_mul(&self, y: &Self) -> Option<Self> {
-        checking_mul(self, y)
+    pub fn checked_mul(&self, y: &Self) -> Option<Self> {
+        checked_mul(self, y)
     }
 
     pub fn wrapping_div(&self, y: &Self) -> U {
         wrapping_div(self, y)
     }
 
-    pub fn checking_div(&self, y: &Self) -> Option<Self> {
-        checking_div(self, y)
+    pub fn checked_div(&self, y: &Self) -> Option<Self> {
+        checked_div(self, y)
     }
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
