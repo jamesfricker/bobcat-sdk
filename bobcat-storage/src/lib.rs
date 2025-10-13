@@ -80,9 +80,19 @@ mod host {
 }
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
-compile_error!("std needs to be enabled for non-wasm");
+mod host {
+    pub(crate) unsafe fn storage_load_bytes32(_: *const u8, _: *mut u8) {}
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
+    pub(crate) unsafe fn storage_cache_bytes32(_: *const u8, _: *const u8) {}
+
+    pub(crate) unsafe fn transient_load_bytes32(_: *const u8, _: *mut u8) {}
+
+    pub(crate) unsafe fn transient_store_bytes32(_: *const u8, _: *const u8) {}
+
+    pub(crate) unsafe fn storage_flush_cache(_: bool) {}
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 use host::*;
 
 macro_rules! storage_ops {

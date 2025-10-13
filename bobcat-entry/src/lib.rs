@@ -58,9 +58,7 @@ mod impls {
 
     pub(crate) unsafe fn read_args(_out: *mut u8) {}
 
-    pub(crate) unsafe fn msg_reentrant() -> bool {
-        false
-    }
+    pub(crate) unsafe fn msg_sender(_: *mut u8) {}
 
     pub(crate) unsafe fn msg_value(_: *mut u8) {}
 
