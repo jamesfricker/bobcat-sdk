@@ -93,8 +93,6 @@ mod impls {
     }
 }
 
-pub use impls::chain_id;
-
 #[unsafe(no_mangle)]
 #[cfg(not(feature = "dont-define-symbols"))]
 pub unsafe fn mark_used() {
@@ -155,4 +153,8 @@ pub fn msg_reentrant() -> bool {
 
 pub fn code_size(addr: Address) -> usize {
     unsafe { impls::account_code_size(addr.as_ptr()) }
+}
+
+pub fn chain_id() -> u64 {
+    unsafe { impls::chain_id() }
 }

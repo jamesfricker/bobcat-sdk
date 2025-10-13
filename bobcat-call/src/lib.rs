@@ -165,7 +165,9 @@ macro_rules! generate_call_variants {
             /// happened. An offset can be used to start reading the return data from,
             /// writing to the buffer given. The function will panic if the returndata
             /// exceeds the capacity. Enforces write control if static, and delegates if
-            /// delegatecall.
+            /// delegatecall. The function will also panic if the offset is greater than
+            /// the size of the returndata. Programmers making this mistake must be
+            /// making an error with the decoding.
             pub fn [<$base_fn _slice>]<const DATA_CAP: usize>(
                 contract: Address,
                 calldata: &[u8],
@@ -176,6 +178,7 @@ macro_rules! generate_call_variants {
             ) -> (bool, usize, [u8; DATA_CAP]) {
                 assert!(DATA_CAP >= size, "not enough cap for size");
                 let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
+                assert!(rd_len > offset, "not enough data for offset");
                 let mut b = [0u8; DATA_CAP];
                 let size = min(size, rd_len - offset);
                 unsafe { impls::read_return_data(b.as_mut_ptr(), offset, size) };
@@ -247,6 +250,73 @@ macro_rules! generate_call_variants {
                     Some([<$base_fn _slice>]::<DATA_CAP>(
                         contract, calldata, $($value_param,)? gas, offset, size,
                     ))
+                } else {
+                    None
+                }
+            }
+
+            /// Invoke call, only reading a single byte at the first word for a
+            /// check.
+            pub fn [<$base_fn _bool>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+            ) -> bool {
+                let (rc, _, v) = [<$base_fn _slice>]::<1>(
+                    contract, calldata, $($value_param,)? gas, 31, 1,
+                );
+                rc && v[0] == 1
+            }
+
+            /// Invoke call, only reading a single byte at the first word for a
+            /// check. Returns Some if success.
+            pub fn [<$base_fn _bool_opt>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+            ) -> Option<()> {
+                if [<$base_fn _bool>](contract, calldata, $($value_param,)? gas) {
+                    Some(())
+                } else {
+                    None
+                }
+            }
+
+            /// Check the codesize before invoking call, only reading a single byte
+            /// at the location for a bool check.
+            pub fn [<safe_ $base_fn _bool>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+            ) -> bool {
+                if code_size(contract) > 0 {
+                    let (rc, _, v) = [<$base_fn _slice>]::<1>(
+                        contract, calldata, $($value_param,)? gas, 31, 1,
+                    );
+                    rc && v[0] == 1
+                } else {
+                    false
+                }
+            }
+
+            /// Check the codesize before invoking call, returning a Option<()> if
+            /// the contract call worked, and the return value is true.
+            pub fn [<safe_ $base_fn _bool_opt>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+            ) -> Option<()> {
+                if [<safe_ $base_fn _bool>](
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas
+                ) {
+                    Some(())
                 } else {
                     None
                 }

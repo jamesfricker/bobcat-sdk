@@ -9,11 +9,11 @@ type Address = [u8; 20];
 pub const fn make_fn_permit(
     owner: Address,
     spender: Address,
-    value: U,
-    deadline: U,
+    value: &U,
+    deadline: &U,
     v: u8,
-    r: U,
-    s: U,
+    r: &U,
+    s: &U,
 ) -> [u8; 4 + 32 * 7] {
     concat_arrays!(
         SEL_PERMIT,
