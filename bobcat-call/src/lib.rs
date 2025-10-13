@@ -151,6 +151,55 @@ macro_rules! generate_call_variants {
                 (rc, size, b)
             }
 
+            /// Same as the other slice function, though returning Option if error.
+            pub fn [<$base_fn _slice_opt>]<const DATA_CAP: usize>(
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+                offset: usize,
+                size: usize,
+            ) -> Option<(usize, [u8; DATA_CAP])> {
+                let (rc, len, c) = [<$base_fn _slice>]::<DATA_CAP>(
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas,
+                    offset,
+                    size,
+                );
+                if rc {
+                    Some((len, c))
+                } else {
+                    None
+                }
+            }
+
+            /// Same as the other slice function, returning Result depending on
+            /// return or revert.
+            pub fn [<$base_fn _slice_res>]<const DATA_CAP: usize>(
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+                offset: usize,
+                size: usize,
+            ) -> Result<(usize, [u8; DATA_CAP]), (usize, [u8; DATA_CAP])> {
+                let (rc, len, c) = [<$base_fn _slice>]::<DATA_CAP>(
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas,
+                    offset,
+                    size,
+                );
+                if rc {
+                    Ok((len, c))
+                } else {
+                    Ok((len, c))
+                }
+            }
+
             /// Same as the slice variant, except check the length of the code for the
             /// address first. If code doesn't exist, then we return None. This might
             /// be useful for implementing ERC20 when you relax the check on the
@@ -191,7 +240,58 @@ macro_rules! generate_call_variants {
                 (rc, b)
             }
 
-            /// Safely call a contract, with the same checks as the safe slice variant.
+            /// Same as the other vec function, returning Option if error.
+            #[cfg(feature = "alloc")]
+            pub fn [<$base_fn _vec_opt>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+                offset: usize,
+                size: usize,
+            ) -> Option<Vec<u8>> {
+                let (rc, v) = [<$base_fn _vec>](
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas,
+                    offset,
+                    size,
+                );
+                if rc {
+                    Some(v)
+                } else {
+                    None
+                }
+            }
+
+            /// Same as the other vec function, returning Result depending on
+            /// return or revert.
+            #[cfg(feature = "alloc")]
+            pub fn [<$base_fn _vec_res>]<const DATA_CAP: usize>(
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+                offset: usize,
+                size: usize,
+            ) -> Result<Vec<u8>, Vec<u8>> {
+                let (rc, rd) = [<$base_fn _vec>](
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas,
+                    offset,
+                    size,
+                );
+                if rc {
+                    Ok(rd)
+                } else {
+                    Ok(rd)
+                }
+            }
+
+            /// Safely call a contract, with the same checks as the safe vec variant.
             #[cfg(feature = "alloc")]
             pub fn [<safe_ $base_fn _vec>](
                 contract: Address,

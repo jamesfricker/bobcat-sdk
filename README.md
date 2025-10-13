@@ -78,6 +78,12 @@ per-function reentrancy guards.
 11. Support for every interface Vyper provides (these are the most common), with the
 exception of eip2612.
 
+12. The ability to distill builtin functions to basic types to reduce codesize if needed.
+Most functions will ship with a form to use Result and Option, but also the ability to get
+the raw values and a simple bool value if needed. This is because Result and Option
+respectively have an impact on code, with Option having a lesser impact. Programmers
+trying to reduce their codesize presence might wish to reduce their use of these.
+
 ## Non-goals
 
 1. Test mocking features (like setting the sender). Use ArbOS-Foundry for e2e testing!
