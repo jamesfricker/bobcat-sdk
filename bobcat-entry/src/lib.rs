@@ -85,7 +85,7 @@ mod impls {
         false
     }
 
-    pub fn chain_id() -> u64 {
+    pub(crate) unsafe fn chain_id() -> u64 {
         0
     }
 

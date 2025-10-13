@@ -14,9 +14,6 @@ use borsh::{BorshDeserialize, BorshSerialize};
 extern crate alloc;
 
 #[cfg(feature = "std")]
-use alloc::vec;
-
-#[cfg(feature = "std")]
 use core::fmt::{Display, Formatter};
 
 pub type Address = [u8; 20];
