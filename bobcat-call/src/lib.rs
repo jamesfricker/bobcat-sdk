@@ -126,7 +126,38 @@ macro_rules! generate_call_variants {
                         &mut return_data_len as *mut usize,
                     )
                 };
-                (status != 0, return_data_len)
+                (status == 0, return_data_len)
+            }
+
+            /// Call a contract, ignoring its returndata. Returns true if contract
+            /// invoked successfully.
+            pub fn [<$base_fn _unit>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64
+            ) -> bool {
+                [<$base_fn _partial>](contract, calldata, $($value_param,)? gas).0
+            }
+
+            /// Call a contract, ignoring its returndata. Returns Some(()) if the
+            /// contract invoked successfully.
+            pub fn [<$base_fn _unit_opt>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+            ) -> Option<()> {
+                if [<$base_fn _unit>](
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas,
+                ) {
+                    Some(())
+                } else {
+                    None
+                }
             }
 
             /// Call a contract, writing its returndata to the slice given. Returns
