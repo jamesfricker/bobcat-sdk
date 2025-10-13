@@ -57,16 +57,17 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
 2. Math operations, and native U256 and I256 types that are simply slices. Use the hidden
 math operations in the Stylus VM for everything to keep codesize low.
 
-3. Calling interface (CALL, STATICCALL, DELEGATECALL). Calldata creation with macros. Some
-simple functions for unpacking the results.
+3. Calling interface (CALL, STATICCALL, DELEGATECALL). Simple functions for unpacking the
+results.
 
 4. Creation (CREATE1/CREATE2) interface.
 
-5. Minimal proxy creation features la Vyper. Minimal proxy, copies.
+5. Minimal proxy creation features la Vyper. Static proxy, proxy that reads from a slot,
+beacon proxy.
 
-6. Each library feature is able to be imported as a separate package.
+6. Each library feature is able to be imported as a separate package without the whole thing.
 
-7. Able to opt out of the allocator.
+7. Have to opt into the allocator.
 
 8. Solidity storage equivalence.
 
@@ -75,8 +76,8 @@ simple functions for unpacking the results.
 10. Reentrancy guard using a Vyper-like exchange method of protecting the method id for
 per-function reentrancy guards.
 
-11. Support for every interface Vyper provides (these are the most common), with the
-exception of eip2612.
+11. Support for every interface Vyper provides (these are the most common), though
+including eip2612.
 
 12. The ability to distill builtin functions to basic types to reduce codesize if needed.
 Most functions will ship with a form to use Result and Option, but also the ability to get
@@ -132,7 +133,7 @@ for addresses. This is to encourage thoughtful use of the storage and the types.
 
 ## Constant functions
 
-Some functions are available in a const form. These are implemented inline, avoiding using
+Some functions are available in a const form. These are implemented in code, avoiding using
 the host features. These functions should not be used at runtime, instead using the
 non-const functions. This will reduce the amount of codesize in the generated code by
 preferring to use the host implementations of these functions.
@@ -145,9 +146,6 @@ pub fn get_ed25519_count() -> U {
     storage_load(const_slot_off_curve("superposition.passport.ed25519_count"))
 }
 ```
-
-Since I assume Rust is smart enough to know to inline the result of the function, without
-actually adding the code to the end result.
 
 ## Philosophy
 
