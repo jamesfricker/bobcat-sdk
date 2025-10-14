@@ -98,6 +98,7 @@ pub struct U(pub [u8; 32]);
 pub struct I(pub [u8; 32]);
 
 pub fn wrapping_div(x: &U, y: &U) -> U {
+    assert!(y.is_some(), "divide by zero");
     let mut b = *x;
     unsafe { math_div(b.as_mut_ptr(), y.as_ptr()) }
     b
@@ -148,6 +149,11 @@ pub fn checked_add(x: &U, y: &U) -> Option<U> {
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
+pub fn saturating_add(x: &U, y: &U) -> U {
+    checked_add(x, y).unwrap_or(U::MAX)
+}
+
 pub const fn wrapping_sub(x: &U, y: &U) -> U {
     let mut neg_y = y.0;
     let mut i = 0;
@@ -167,6 +173,10 @@ pub const fn wrapping_sub(x: &U, y: &U) -> U {
         i -= 1;
     }
     wrapping_add(x, &U(neg_y))
+}
+
+pub fn saturating_sub(x: &U, y: &U) -> U {
+    checked_sub(x, y).unwrap_or(U::ZERO)
 }
 
 #[cfg_attr(test, mutants::skip)]
@@ -209,7 +219,7 @@ pub const fn wrapping_mul(x: &U, y: &U) -> U {
 #[cfg_attr(test, mutants::skip)]
 pub fn checked_mul(x: &U, y: &U) -> Option<U> {
     if x.is_zero() || y.is_zero() {
-        return Some(U::zero());
+        return Some(U::ZERO);
     }
     if x > &(U::MAX / *y) {
         None
@@ -221,6 +231,10 @@ pub fn checked_mul(x: &U, y: &U) -> Option<U> {
             Some(z)
         }
     }
+}
+
+pub fn saturating_mul(x: &U, y: &U) -> U {
+    checked_mul(x, y).unwrap_or(U::MAX)
 }
 
 impl Add for U {
@@ -391,36 +405,48 @@ impl U {
         &self.0
     }
 
-    pub fn wrapping_add(&self, y: &Self) -> U {
-        wrapping_add(self, y)
-    }
-
     pub fn checked_add(&self, y: &Self) -> Option<Self> {
         checked_add(self, y)
-    }
-
-    pub fn wrapping_sub(&self, y: &Self) -> U {
-        wrapping_sub(self, y)
-    }
-
-    pub fn checked_sub(&self, y: &Self) -> Option<Self> {
-        checked_sub(self, y)
-    }
-
-    pub fn wrapping_mul(&self, y: &Self) -> U {
-        wrapping_mul(self, y)
     }
 
     pub fn checked_mul(&self, y: &Self) -> Option<Self> {
         checked_mul(self, y)
     }
 
-    pub fn wrapping_div(&self, y: &Self) -> U {
-        wrapping_div(self, y)
+    pub fn checked_sub(&self, y: &Self) -> Option<Self> {
+        checked_sub(self, y)
     }
 
     pub fn checked_div(&self, y: &Self) -> Option<Self> {
         checked_div(self, y)
+    }
+
+    pub fn wrapping_add(&self, y: &Self) -> U {
+        wrapping_add(self, y)
+    }
+
+    pub fn wrapping_sub(&self, y: &Self) -> U {
+        wrapping_sub(self, y)
+    }
+
+    pub fn wrapping_mul(&self, y: &Self) -> U {
+        wrapping_mul(self, y)
+    }
+
+    pub fn wrapping_div(&self, y: &Self) -> U {
+        wrapping_div(self, y)
+    }
+
+    pub fn saturating_add(&self, y: &Self) -> U {
+        saturating_add(self, y)
+    }
+
+    pub fn saturating_sub(&self, y: &Self) -> U {
+        saturating_sub(self, y)
+    }
+
+    pub fn saturating_mul(&self, y: &Self) -> U {
+        saturating_mul(self, y)
     }
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {

@@ -15,16 +15,23 @@ struct Add {
     y: U,
 }
 
+macro_rules! assert_eq_t {
+    ($e:expr, $x:expr, $($o:expr),*) => {
+        assert_eq!($e.to_be_bytes::<32>(), $x.0, $($o),*)
+    };
+}
+
 fuzz_target!(|data: Add| {
-    let v = bobcat_maths::checked_add(&data.x, &data.y);
-    match (
-        U256::from_be_bytes(data.x.0).checked_add(U256::from_be_bytes(data.y.0)),
-        v,
-    ) {
+    let ex = U256::from_be_bytes(data.x.0);
+    let ey = U256::from_be_bytes(data.y.0);
+    let Add { x, y } = data;
+    assert_eq_t!(ex.wrapping_add(ey), x.wrapping_add(&y),);
+    match (ex.checked_add(ey), bobcat_maths::checked_add(&x, &y)) {
         (None, None) => (),
         (Some(x), Some(y)) => {
-            assert_eq!(x.to_be_bytes(), y.0, "{x} != {y} ({}, {})", data.x, data.y)
-        },
-        (x, y) => panic!("bad checked, {x:?} != {y:?}")
+            assert_eq_t!(x, y, "{x} != {y} ({}, {})", data.x, data.y)
+        }
+        (x, y) => panic!("bad checked, {x:?} != {y:?}"),
     }
+    assert_eq_t!(ex.saturating_add(ey), x.saturating_add(&y), );
 });

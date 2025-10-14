@@ -124,9 +124,8 @@ a different format.
 
 The native integer types here use the native Stylus functions where possible for math,
 keeping codesize (and gas I imagine) super low. Some functions we use frequently in web3
-are also provided, including mul_div, mul_div_round_up, mul_div_widening, and
-mul_div_widening_round_up. The functions use the native vm operations for minimal codesize
-impact.
+are also provided, including mul_div, mul_div_round_up, and some widening operations. The
+functions use the native vm operations for minimal codesize impact.
 
 We don't support anything other than the native type for storage access, except [u8; 20]
 for addresses. This is to encourage thoughtful use of the storage and the types.
