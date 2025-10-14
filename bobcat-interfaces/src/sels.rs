@@ -1,26 +1,10 @@
-
-use bobcat_storage::const_keccak256;
-
-use array_concat::concat_arrays;
-
-pub(crate) const fn leftpad_addr(x: [u8; 20]) -> [u8; 32] {
-    concat_arrays!([0u8; 32 - 20], x)
-}
-
-pub(crate) const fn leftpad_u8(x: u8) -> [u8; 32] {
-    concat_arrays!([0u8; 32 - 1], [x])
-}
-
-const fn keccak_sel(x: &[u8]) -> [u8; 4] {
-    let x = const_keccak256(x).0;
-    [x[0], x[1], x[2], x[3]]
-}
+use bobcat_cd::const_keccak_sel;
 
 #[macro_export]
 macro_rules! selectors {
     ($($name:ident = $str:literal),* $(,)?) => {
         $(
-            pub(crate) const $name: [u8; 4] = keccak_sel($str);
+            pub(crate) const $name: [u8; 4] = const_keccak_sel($str);
         )*
     };
 }
@@ -35,4 +19,9 @@ selectors! {
     SEL_PERMIT = b"permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
     SEL_NONCES = b"nonces(address)",
     SEL_DOMAIN_SEPARATOR = b"DOMAIN_SEPARATOR()"
+}
+
+#[test]
+fn test_allowance() {
+    assert_eq!([0xdd, 0x62, 0xed, 0x3e], SEL_ALLOWANCE);
 }

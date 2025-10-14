@@ -661,6 +661,12 @@ from_slices!(
     27, 28, 29, 30, 31
 );
 
+impl From<&U> for Address {
+    fn from(x: &U) -> Self {
+        (*x).into()
+    }
+}
+
 macro_rules! from_ints {
     ($($t:ty),+ $(,)?) => {
         $(
@@ -1002,7 +1008,7 @@ mod test {
 
         #[test]
         fn test_to_and_from_addrs(x in any::<Address>()) {
-            let y: [u8; 20] = U::from(x).into();
+            let y: Address = U::from(x).into();
             assert_eq!(x, y)
         }
 

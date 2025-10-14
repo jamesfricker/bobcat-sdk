@@ -10,6 +10,8 @@ pub use bobcat_maths::U;
 
 pub type Address = [u8; 20];
 
+pub use bobcat_cd::read_word_slices;
+
 #[cfg(target_arch = "wasm32")]
 mod impls {
     #[link(wasm_import_module = "vm_hooks")]
@@ -101,8 +103,53 @@ pub unsafe fn mark_used() {
     panic!();
 }
 
-pub fn write_result(s: &[u8]) {
+pub fn write_result_slice(s: &[u8]) {
     unsafe { impls::write_result(s.as_ptr(), s.len()) }
+}
+
+pub use bobcat_cd::leftpad_addr;
+
+#[macro_export]
+macro_rules! write_result_exit_res {
+    ($ident:expr) => {{
+        match $ident {
+            Ok(v) => {
+                $crate::write_result_slice(&v);
+                0
+            }
+            Err(v) => {
+                $crate::write_result_slice(&v);
+                1
+            }
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! write_result_exit_create {
+    ($ident:expr) => {{
+        let (addr, b, i) = $ident;
+        if addr != [0u8; 20] {
+            $crate::write_result_slice(&leftpad_addr(addr));
+            0
+        } else {
+            $crate::write_result_slice(&b[..i]);
+            1
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! write_result_exit_call {
+    ($ident:expr) => {{
+        let (rc, l, v) = $ident;
+        $crate::write_result_slice(&v[..l]);
+        if rc {
+            0
+        } else {
+            1
+        }
+    }};
 }
 
 pub fn read_args<const CAP: usize>(len: usize) -> ([u8; CAP], usize) {

@@ -1,5 +1,7 @@
 use bobcat_maths::U;
 
+use bobcat_cd::{leftpad_u8, leftpad_addr};
+
 use array_concat::concat_arrays;
 
 use crate::sels::*;

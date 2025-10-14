@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["001-counter", "002-mul_div"]
+members = ["001-counter", "002-mul_div", "003-beacon", "004-calling"]
 
 [workspace.dependencies]
 bobcat-sdk = { path = "../bobcat-sdk" }

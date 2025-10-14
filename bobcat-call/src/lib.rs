@@ -6,8 +6,6 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use core::cmp::min;
-
 use bobcat_maths::U;
 
 pub type Address = [u8; 20];
@@ -174,14 +172,12 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> (bool, usize, [u8; DATA_CAP]) {
-                assert!(DATA_CAP >= size, "not enough cap for size");
                 let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
-                assert!(rd_len > offset, "not enough data for offset");
+                let size = rd_len - offset;
+                assert!(DATA_CAP >= size, "not enough capacity");
                 let mut b = [0u8; DATA_CAP];
-                let size = min(size, rd_len - offset);
-                unsafe { impls::read_return_data(b.as_mut_ptr(), offset, size) };
+                unsafe { impls::read_return_data(b.as_mut_ptr(), 0, DATA_CAP) };
                 (rc, size, b)
             }
 
@@ -192,7 +188,6 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> Option<(usize, [u8; DATA_CAP])> {
                 let (rc, len, c) = [<$base_fn _slice>]::<DATA_CAP>(
                     contract,
@@ -200,7 +195,6 @@ macro_rules! generate_call_variants {
                     $($value_param,)?
                     gas,
                     offset,
-                    size,
                 );
                 if rc {
                     Some((len, c))
@@ -217,7 +211,6 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> Result<(usize, [u8; DATA_CAP]), (usize, [u8; DATA_CAP])> {
                 let (rc, len, c) = [<$base_fn _slice>]::<DATA_CAP>(
                     contract,
@@ -225,7 +218,6 @@ macro_rules! generate_call_variants {
                     $($value_param,)?
                     gas,
                     offset,
-                    size,
                 );
                 if rc {
                     Ok((len, c))
@@ -244,11 +236,10 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> Option<(bool, usize, [u8; DATA_CAP])> {
                 if code_size(contract) > 0 {
                     Some([<$base_fn _slice>]::<DATA_CAP>(
-                        contract, calldata, $($value_param,)? gas, offset, size,
+                        contract, calldata, $($value_param,)? gas, offset,
                     ))
                 } else {
                     None
@@ -264,7 +255,7 @@ macro_rules! generate_call_variants {
                 gas: u64,
             ) -> bool {
                 let (rc, _, v) = [<$base_fn _slice>]::<1>(
-                    contract, calldata, $($value_param,)? gas, 31, 1,
+                    contract, calldata, $($value_param,)? gas, 31,
                 );
                 rc && v[0] == 1
             }
@@ -285,7 +276,8 @@ macro_rules! generate_call_variants {
             }
 
             /// Check the codesize before invoking call, only reading a single byte
-            /// at the location for a bool check.
+            /// at the location for a bool check. If the contract doesn't return anything,
+            /// then we assume everything went okay.
             pub fn [<safe_ $base_fn _bool>](
                 contract: Address,
                 calldata: &[u8],
@@ -293,10 +285,13 @@ macro_rules! generate_call_variants {
                 gas: u64,
             ) -> bool {
                 if code_size(contract) > 0 {
-                    let (rc, _, v) = [<$base_fn _slice>]::<1>(
-                        contract, calldata, $($value_param,)? gas, 31, 1,
+                    let (rc, l, v) = [<$base_fn _slice>]::<1>(
+                        contract, calldata, $($value_param,)? gas, 31,
                     );
-                    rc && v[0] == 1
+                    match (rc, l) {
+                        (true, 1) => v[0] == 1,
+                        (x, _) => x
+                    }
                 } else {
                     false
                 }
@@ -331,10 +326,9 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> (bool, Vec<u8>) {
                 let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
-                let size = min(size, rd_len - offset);
+                let size = rd_len - offset;
                 let mut b = Vec::with_capacity(size);
                 unsafe { b.set_len(size) }
                 unsafe { impls::read_return_data(b.as_mut_ptr(), offset, size) };
@@ -349,7 +343,6 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> Option<Vec<u8>> {
                 let (rc, v) = [<$base_fn _vec>](
                     contract,
@@ -357,7 +350,6 @@ macro_rules! generate_call_variants {
                     $($value_param,)?
                     gas,
                     offset,
-                    size,
                 );
                 if rc {
                     Some(v)
@@ -375,7 +367,6 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> Result<Vec<u8>, Vec<u8>> {
                 let (rc, rd) = [<$base_fn _vec>](
                     contract,
@@ -383,7 +374,6 @@ macro_rules! generate_call_variants {
                     $($value_param,)?
                     gas,
                     offset,
-                    size,
                 );
                 if rc {
                     Ok(rd)
@@ -400,10 +390,9 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
                 offset: usize,
-                size: usize,
             ) -> Option<(bool, Vec<u8>)> {
                 if code_size(contract) > 0 {
-                    Some([<$base_fn _vec>](contract, calldata, $($value_param,)? gas, offset, size))
+                    Some([<$base_fn _vec>](contract, calldata, $($value_param,)? gas, offset))
                 } else {
                     None
                 }

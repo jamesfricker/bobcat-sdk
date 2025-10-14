@@ -2,336 +2,353 @@
 
 pub use bobcat_maths::U;
 
+pub use bobcat_storage::const_keccak256;
+
+use array_concat::concat_arrays;
+
 #[macro_export]
 macro_rules! read_word_slices {
     ($slice:expr, 1) => {{
         let s = $slice;
         assert!(s.len() >= 32);
-        unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) }
+        &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) })
     }};
     ($slice:expr, 2) => {{
         let s = $slice;
         assert!(s.len() >= 64);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 3) => {{
         let s = $slice;
         assert!(s.len() >= 96);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 4) => {{
         let s = $slice;
         assert!(s.len() >= 128);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 5) => {{
         let s = $slice;
         assert!(s.len() >= 160);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 6) => {{
         let s = $slice;
         assert!(s.len() >= 192);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 7) => {{
         let s = $slice;
         assert!(s.len() >= 224);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 8) => {{
         let s = $slice;
         assert!(s.len() >= 256);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 9) => {{
         let s = $slice;
         assert!(s.len() >= 288);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 10) => {{
         let s = $slice;
         assert!(s.len() >= 320);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 11) => {{
         let s = $slice;
         assert!(s.len() >= 352);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 12) => {{
         let s = $slice;
         assert!(s.len() >= 384);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 13) => {{
         let s = $slice;
         assert!(s.len() >= 416);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 14) => {{
         let s = $slice;
         assert!(s.len() >= 448);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[416..448].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 15) => {{
         let s = $slice;
         assert!(s.len() >= 480);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[416..448].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[448..480].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 16) => {{
         let s = $slice;
         assert!(s.len() >= 512);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[416..448].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[448..480].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[480..512].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 17) => {{
         let s = $slice;
         assert!(s.len() >= 544);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[416..448].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[448..480].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[480..512].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[512..544].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 18) => {{
         let s = $slice;
         assert!(s.len() >= 576);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[416..448].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[448..480].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[480..512].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[512..544].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[544..576].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 19) => {{
         let s = $slice;
         assert!(s.len() >= 608);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[416..448].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[448..480].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[480..512].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[512..544].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[544..576].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[576..608].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[576..608].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 20) => {{
         let s = $slice;
         assert!(s.len() >= 640);
         (
-            unsafe { &*(s[0..32].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[32..64].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[64..96].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[96..128].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[128..160].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[160..192].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[192..224].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[224..256].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[256..288].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[288..320].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[320..352].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[352..384].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[384..416].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[416..448].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[448..480].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[480..512].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[512..544].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[544..576].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[576..608].as_ptr() as *const [u8; 32]) },
-            unsafe { &*(s[608..640].as_ptr() as *const [u8; 32]) },
+            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[576..608].as_ptr() as *const [u8; 32]) }),
+            &U::from(unsafe { *(s[608..640].as_ptr() as *const [u8; 32]) }),
         )
     }};
+}
+
+pub const fn leftpad_addr(x: [u8; 20]) -> [u8; 32] {
+    concat_arrays!([0u8; 32 - 20], x)
+}
+
+pub const fn leftpad_u8(x: u8) -> [u8; 32] {
+    concat_arrays!([0u8; 32 - 1], [x])
+}
+
+pub const fn const_keccak_sel(x: &[u8]) -> [u8; 4] {
+    let x = const_keccak256(x).0;
+    [x[0], x[1], x[2], x[3]]
 }
 
 #[test]

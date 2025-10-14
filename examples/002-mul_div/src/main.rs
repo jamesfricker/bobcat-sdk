@@ -9,7 +9,6 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let (x, y) = read_word_slices!(&args, 2);
     let x = <&U>::from(x);
     let y = <&U>::from(y);
-    let w = U::from(10 as u32);
-    write_result(&x.widening_mul(&y).1.0);
+    write_result_slice(&x.widening_mul(&y).1.0);
     0
 }

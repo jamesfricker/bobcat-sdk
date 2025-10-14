@@ -1,5 +1,3 @@
-// TODO: This can probably be more efficient.
-
 #define constant SLOT_BEACON = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50
 
 #define macro IMPL_ADDR() = takes(0) returns(1) {

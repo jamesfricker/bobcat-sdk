@@ -65,7 +65,7 @@ mod impls {
     }
 }
 
-fn create1_partial(code: &[u8], endowment: U) -> Result<Address, usize> {
+fn create1_partial(code: &[u8], endowment: U) -> (Address, usize) {
     let mut addr = [0u8; 20];
     let mut revert_len = 0;
     unsafe {
@@ -77,23 +77,33 @@ fn create1_partial(code: &[u8], endowment: U) -> Result<Address, usize> {
             &mut revert_len as *mut usize,
         )
     }
-    if addr == [0u8; 20] {
-        Err(revert_len)
-    } else {
-        Ok(addr)
-    }
+    (addr, revert_len)
 }
 
 pub fn create1_slice<const REVERT_CAP: usize>(
     code: &[u8],
     endowment: U,
-) -> Result<Address, ([u8; REVERT_CAP], usize)> {
-    create1_partial(code, endowment).map_err(|i| {
-        let mut b = [0u8; REVERT_CAP];
+) -> (Address, [u8; REVERT_CAP], usize) {
+    let (addr, i) = create1_partial(code, endowment);
+    let mut b = [0u8; REVERT_CAP];
+    let mut l = 0;
+    if i > 0 {
         assert!(REVERT_CAP >= i, "create1 not enough space");
-        let l = unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) };
-        (b, l)
-    })
+        l = unsafe { impls::read_return_data(b.as_mut_ptr(), 0, i) };
+    }
+    (addr, b, l)
+}
+
+pub fn create1_slice_res<const REVERT_CAP: usize>(
+    code: &[u8],
+    endowment: U,
+) -> Result<Address, ([u8; REVERT_CAP], usize)> {
+    let (addr, b, l) = create1_slice(code, endowment);
+    if addr != [0u8; 20] {
+        Ok(addr)
+    } else {
+        Err((b, l))
+    }
 }
 
 #[cfg(feature = "alloc")]
