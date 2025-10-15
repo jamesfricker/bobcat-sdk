@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-interfaces"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 license = "MIT"
 description = "Bobcat SDK utilities for generating signautres  on Arbitrum Stylus."
@@ -12,7 +12,7 @@ name = "bobcat_interfaces"
 
 [dependencies]
 array-concat.workspace = true
-bobcat-cd = { version = "0.3.0", path = "../bobcat-cd" }
-bobcat-maths = { version = "0.3.0", path = "../bobcat-maths" }
-bobcat-storage = { version = "0.3.0", path = "../bobcat-storage" }
+bobcat-cd = { version = "0.4.0", path = "../bobcat-cd" }
+bobcat-maths = { version = "0.4.0", path = "../bobcat-maths" }
+bobcat-storage = { version = "0.4.0", path = "../bobcat-storage" }
 const-hex.workspace = true
