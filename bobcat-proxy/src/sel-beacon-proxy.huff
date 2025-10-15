@@ -1,0 +1,21 @@
+// sel-beacon-proxy: Select a specific proxy to delegate to, by
+// forwarding the selector to a proxy that tells us which address to call
+// from. Invokes implementation(bytes4) on the beacon for an address.
+
+#define constant BEACON = 0xB9b0E67783afad26DE499C39cA666f6f16551A96
+
+#define macro MAIN() = takes(0) returns(0) {
+    calldatasize 0x04 0x20 calldataload
+    0x00 0x00 calldatasize 0x20
+    0x0d741577 0x00 mstore
+    0x04 0x00 0x20 calldatacopy
+    0x20 0x24 0x24 0x1c [BEACON] gas staticcall
+    iszero REVERT jumpi
+    0x24 mload
+    calldatasize 0x04 0x24 calldatacopy
+    gas delegatecall
+    returndatasize 0x0 0x0 returndatacopy
+    0x00 returndatasize swap2 iszero REVERT jumpi return
+    REVERT:
+        revert
+}

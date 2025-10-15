@@ -20,16 +20,25 @@ pub const fn make_minimal_proxy(addr: Address) -> [u8; 18 + 16 + 20] {
     )
 }
 
+macro_rules! unpack_arr {
+    ($b:expr, $l:expr) => {
+        match const_hex::const_decode_to_array::<$l>($b) {
+            Ok(v) => v,
+            Err(_) => panic!("bad code"),
+        }
+    };
+}
+
 /// Make a EIP1967 proxy that reads from the standard storage slot.
 pub const fn make_eip1967_proxy(logic: Address) -> [u8; 1 + 20 + 102] {
     // Created from eip1967.huff .
     concat_arrays!(
       [0x73],
       logic,
-      match const_hex::const_decode_to_array::<101>(b"7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc55603a8060403d393df3365f5f375f5f365f7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545af45f3d5f5f3e3d9161003857fd5bf3") {
-         Ok(v) => v,
-         Err(_) => panic!("bad eip1967")
-      }
+      unpack_arr!(
+          b"7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc55603a8060403d393df3365f5f375f5f365f7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545af45f3d5f5f3e3d9161003857fd5bf3",
+          101
+      )
     )
 }
 
@@ -38,15 +47,15 @@ pub const fn make_eip1967_proxy(logic: Address) -> [u8; 1 + 20 + 102] {
 pub const fn make_beacon_proxy(beacon: Address) -> [u8; 20 + 110] {
     // Created from beacon-proxy.huff .
     concat_arrays!(
-        match const_hex::const_decode_to_array::<34>(b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c73") {
-            Ok(v) => v,
-            Err(_) => panic!("bad first part of beacon proxy")
-        },
+        unpack_arr!(
+            b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c73",
+            34
+        ),
         beacon,
-        match const_hex::const_decode_to_array::<76>(b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c7390b75e378f50a871e4125ba9d1ef9a3826cedf415afa506020515af45f3d5f5f3e3d9161004157fd5bf3") {
-            Ok(v) => v,
-            Err(_) => panic!("bad second part of beacon proxy")
-        }
+        unpack_arr!(
+          b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c7390b75e378f50a871e4125ba9d1ef9a3826cedf415afa506020515af45f3d5f5f3e3d9161004157fd5bf3",
+          76
+        )
     )
 }
 
@@ -57,9 +66,49 @@ pub const fn make_upgradeable_beacon_proxy(beacon: Address) -> [u8; 1 + 20 + 123
     concat_arrays!(
         [0x73],
         beacon,
-        match const_hex::const_decode_to_array::<123>(b"7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d505560508060403d393df3365f5f375f5f365f635c60da1b602052602060206004603c7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50545afa506020515af45f3d5f5f3e3d9161004e57fd5bf3") {
-            Ok(v) => v,
-            Err(_) => panic!("bad beacon proxy")
-        }
+        unpack_arr!(
+            b"7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d505560508060403d393df3365f5f375f5f365f635c60da1b602052602060206004603c7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50545afa506020515af45f3d5f5f3e3d9161004e57fd5bf3",
+            123
+        )
+    )
+}
+
+pub const fn make_multi3_proxy(
+    one: Address,
+    two: Address,
+    three: Address,
+    all: Address,
+) -> [u8; 46 + 20 + 7 + 20 + 7 + 20 + 6 + 20 + 21] {
+    // Created from multi3-proxy.huff .
+    concat_arrays!(
+        unpack_arr!(
+            b"609e8060093d393df3365f5f375f5f365f6002355f1a8060011461003d5780600214610058576003146100735773",
+            46
+        ),
+        all,
+        unpack_arr!(b"61008d565b5073", 7),
+        one,
+        unpack_arr!(b"61008d565b5073", 7),
+        two,
+        unpack_arr!(b"61008d565b73", 6),
+        three,
+        unpack_arr!(b"61008d565b5af45f3d5f5f3e3d9161009c57fd5bf3", 21)
+    )
+}
+
+/// Create a proxy that calls "implementation(bytes4)" on the beacon given
+/// to figure out where to delegatecall its calldata to.
+pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; 42 + 20 + 33] {
+    // Created from sel-beacon-proxy.huff .
+    concat_arrays!(
+        unpack_arr!(
+            b"60568060093d393df33660046020355f5f366020630d7415775f5260045f602037602060246024601c73",
+            42
+        ),
+        beacon,
+        unpack_arr!(
+            b"5afa15610054576024513660046024375af43d5f5f3e5f3d911561005457f35bfd",
+            33
+        )
     )
 }
