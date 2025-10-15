@@ -2,7 +2,7 @@
 // forwarding the selector to a proxy that tells us which address to call
 // from. Invokes implementation(bytes4) on the beacon for an address.
 
-#define constant SLOT_BEACON = 0xB9b0E67783afad26DE499C39cA666f6f16551A96
+#define constant SLOT_BEACON = 0x7118eAe2EdaF51b06eD0f09e0aAbD977fc2759A6
 
 // There might be a usecase for a user to change this, so this is here
 // for users to set themselves.
@@ -53,14 +53,14 @@ contract NineLivesBeacon {
 */
 
 #define macro MAIN() = takes(0) returns(0) {
-    calldatasize 0x04 0x20 calldataload
-    0x00 0x00 calldatasize 0x20
+    0x24 0x04 0x20 calldatasize dup3 dup3 calldataload
+    0x00 0x00 calldatasize dup6
     [SEL_IMPL] 0x00 mstore
-    0x04 0x00 0x20 calldatacopy
-    0x20 0x24 0x24 0x1c [SLOT_BEACON] gas staticcall
+    dup6 0x00 dup4 calldatacopy
+    dup8 dup11 dup1 0x1c [SLOT_BEACON] gas staticcall
     iszero REVERT jumpi
-    0x24 mload
-    calldatasize 0x04 0x24 calldatacopy
+    dup10 mload
+    calldatasize dup9 dup11 calldatacopy
     gas delegatecall
     returndatasize 0x0 0x0 returndatacopy
     0x00 returndatasize swap2 iszero REVERT jumpi return

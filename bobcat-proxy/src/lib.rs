@@ -50,26 +50,27 @@ pub const fn make_beacon_proxy(beacon: Address) -> [u8; 20 + 110] {
     // Created from beacon-proxy.huff .
     concat_arrays!(
         unpack_arr!(
-            b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c73",
-            34
+            b"60408060093d393df3365f5f375f5f365f6020635c60da1b815280806004603c73",
+            33
         ),
         beacon,
         unpack_arr!(
-          b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c7390b75e378f50a871e4125ba9d1ef9a3826cedf415afa506020515af45f3d5f5f3e3d9161004157fd5bf3",
-          76
+          b"5afa50515af45f3d5f5f3e3d9161003e57fd5bf3",
+          20
         )
     )
 }
 
 /// Make a beacon proxy that loads from the beacon slot to get the
-/// "implementation()(address)" to get the logic address to delegate to.
+/// "implementation()(address)" to get the logic address to delegate to,
+/// with the value initially set during the constructor.
 pub const fn make_upgradeable_beacon_proxy(beacon: Address) -> [u8; 1 + 20 + 123] {
     // Created from beacon-proxy.huff .
     concat_arrays!(
         [0x73],
         beacon,
         unpack_arr!(
-            b"7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d505560508060403d393df3365f5f375f5f365f635c60da1b602052602060206004603c7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50545afa506020515af45f3d5f5f3e3d9161004e57fd5bf3",
+            b"7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d5055604d8060403d393df3365f5f375f5f365f6020635c60da1b815280806004603c7fa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50545afa50515af45f3d5f5f3e3d9161004b57fd5bf3",
             123
         )
     )
@@ -100,16 +101,16 @@ pub const fn make_multi3_proxy(
 
 /// Create a proxy that calls the selector on the beacon given
 /// to figure out where to delegatecall its calldata to.
-pub const fn make_beacon_sel_proxy_sel(sel: [u8; 4], beacon: Address) -> [u8; 42 + 20 + 33] {
+pub const fn make_beacon_sel_proxy_sel(sel: [u8; 4], beacon: Address) -> [u8; 24 + 4 + 12 + 20 + 30] {
     // Created from sel-beacon-proxy.huff .
     concat_arrays!(
-        unpack_arr!(b"60568060093d393df33660046020355f5f36602063", 21),
+        unpack_arr!(b"60518060093d393df3602460046020368282355f5f368563", 24),
         sel,
-        unpack_arr!(b"5f5260045f602037602060246024601c73", 17),
+        unpack_arr!(b"5f52855f8337878a80601c73", 12),
         beacon,
         unpack_arr!(
-            b"5afa15610054576024513660046024375af43d5f5f3e5f3d911561005457f35bfd",
-            33
+            b"5afa1561004f57895136888a375af43d5f5f3e5f3d911561004f57f35bfd",
+            30
         )
     )
 }
@@ -117,6 +118,6 @@ pub const fn make_beacon_sel_proxy_sel(sel: [u8; 4], beacon: Address) -> [u8; 42
 /// Create a proxy that calls "implementation(bytes4)" on the beacon
 /// address given with the selector in the calldata to this proxy. Use the
 /// returned address as the target of a delegatecall.
-pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; 42 + 20 + 33] {
+pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; 24 + 4 + 12 + 20 + 30] {
     make_beacon_sel_proxy_sel(SEL_IMPLEMENTATION, beacon)
 }

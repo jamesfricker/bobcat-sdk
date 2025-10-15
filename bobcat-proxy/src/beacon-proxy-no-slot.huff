@@ -1,7 +1,7 @@
-#define macro IMPL_ADDR() = takes(0) returns(1) {
-   0x5c60da1b 0x20 mstore
-   0x20 0x20 0x4 0x3c 0x90b75E378f50a871E4125ba9D1Ef9a3826CEdF41 gas staticcall
-   pop 0x20 mload
+#define macro IMPL_ADDR() = takes(0) returns(2) {
+   0x20 0x5c60da1b dup2 mstore
+   dup1 dup1 0x4 0x3c 0x90b75E378f50a871E4125ba9D1Ef9a3826CEdF41 gas staticcall
+   pop mload
 }
 
 #define macro MAIN() = takes(0) returns(0) {
