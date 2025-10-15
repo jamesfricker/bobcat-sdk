@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-cd"
-version = "0.4.1"
+version = "0.4.0"
 edition = "2024"
 license = "MIT"
 description = "Bobcat SDK utilities for accessing calldata on Arbitrum Stylus."
@@ -11,10 +11,10 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 name = "bobcat_cd"
 
 [dependencies]
-bobcat-maths = { version = "0.4.1", path = "../bobcat-maths" }
+bobcat-maths = { version = "0.4.0", path = "../bobcat-maths" }
 array-concat = { workspace = true }
 proptest = { workspace = true, optional = true }
-bobcat-storage = { version = "0.4.1", path = "../bobcat-storage" }
+bobcat-storage = { version = "0.4.0", path = "../bobcat-storage" }
 
 [dev-dependencies]
 const-hex = { workspace = true }

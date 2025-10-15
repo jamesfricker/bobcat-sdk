@@ -128,7 +128,7 @@ version = "0.4.0"
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "array-concat",
  "bobcat-interfaces",
@@ -138,7 +138,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",
