@@ -2,6 +2,8 @@
 
 use array_concat::concat_arrays;
 
+use bobcat_interfaces::sels::SEL_IMPLEMENTATION;
+
 pub type Address = [u8; 20];
 
 pub const fn make_minimal_proxy(addr: Address) -> [u8; 18 + 16 + 20] {
@@ -96,19 +98,25 @@ pub const fn make_multi3_proxy(
     )
 }
 
-/// Create a proxy that calls "implementation(bytes4)" on the beacon given
+/// Create a proxy that calls the selector on the beacon given
 /// to figure out where to delegatecall its calldata to.
-pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; 42 + 20 + 33] {
+pub const fn make_beacon_sel_proxy_sel(sel: [u8; 4], beacon: Address) -> [u8; 42 + 20 + 33] {
     // Created from sel-beacon-proxy.huff .
     concat_arrays!(
-        unpack_arr!(
-            b"60568060093d393df33660046020355f5f366020630d7415775f5260045f602037602060246024601c73",
-            42
-        ),
+        unpack_arr!(b"60568060093d393df33660046020355f5f36602063", 21),
+        sel,
+        unpack_arr!(b"5f5260045f602037602060246024601c73", 17),
         beacon,
         unpack_arr!(
             b"5afa15610054576024513660046024375af43d5f5f3e5f3d911561005457f35bfd",
             33
         )
     )
+}
+
+/// Create a proxy that calls "implementation(bytes4)" on the beacon
+/// address given with the selector in the calldata to this proxy. Use the
+/// returned address as the target of a delegatecall.
+pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; 42 + 20 + 33] {
+    make_beacon_sel_proxy_sel(SEL_IMPLEMENTATION, beacon)
 }

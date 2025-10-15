@@ -2,7 +2,11 @@
 // forwarding the selector to a proxy that tells us which address to call
 // from. Invokes implementation(bytes4) on the beacon for an address.
 
-#define constant BEACON = 0xB9b0E67783afad26DE499C39cA666f6f16551A96
+#define constant SLOT_BEACON = 0xB9b0E67783afad26DE499C39cA666f6f16551A96
+
+// There might be a usecase for a user to change this, so this is here
+// for users to set themselves.
+#define constant SEL_IMPL = 0x0d741577
 
 // Example contract that you could use with selector mining (this is how
 // we use 9lives):
@@ -51,9 +55,9 @@ contract NineLivesBeacon {
 #define macro MAIN() = takes(0) returns(0) {
     calldatasize 0x04 0x20 calldataload
     0x00 0x00 calldatasize 0x20
-    0x0d741577 0x00 mstore
+    [SEL_IMPL] 0x00 mstore
     0x04 0x00 0x20 calldatacopy
-    0x20 0x24 0x24 0x1c [BEACON] gas staticcall
+    0x20 0x24 0x24 0x1c [SLOT_BEACON] gas staticcall
     iszero REVERT jumpi
     0x24 mload
     calldatasize 0x04 0x24 calldatacopy

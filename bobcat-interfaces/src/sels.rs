@@ -1,15 +1,15 @@
 use bobcat_cd::const_keccak_sel;
 
-#[macro_export]
 macro_rules! selectors {
     ($($name:ident = $str:literal),* $(,)?) => {
         $(
-            pub(crate) const $name: [u8; 4] = const_keccak_sel($str);
+            pub const $name: [u8; 4] = const_keccak_sel($str);
         )*
     };
 }
 
 selectors! {
+    SEL_IMPLEMENTATION = b"implementation(bytes4)",
     SEL_TOTAL_SUPPLY = b"totalSupply()",
     SEL_BALANCE_OF = b"balanceOf(address)",
     SEL_ALLOWANCE = b"allowance(address,address)",
