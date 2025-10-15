@@ -4,6 +4,50 @@
 
 #define constant BEACON = 0xB9b0E67783afad26DE499C39cA666f6f16551A96
 
+// Example contract that you could use with selector mining (this is how
+// we use 9lives):
+
+/*
+pragma solidity 0.8.20;
+
+contract NineLivesBeacon {
+    address public admin;
+    address public mint;
+    address public quotes;
+    address public price;
+    address public extras;
+
+    event NewAdmin(address indexed newAdmin);
+    event UpgradedMint(address indexed impl);
+    event UpgradedQuotes(address indexed impl);
+    event UpgradedPrice(address indexed price);
+    event UpgradedExtras(address indexed extras);
+
+    constructor(
+        address _admin,
+        address _mintImpl,
+        address _quotesImpl,
+        address _priceImpl,
+        address _extrasImpl
+    ) {
+        admin = _admin;
+        mint = _mintImpl;
+        quotes = _quotesImpl;
+        price = _priceImpl;
+        extras = _extrasImpl;
+    }
+
+    function implementation(bytes4 _sel) external view returns (address) {
+        uint8 sel = uint8(_sel[2]);
+        if (sel == 1) return mint;
+        else if (sel == 2) return quotes;
+        else if (sel == 3) return price;
+        else return extras;
+    }
+}
+
+*/
+
 #define macro MAIN() = takes(0) returns(0) {
     calldatasize 0x04 0x20 calldataload
     0x00 0x00 calldatasize 0x20
