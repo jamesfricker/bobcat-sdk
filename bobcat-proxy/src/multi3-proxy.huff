@@ -1,0 +1,31 @@
+// multi3-proxy: Select a specific proxy to delegate to, based on the
+// third byte in the selector. For example, 3 would send to the "three" proxy
+// address.
+
+#define macro MAIN() = takes(0) returns(0) {
+	calldatasize 0x0 0x0 calldatacopy
+	0x0 0x0 calldatasize
+	0x0 0x02 calldataload 0x0 byte
+	dup1 0x01 eq ONE jumpi
+	dup1 0x02 eq TWO jumpi
+	0x03 eq THREE jumpi
+	0x4000000000000000000000000000000000000004
+	ALL jump
+	ONE:
+		pop
+		0x1000000000000000000000000000000000000001
+		CONTINUE jump
+	TWO:
+		pop
+		0x2000000000000000000000000000000000000002
+		CONTINUE jump
+	THREE:
+		0x3000000000000000000000000000000000000003
+		CONTINUE jump
+	ALL:
+		gas delegatecall
+		0x0 returndatasize 0x0 0x0 returndatacopy
+		returndatasize swap2 RETURN jumpi revert
+	RETURN:
+		return
+}

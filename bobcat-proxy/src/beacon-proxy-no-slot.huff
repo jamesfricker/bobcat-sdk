@@ -1,0 +1,13 @@
+#define macro IMPL_ADDR() = takes(0) returns(1) {
+   0x5c60da1b 0x20 mstore
+   0x20 0x20 0x4 0x3c 0x90b75E378f50a871E4125ba9D1Ef9a3826CEdF41 gas staticcall
+   pop 0x20 mload
+}
+
+#define macro MAIN() = takes(0) returns(0) {
+    calldatasize 0x0 0x0 calldatacopy
+    0x0 0x0 calldatasize 0x0 IMPL_ADDR() gas delegatecall
+    0x0 returndatasize 0x0 0x0 returndatacopy
+    returndatasize swap2 RETURN jumpi revert
+    RETURN: return
+}

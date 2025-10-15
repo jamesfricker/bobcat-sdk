@@ -33,9 +33,26 @@ pub const fn make_eip1967_proxy(logic: Address) -> [u8; 1 + 20 + 102] {
     )
 }
 
-/// Make a non-upgradeable beacon proxy that calls
+/// Make beacon proxy that calls "implementation()(address)" on a
+/// hardcoded beacon address to get the logic address to delegate to.
+pub const fn make_beacon_proxy(beacon: Address) -> [u8; 20 + 110] {
+    // Created from beacon-proxy.huff .
+    concat_arrays!(
+        match const_hex::const_decode_to_array::<34>(b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c73") {
+            Ok(v) => v,
+            Err(_) => panic!("bad first part of beacon proxy")
+        },
+        beacon,
+        match const_hex::const_decode_to_array::<76>(b"60438060093d393df3365f5f375f5f365f635c60da1b602052602060206004603c7390b75e378f50a871e4125ba9d1ef9a3826cedf415afa506020515af45f3d5f5f3e3d9161004157fd5bf3") {
+            Ok(v) => v,
+            Err(_) => panic!("bad second part of beacon proxy")
+        }
+    )
+}
+
+/// Make a beacon proxy that loads from the beacon slot to get the
 /// "implementation()(address)" to get the logic address to delegate to.
-pub const fn make_beacon_proxy(beacon: Address) -> [u8; 1 + 20 + 123] {
+pub const fn make_upgradeable_beacon_proxy(beacon: Address) -> [u8; 1 + 20 + 123] {
     // Created from beacon-proxy.huff .
     concat_arrays!(
         [0x73],
