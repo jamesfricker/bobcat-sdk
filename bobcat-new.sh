@@ -88,7 +88,7 @@ chmod +x deploy.sh
 
 cat >Makefile <<EOF
 
-$project_name.wasm: \$(shell find src -type f)
+$project_name.wasm: \$(shell find Cargo.* src -type f)
 	@cargo build --release
 	@./wasm-post.sh \\
 		target/wasm32-unknown-unknown/release/$project_name.wasm \\
