@@ -63,15 +63,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bobcat-examples-006-camelot-swapping"
-version = "0.1.0"
-dependencies = [
- "bobcat-sdk",
- "const-hex",
- "mini-alloc",
-]
-
-[[package]]
 name = "bobcat-interfaces"
 version = "0.4.1"
 dependencies = [
@@ -144,6 +135,15 @@ dependencies = [
 [[package]]
 name = "bobcat-sdk-examples-005"
 version = "0.1.0"
+
+[[package]]
+name = "bobcat-sdk-examples-006"
+version = "0.1.0"
+dependencies = [
+ "bobcat-sdk",
+ "const-hex",
+ "mini-alloc",
+]
 
 [[package]]
 name = "bobcat-storage"
