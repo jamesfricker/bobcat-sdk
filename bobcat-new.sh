@@ -88,7 +88,7 @@ chmod +x deploy.sh
 
 cat >Makefile <<EOF
 
-$project_name.wasm:
+$project_name.wasm: \$(shell find src -type f)
 	@cargo build --release
 	@./wasm-post.sh \\
 		target/wasm32-unknown-unknown/release/$project_name.wasm \\
@@ -132,6 +132,12 @@ $project_name.wasm
 *.wat
 *.wasm1
 target
+EOF
+
+cat >rust-toolchain.toml <<EOF
+[toolchain]
+channel = "stable"
+components = [ "rust-src" ]
 EOF
 
 [ -z "$EDITOR" ] || $EDITOR src/main.rs &
