@@ -126,3 +126,5 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     }
 }
 EOF
+
+[ -z "\$EDITOR" ] || \$EDITOR src/main.rs
