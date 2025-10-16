@@ -2,59 +2,83 @@ use stylus_sdk::{
     alloy_primitives::*,
     alloy_sol_types::{sol, SolCall},
     prelude::*,
+    stylus_core::calls::context::Call,
 };
+
+extern crate alloc;
+
+use alloc::{vec, vec::Vec};
+
+// It would be better in this example to use a safe transfer method by
+// checking the codesize beforehand, since not every ERC20 will revert if
+// something is wrong. But, we're being kind to this example, so we won't
+// check.
 
 #[entrypoint]
 #[storage]
 pub struct Swapper;
 
 sol! {
-    function transferFrom(address sender, address recipient, uint256 amount);
+    interface ICamelotSwapRouter {
+        struct ExactInputSingleParams {
+            address tokenIn;
+            address tokenOut;
+            address recipient;
+            uint256 deadline;
+            uint256 amountIn;
+            uint256 amountOutMinimum;
+            uint160 limitSqrtPrice;
+        }
 
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 limitSqrtPrice;
+        function exactInputSingle(
+            ExactInputSingleParams memory params
+        ) external payable returns (uint256 amountOut);
     }
-
-    function exactInputSingle(
-        ExactInputSingleParams memory params
-    ) external payable returns (uint256 amountOut);
 }
 
-pub const ADDR: Address = address!("6221a9c005f6e47eb398fd867784cacfdcfff4e7");
+sol_interface! {
+    interface IERC20 {
+        function transferFrom(address sender, address recipient, uint256 amount) external;
+    }
+}
+
+pub const SWAP_ROUTER: Address = address!("6221a9c005f6e47eb398fd867784cacfdcfff4e7");
 
 #[public]
 impl Swapper {
     pub fn make_swap(
-        &self,
-        token_in: Address,
-        token_out: Address,
+        &mut self,
+        token_in: IERC20,
+        token_out: IERC20,
         amount_in: U256,
         amount_out_min: U256,
-    ) -> Result<(), Vec<u8>> {
-        let mut b = [0u8; 32];
-        b[..32 - 4].copy_from_slice(self.vm().block_timestamp().to_be_bytes());
-        call(
-            self.vm(),
-            &exactInputSingleCall {
-                params: ExactInputSingleParams {
-                    tokenIn: token_in,
-                    tokenOut: token_out,
-                    recipient: self.vm().msg_sender(),
-                    deadline: U256::from_be_bytes(b),
-                    amountIn: amount_in,
-                    amountOutMinimum: amount_out_min,
-                    limit_sqrt_price: U160::MAX,
-                },
-            }
-            .abi_encode(),
-        )
-        .map_err(|_| panic!())?;
-        Ok(())
+    ) -> Result<U256, Vec<u8>> {
+        let sender = self.vm().msg_sender();
+        let contract_addr = self.vm().contract_address();
+        let deadline = self.vm().block_timestamp() + 1;
+        token_in.transfer_from(&mut *self, sender, contract_addr, amount_in)?;
+        let c = self
+            .vm()
+            .call(
+                &Call::new(),
+                SWAP_ROUTER,
+                &ICamelotSwapRouter::exactInputSingleCall {
+                    params: ICamelotSwapRouter::ExactInputSingleParams {
+                        tokenIn: *token_in,
+                        tokenOut: *token_out,
+                        recipient: self.vm().msg_sender(),
+                        deadline: U256::from(deadline),
+                        amountIn: amount_in,
+                        amountOutMinimum: amount_out_min,
+                        limitSqrtPrice: U160::MAX,
+                    },
+                }
+                .abi_encode(),
+            )
+            .unwrap();
+        let amount_out = ICamelotSwapRouter::exactInputSingleCall::abi_decode_returns(&c, true)
+            .unwrap()
+            .amountOut;
+        Ok(amount_out)
     }
 }

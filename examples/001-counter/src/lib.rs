@@ -19,9 +19,14 @@ pub fn add_number(x: &U) {
     storage_wrapping_add(&U::ZERO, x)
 }
 
+#[link(wasm_import_module = "vm_hooks")]
+unsafe extern "C" {
+    fn msg_reentrant() -> bool;
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
-    assert!(!msg_reentrant());
+    assert!(! unsafe { msg_reentrant() });
     let args = read_args_safe!(args_len, { 32 + 4 });
     let w = read_word_slices!(&args[4..], 1);
     flush_guard(|| match args[..4] {

@@ -108,7 +108,17 @@ macro_rules! storage_ops {
                     U(b)
                 }
 
-                pub fn [<$prefix _exchange>](k: &U, exp: &U, new: &U) -> Result<(), U> {
+                /// Attempt to "exchange" a value, returning whether the expected value was set.
+                pub fn [<$prefix _exchange>](k: &U, exp: &U, new: &U) -> bool {
+                    let t = [<$prefix _load>](k);
+                    if &t != exp {
+                        return false;
+                    }
+                    [<$prefix _store>](k, new);
+                    true
+                }
+
+                pub fn [<$prefix _exchange_res>](k: &U, exp: &U, new: &U) -> Result<(), U> {
                     let t = [<$prefix _load>](k);
                     if &t != exp {
                         return Err(t);
@@ -117,9 +127,19 @@ macro_rules! storage_ops {
                     Ok(())
                 }
 
-                pub fn [<$prefix _exchange_bool>](k: &U, exp: bool) -> Result<(), bool> {
-                    [<$prefix _exchange>](k, &U::from(exp), &U::from(!exp))
-                        .map_err(|x| x.is_true())
+                /// Set the value given, checking that the value passed has the inverse
+                /// set set currently. So, passing true would check if false is set.
+                pub fn [<$prefix _exchange_bool>](k: &U, new: bool) -> bool {
+                    [<$prefix _exchange>](k, &U::from(!new), &U::from(new))
+                }
+
+                pub fn [<$prefix _exchange_bool_res>](k: &U, new: bool) -> Result<(), bool> {
+                   let x = [<$prefix _exchange_bool>](k, new);
+                   if x == !new {
+                       Ok(())
+                   } else {
+                       Err(x)
+                   }
                 }
             }
         )*
@@ -182,9 +202,9 @@ pub fn slot_map_slot(k: &U, p: &U) -> U {
     const_slot_map(k, p)
 }
 
-pub fn reentrancy_guard_entry(x: &U) -> Result<(), bool> {
+pub fn reentrancy_guard_entry(x: &U) {
     assert!(x.len() <= 32, "too large");
-    transient_exchange_bool(x, false)
+    assert!(transient_exchange_bool(x, true), "reentrancy alarm")
 }
 
 pub fn reentrancy_guard_exit(x: &U) {
@@ -192,11 +212,11 @@ pub fn reentrancy_guard_exit(x: &U) {
     transient_store(x, &U::ZERO);
 }
 
-pub fn reentrancy_guard<R>(k: &U, f: impl FnOnce() -> R) -> Result<R, bool> {
-    reentrancy_guard_entry(k)?;
+pub fn reentrancy_guard<R>(k: &U, f: impl FnOnce() -> R) -> R {
+    reentrancy_guard_entry(k);
     let v = f();
     reentrancy_guard_exit(k);
-    Ok(v)
+    v
 }
 
 /// Compute the slot for a slice, and take it off the curve. Useful for
@@ -229,11 +249,11 @@ pub fn keccak256(b: &[u8]) -> U {
     const_keccak256(b)
 }
 
-pub fn reentrancy_guard_const_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
+pub fn reentrancy_guard_const_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> R {
     reentrancy_guard(&const_keccak256(k), f)
 }
 
-pub fn reentrancy_guard_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> Result<R, bool> {
+pub fn reentrancy_guard_keccak<R>(k: &[u8], f: impl FnOnce() -> R) -> R {
     reentrancy_guard(&keccak256(k), f)
 }
 
@@ -279,9 +299,17 @@ mod test {
         fn test_reentrancy_guard(x in any::<[u8; 8]>()) {
             reentrancy_guard(&U::from(x), || {
                 assert!(transient_load(&U::from(x)).is_true());
-            })
-            .unwrap();
+            });
             assert!(transient_load(&U::from(x)).is_zero());
+        }
+
+        #[test]
+        fn test_reentrancy_guard_bad(x in any::<[u8; 8]>()) {
+             let x = U::from(x);
+             transient_store(&x, &U::from(false));
+             assert!(transient_exchange_bool(&x, true));
+             assert!(!transient_exchange_bool(&x, true));
+            assert!(transient_load(&x).is_some());
         }
     }
 }

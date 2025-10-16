@@ -8,7 +8,14 @@ members = [
     "005-layerzero",
     "006-camelot-swapping"
 ]
-exclude = ["006-camelot-swapping/reference"]
+exclude = ["006-camelot-swapping/reference/Cargo.toml"]
 
 [workspace.dependencies]
 bobcat-sdk = { path = "../bobcat-sdk" }
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+panic = "abort"
+opt-level = "s"

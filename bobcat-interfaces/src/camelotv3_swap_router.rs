@@ -17,7 +17,7 @@ selectors! {
     SEL_EXACT_OUTPUT_SINGLE = b"exactOutputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))"
 }
 
-pub const fn make_exact_input_single(
+pub const fn make_fn_exact_input_single(
     token_in: Address,
     token_out: Address,
     recipient: Address,
@@ -38,7 +38,7 @@ pub const fn make_exact_input_single(
     )
 }
 
-pub const fn make_exact_output_single(
+pub const fn make_fn_exact_output_single(
     token_in: Address,
     token_out: Address,
     fee: U24,
@@ -116,7 +116,7 @@ mod test {
             amount_out_minimum in any::<U>(),
             limit_sqrt_price in any::<[u8; 20]>()
         ) {
-            let v = make_exact_input_single(
+            let v = make_fn_exact_input_single(
                 token_in,
                 token_out,
                 recipient,
@@ -149,7 +149,7 @@ mod test {
             amount_in_maximum in any::<U>(),
             limit_sqrt_price in any::<[u8; 20]>()
         ) {
-            let v = make_exact_output_single(
+            let v = make_fn_exact_output_single(
                 token_in,
                 token_out,
                 fee,

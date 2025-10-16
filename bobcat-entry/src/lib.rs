@@ -23,9 +23,9 @@ mod impls {
         pub(crate) fn msg_sender(addr: *mut u8);
         pub(crate) fn contract_address(addr: *mut u8);
         pub(crate) fn msg_value(value: *mut u8);
-        pub(crate) fn msg_reentrant() -> bool;
         pub fn chain_id() -> u64;
         pub(crate) fn account_code_size(address: *const u8) -> usize;
+        pub(crate) fn block_timestamp() -> u64;
     }
 }
 
@@ -56,15 +56,15 @@ mod impls {
         unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
     }
 
-    pub(crate) unsafe fn msg_reentrant() -> bool {
-        false
-    }
-
     pub(crate) unsafe fn chain_id() -> u64 {
         0
     }
 
     pub(crate) unsafe fn account_code_size(_: *const u8) -> usize {
+        0
+    }
+
+    pub(crate) unsafe fn block_timestamp() -> u64 {
         0
     }
 }
@@ -83,15 +83,15 @@ mod impls {
 
     pub(crate) unsafe fn msg_value(_: *mut u8) {}
 
-    pub(crate) unsafe fn msg_reentrant() -> bool {
-        false
-    }
-
     pub(crate) unsafe fn chain_id() -> u64 {
         0
     }
 
     pub(crate) unsafe fn account_code_size(_: *const u8) -> usize {
+        0
+    }
+
+    pub(crate) unsafe fn block_timestamp() -> u64 {
         0
     }
 }
@@ -108,6 +108,21 @@ pub fn write_result_slice(s: &[u8]) {
 }
 
 pub use bobcat_cd::leftpad_addr;
+
+/// Like write_result_exit_call, except it only reverts with the
+/// returndata if the underlying call reverted. If it doesn't, then it
+/// just returns the slice.
+#[cfg_attr(feature = "alloc", macro_export)]
+macro_rules! revert_if_bad_call_vec {
+    ($e:expr) => {{
+        let (rc, rd) = $e;
+        if !rc {
+            $crate::write_result_slice(&rd);
+            return 1;
+        }
+        rd
+    }};
+}
 
 #[macro_export]
 macro_rules! write_result_exit_res {
@@ -195,14 +210,14 @@ pub fn msg_value() -> U {
     U(b)
 }
 
-pub fn msg_reentrant() -> bool {
-    unsafe { impls::msg_reentrant() }
-}
-
 pub fn code_size(addr: Address) -> usize {
     unsafe { impls::account_code_size(addr.as_ptr()) }
 }
 
 pub fn chain_id() -> u64 {
     unsafe { impls::chain_id() }
+}
+
+pub fn block_timestamp() -> u64 {
+    unsafe { impls::block_timestamp() }
 }
