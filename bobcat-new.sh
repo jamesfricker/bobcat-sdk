@@ -134,4 +134,4 @@ $project_name.wasm
 target
 EOF
 
-[ -z "$EDITOR" ] || $EDITOR src/main.rs
+[ -z "$EDITOR" ] || $EDITOR src/main.rs &
