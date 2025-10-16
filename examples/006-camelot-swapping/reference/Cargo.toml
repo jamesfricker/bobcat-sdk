@@ -1,0 +1,23 @@
+[package]
+name = "reference"
+version = "0.1.11"
+edition = "2024"
+
+[dependencies]
+alloy-primitives = "=0.8.20"
+alloy-sol-types = "=0.8.20"
+stylus-sdk = "0.9.0"
+
+[[bin]]
+name = "reference"
+path = "src/main.rs"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+panic = "abort"
+opt-level = "z"

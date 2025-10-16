@@ -1,0 +1,6 @@
+[package]
+name = "bobcat-examples-006-camelot-swapping"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]

@@ -5,8 +5,10 @@ members = [
     "002-mul_div",
     "003-beacon",
     "004-calling",
-    "005-layerzero"
+    "005-layerzero",
+    "006-camelot-swapping"
 ]
+exclude = ["006-camelot-swapping/reference"]
 
 [workspace.dependencies]
 bobcat-sdk = { path = "../bobcat-sdk" }
