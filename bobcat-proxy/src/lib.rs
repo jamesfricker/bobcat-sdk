@@ -2,7 +2,7 @@
 
 use array_concat::concat_arrays;
 
-use bobcat_interfaces::sels::SEL_IMPLEMENTATION;
+use bobcat_interfaces::selectors;
 
 pub type Address = [u8; 20];
 
@@ -54,10 +54,7 @@ pub const fn make_beacon_proxy(beacon: Address) -> [u8; 20 + 110] {
             33
         ),
         beacon,
-        unpack_arr!(
-          b"5afa50515af45f3d5f5f3e3d9161003e57fd5bf3",
-          20
-        )
+        unpack_arr!(b"5afa50515af45f3d5f5f3e3d9161003e57fd5bf3", 20)
     )
 }
 
@@ -101,7 +98,10 @@ pub const fn make_multi3_proxy(
 
 /// Create a proxy that calls the selector on the beacon given
 /// to figure out where to delegatecall its calldata to.
-pub const fn make_beacon_sel_proxy_sel(sel: [u8; 4], beacon: Address) -> [u8; 24 + 4 + 12 + 20 + 30] {
+pub const fn make_beacon_sel_proxy_sel(
+    sel: [u8; 4],
+    beacon: Address,
+) -> [u8; 24 + 4 + 12 + 20 + 30] {
     // Created from sel-beacon-proxy.huff .
     concat_arrays!(
         unpack_arr!(b"60518060093d393df3602460046020368282355f5f368563", 24),
@@ -113,6 +113,10 @@ pub const fn make_beacon_sel_proxy_sel(sel: [u8; 4], beacon: Address) -> [u8; 24
             30
         )
     )
+}
+
+selectors! {
+    SEL_IMPLEMENTATION = b"implementation(bytes4)",
 }
 
 /// Create a proxy that calls "implementation(bytes4)" on the beacon

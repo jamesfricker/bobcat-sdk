@@ -76,8 +76,9 @@ beacon proxy.
 10. Reentrancy guard using a Vyper-like exchange method of protecting the method id for
 per-function reentrancy guards.
 
-11. Support for every interface Vyper provides (these are the most common), though
-including eip2612.
+11. Support for every interface Vyper provides (these are the most common). Also a few
+that the Superposition team makes special use of (Chainlink data feeds, Permit, LzRead,
+Camelot, 9lives, Uniswap). We also welcome community contributions on this front!
 
 12. The ability to distill builtin functions to basic types to reduce codesize if needed.
 Most functions will ship with a form to use Result and Option, but also the ability to get

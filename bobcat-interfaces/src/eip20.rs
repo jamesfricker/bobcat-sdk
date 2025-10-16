@@ -2,9 +2,18 @@ use bobcat_maths::U;
 
 use bobcat_cd::leftpad_addr;
 
+use crate::selectors;
+
 use array_concat::concat_arrays;
 
-use crate::sels::*;
+selectors! {
+    SEL_TOTAL_SUPPLY = b"totalSupply()",
+    SEL_BALANCE_OF = b"balanceOf(address)",
+    SEL_ALLOWANCE = b"allowance(address,address)",
+    SEL_TRANSFER = b"transfer(address,uint256)",
+    SEL_TRANSFER_FROM = b"transferFrom(address,address,uint256)",
+    SEL_APPROVE = b"approve(address,uint256)",
+}
 
 type Address = [u8; 20];
 

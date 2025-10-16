@@ -16,3 +16,10 @@ bobcat-cd = { version = "0.4.0", path = "../bobcat-cd" }
 bobcat-maths = { version = "0.4.0", path = "../bobcat-maths" }
 bobcat-storage = { version = "0.4.0", path = "../bobcat-storage" }
 const-hex.workspace = true
+
+[dev-dependencies]
+alloy-sol-macro = "1.4.1"
+proptest.workspace = true
+bobcat-maths = { version = "0.4.0", path = "../bobcat-maths", features = ["proptest-enabled"] }
+alloy-primitives = "1.4.1"
+alloy-sol-types = "1.4.1"

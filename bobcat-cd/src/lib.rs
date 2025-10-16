@@ -342,6 +342,10 @@ pub const fn leftpad_addr(x: [u8; 20]) -> [u8; 32] {
     concat_arrays!([0u8; 32 - 20], x)
 }
 
+pub const fn leftpad_u24(x: [u8; 3]) -> [u8; 32] {
+    concat_arrays!([0u8; 32 - 3], x)
+}
+
 pub const fn leftpad_u8(x: u8) -> [u8; 32] {
     concat_arrays!([0u8; 32 - 1], [x])
 }

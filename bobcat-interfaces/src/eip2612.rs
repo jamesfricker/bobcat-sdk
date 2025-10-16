@@ -4,9 +4,15 @@ use bobcat_cd::{leftpad_u8, leftpad_addr};
 
 use array_concat::concat_arrays;
 
-use crate::sels::*;
+use crate::selectors;
 
 type Address = [u8; 20];
+
+selectors! {
+    SEL_PERMIT = b"permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+    SEL_NONCES = b"nonces(address)",
+    SEL_DOMAIN_SEPARATOR = b"DOMAIN_SEPARATOR()"
+}
 
 pub const fn make_fn_permit(
     owner: Address,
