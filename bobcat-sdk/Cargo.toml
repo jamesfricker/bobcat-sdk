@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-sdk"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2024"
 license = "MIT"
 description = "Bobcat SDK is a codesize efficent SDK for developing on Arbitrum Stylus."
@@ -11,10 +11,10 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 name = "bobcat_sdk"
 
 [dependencies]
-bobcat-create = { version = "0.4.0", path = "../bobcat-create" }
+bobcat-create = { version = "0.4.1", path = "../bobcat-create" }
 bobcat-entry = { version = "0.4.0", path = "../bobcat-entry" }
 bobcat-maths = { version = "0.4.0", path = "../bobcat-maths" }
-bobcat-panic = { version = "0.4.0", path = "../bobcat-panic", optional = true }
+bobcat-panic = { version = "0.4.1", path = "../bobcat-panic", optional = true }
 bobcat-proxy = { version = "0.4.2", path = "../bobcat-proxy" }
 bobcat-storage = { version = "0.4.0", path = "../bobcat-storage" }
 bobcat-cd = { version = "0.4.0", path = "../bobcat-cd" }

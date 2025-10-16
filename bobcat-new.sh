@@ -14,28 +14,75 @@ case "$project_name" in
 	*[[:space:]]*) usage "spaces disallowed from project name" ;;
 esac
 
+project_name="$(echo "$project_name" | sed 's/\/*$//g')"
+
 if [ -d "$project_name" ]; then
 	>&2 echo "$project_name already exists! Aborting."
 	exit 1
 fi
 
-mkdir -p "$project_name/src"
+mkdir -p \
+	"$project_name/contract/.cargo" \
+	"$project_name/contract/src" \
+	"$project_name/$project_name/src"
 
 cd "$project_name"
 
 cat >Cargo.toml <<EOF
+[workspace]
+resolver = "3"
+members = ["contract", "$project_name"]
+
+[workspace.dependencies]
+bobcat-sdk = "0.4.3"
+EOF
+
+cat >"$project_name/Cargo.toml" <<EOF
 [package]
 name = "$project_name"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "$project_name"
+crate-type   = ["rlib", "cdylib"]
+
 [dependencies]
-bobcat-sdk = { version = "0.4.2", features = ["panic"] }
+bobcat-sdk = { workspace = true, features = ["panic"] }
+EOF
+
+cat >contract/Cargo.toml <<EOF
+[package]
+name = "contract"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bobcat-sdk = { workspace = true, features = ["panic"] }
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+strip = true
+lto = "fat"
+debug = false
+rpath = false
+debug-assertions = false
+incremental = false
+
+[profile.dev]
+codegen-units = 16
+panic = "unwind"
+opt-level = "z"
+incremental = true
+
+[features]
+std = ["bobcat-sdk/std"]
 EOF
 
 mkdir .cargo
 
-cat >.cargo/config.toml <<EOF
+cat >contract/.cargo/config.toml <<EOF
 [build]
 target = "wasm32-unknown-unknown"
 EOF
@@ -108,9 +155,15 @@ fi
 exit 0
 EOF
 
-cat >src/main.rs <<EOF
-#![no_main]
+cat >"$project_name/src/lib.rs" <<EOF
 #![no_std]
+
+pub fn hello() -> usize { 0 }
+EOF
+
+cat >contract/src/main.rs <<EOF
+#![no_main]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 use bobcat_sdk::{cd::const_keccak_sel, entry::read_args_safe};
 
@@ -134,10 +187,13 @@ $project_name.wasm
 target
 EOF
 
-cat >rust-toolchain.toml <<EOF
+cat >contract/rust-toolchain.toml <<EOF
 [toolchain]
 channel = "stable"
 components = [ "rust-src" ]
 EOF
 
-[ -z "$EDITOR" ] || $EDITOR src/main.rs &
+if ! [ -z "$EDITOR" ]; then
+	$EDITOR contract/src/main.rs &
+	$EDITOR "$project_name/src/lib.rs" &
+fi

@@ -81,7 +81,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-create"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "bobcat-maths",
  "bobcat-proxy",
@@ -124,7 +124,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-panic"
-version = "0.4.0"
+version = "0.4.1"
 
 [[package]]
 name = "bobcat-proxy"
