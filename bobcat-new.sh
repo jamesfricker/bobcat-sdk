@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 usage() {
 	>&2 echo $@
@@ -127,4 +127,11 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
 }
 EOF
 
-[ -z "\$EDITOR" ] || \$EDITOR src/main.rs
+cat >.gitignore <<EOF
+$project_name.wasm
+*.wat
+*.wasm1
+target
+EOF
+
+[ -z "$EDITOR" ] || $EDITOR src/main.rs
