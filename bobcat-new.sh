@@ -35,6 +35,23 @@ members = ["contract", "$project_name"]
 
 [workspace.dependencies]
 bobcat-sdk = "0.4.3"
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+panic = "abort"
+strip = true
+lto = "fat"
+debug = false
+rpath = false
+debug-assertions = false
+incremental = false
+
+[profile.dev]
+codegen-units = 16
+panic = "unwind"
+opt-level = "z"
+incremental = true
 EOF
 
 cat >"$project_name/Cargo.toml" <<EOF
@@ -59,22 +76,6 @@ edition = "2024"
 
 [dependencies]
 bobcat-sdk = { workspace = true, features = ["panic"] }
-
-[profile.release]
-codegen-units = 1
-opt-level = "z"
-strip = true
-lto = "fat"
-debug = false
-rpath = false
-debug-assertions = false
-incremental = false
-
-[profile.dev]
-codegen-units = 16
-panic = "unwind"
-opt-level = "z"
-incremental = true
 
 [features]
 std = ["bobcat-sdk/std"]
@@ -135,11 +136,13 @@ chmod +x deploy.sh
 
 cat >Makefile <<EOF
 
-$project_name.wasm: \$(shell find Cargo.* src -type f)
-	@cargo build --release
+$project_name.wasm: \$(shell find Cargo.* contract $project_name -type f)
+	@rm -f $project_name.wasm
+	@cargo build --release --target wasm32-unknown-unknown
 	@./wasm-post.sh \\
-		target/wasm32-unknown-unknown/release/$project_name.wasm \\
+		target/wasm32-unknown-unknown/release/contract.wasm \\
 		$project_name.wasm
+	@./check-codesize.sh $project_name.wasm
 EOF
 
 cat >check-codesize.sh <<EOF
@@ -155,8 +158,12 @@ fi
 exit 0
 EOF
 
+chmod +x check-codesize.sh
+
 cat >"$project_name/src/lib.rs" <<EOF
 #![no_std]
+
+pub use bobcat_sdk::panic::panic_handler;
 
 pub fn hello() -> usize { 0 }
 EOF
