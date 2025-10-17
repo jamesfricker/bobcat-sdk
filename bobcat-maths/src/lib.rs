@@ -130,6 +130,30 @@ fn wrapping_div_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
     q
 }
 
+fn wrapping_mod_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
+    if denom == &[0u8; C] {
+        return [0u8; C];
+    }
+    let mut r = [0u8; C];
+    let mut one = [0u8; C];
+    one[C - 1] = 1;
+    let mut two = [0u8; C];
+    two[C - 1] = 2;
+    let mut i = 0;
+    while i < C * 8 {
+        let bit = (x[i / 8] >> (7 - (i % 8))) & 1;
+        r = wrapping_mul_b::<C>(&r, &two);
+        if bit == 1 {
+            r = wrapping_add_b::<C>(&r, &one);
+        }
+        if r >= *denom {
+            r = wrapping_sub_b::<C>(&r, denom);
+        }
+        i += 1;
+    }
+    r
+}
+
 pub fn const_wrapping_div(x: &U, y: &U) -> U {
     U(wrapping_div_b::<32>(&x.0, &y.0))
 }
@@ -541,14 +565,16 @@ impl U {
         }
         let x = self.widening_mul(y);
         let mut d = [0u8; 64];
-        d[64 - 32..].copy_from_slice(&denom.0);
+        d[32..].copy_from_slice(&denom.0);
         let q = wrapping_div_b::<64>(&x, &d);
         if q[..32] != [0u8; 32] {
             return None;
         }
         let l: [u8; 32] = q[32..].try_into().unwrap();
         let l = U::from(l);
-        Some((l, false))
+        let rem = wrapping_mod_b::<64>(&x, &d);
+        let has_carry = rem[32..] != [0u8; 32];
+        Some((l, has_carry))
     }
 
     pub fn mul_div_round_up(&self, y: &U, denom_and_rem: &U) -> Option<U> {
