@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "console")]
 extern crate alloc;
 
 #[cfg(all(target_arch = "wasm32", feature = "console"))]

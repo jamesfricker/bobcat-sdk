@@ -42,7 +42,7 @@ sol_interface! {
     }
 }
 
-pub const SWAP_ROUTER: Address = address!("6221a9c005f6e47eb398fd867784cacfdcfff4e7");
+pub const SWAP_ROUTER: Address = address!("C216fCdEb961EEF95657Cb45dEe20e379C7624B8");
 
 #[public]
 impl Swapper {

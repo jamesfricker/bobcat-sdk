@@ -112,7 +112,7 @@ pub use bobcat_cd::leftpad_addr;
 /// Like write_result_exit_call, except it only reverts with the
 /// returndata if the underlying call reverted. If it doesn't, then it
 /// just returns the slice.
-#[cfg_attr(feature = "alloc", macro_export)]
+#[macro_export]
 macro_rules! revert_if_bad_call_vec {
     ($e:expr) => {{
         let (rc, rd) = $e;

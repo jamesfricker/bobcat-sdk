@@ -34,9 +34,9 @@ alloc = [
 	"bobcat-create/alloc",
 	"bobcat-entry/alloc",
 	"bobcat-maths/alloc",
-	"bobcat-panic/alloc",
 	"bobcat-call/alloc",
 ]
+console = ["bobcat-panic/console"]
 arbitrary-enabled = ["bobcat-maths/arbitrary-enabled"]
 proptest-enabled = ["bobcat-maths/proptest-enabled"]
 panic = ["bobcat-panic"]

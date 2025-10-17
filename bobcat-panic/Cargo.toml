@@ -11,6 +11,5 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 name = "bobcat_panic"
 
 [features]
-alloc = []
-console = ["alloc"]
+console = []
 std = []
