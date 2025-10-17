@@ -404,7 +404,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-call"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "bobcat-maths",
  "paste",
@@ -412,7 +412,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-cd"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -423,7 +423,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-create"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "bobcat-maths",
  "bobcat-proxy",
@@ -432,7 +432,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-entry"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "bobcat-cd",
  "bobcat-maths",
@@ -441,7 +441,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-interfaces"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-macro",
@@ -456,7 +456,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-maths"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "alloy-primitives",
  "arbitrary",
@@ -470,11 +470,11 @@ dependencies = [
 
 [[package]]
 name = "bobcat-panic"
-version = "0.4.1"
+version = "0.5.0"
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "array-concat",
  "bobcat-interfaces",
@@ -484,7 +484,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.4.3"
+version = "0.5.0"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",
@@ -499,7 +499,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-storage"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -565,9 +565,9 @@ dependencies = [
 
 [[package]]
 name = "cfg-if"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
+checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "cfg_aliases"
@@ -577,9 +577,9 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
 name = "const-hex"
-version = "1.16.0"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6407bff74dea37e0fa3dc1c1c974e5d46405f0c987bf9997a0762adce71eda6"
+checksum = "3bb320cac8a0750d7f25280aa97b09c26edfe161164238ecbbb31092b079e735"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -910,19 +910,19 @@ checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
 dependencies = [
  "cfg-if",
  "libc",
- "wasi 0.11.1+wasi-snapshot-preview1",
+ "wasi",
 ]
 
 [[package]]
 name = "getrandom"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26145e563e54f2cadc477553f1ec5ee650b00862f0a58bcd12cbdc5f0ea2d2f4"
+checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
 dependencies = [
  "cfg-if",
  "libc",
  "r-efi",
- "wasi 0.14.7+wasi-0.2.4",
+ "wasip2",
 ]
 
 [[package]]
@@ -1372,7 +1372,7 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 dependencies = [
- "getrandom 0.3.3",
+ "getrandom 0.3.4",
  "serde",
 ]
 
@@ -1387,9 +1387,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.6"
+version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
+checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 
 [[package]]
 name = "rfc6979"
@@ -1709,7 +1709,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d31c77bdf42a745371d260a26ca7163f1e0924b64afa0b688e61b5a9fa02f16"
 dependencies = [
  "fastrand",
- "getrandom 0.3.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys",
@@ -1735,9 +1735,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.23.6"
+version = "0.23.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3effe7c0e86fdff4f69cdd2ccc1b96f933e24811c5441d44904e8683e27184b"
+checksum = "6485ef6d0d9b5d0ec17244ff7eb05310113c3f316f2d14200d4de56b3cb98f8d"
 dependencies = [
  "indexmap",
  "toml_datetime",
@@ -1747,9 +1747,9 @@ dependencies = [
 
 [[package]]
 name = "toml_parser"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cf893c33be71572e0e9aa6dd15e6677937abd686b066eac3f8cd3531688a627"
+checksum = "c0cbe268d35bdb4bb5a56a2de88d0ad0eb70af5384a99d648cd4b3d04039800e"
 dependencies = [
  "winnow",
 ]
@@ -1822,15 +1822,6 @@ name = "wasi"
 version = "0.11.1+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
-
-[[package]]
-name = "wasi"
-version = "0.14.7+wasi-0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "883478de20367e224c0090af9cf5f9fa85bed63a95c1abf3afc5c083ebc06e8c"
-dependencies = [
- "wasip2",
-]
 
 [[package]]
 name = "wasip2"

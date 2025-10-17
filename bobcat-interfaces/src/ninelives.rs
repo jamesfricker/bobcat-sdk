@@ -1,6 +1,6 @@
 use bobcat_maths::U;
 
-use bobcat_cd::{leftpad_addr, rightpad_b8, leftpad_bool};
+use bobcat_cd::{leftpad_addr, leftpad_bool, rightpad_b8};
 
 use crate::selectors;
 
@@ -167,7 +167,7 @@ pub const fn make_fn_oracle() -> [u8; 4] {
     SEL_ORACLE
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod test {
     use super::*;
 
@@ -175,101 +175,101 @@ mod test {
 
     use proptest::prelude::*;
 
-    use alloy_primitives::{FixedBytes, U256 as AU, Address as AAddress};
+    use alloy_primitives::{Address as AAddress, FixedBytes, U256 as AU};
 
     use alloy_sol_types::SolCall;
 
     sol! {
-        function oracle() external view returns (address);
+            function oracle() external view returns (address);
 
-        function mint8A059B6E(
-            bytes8 outcome,
-            uint256 value,
-            address referrer,
-            address recipient
-        ) external returns (uint256);
+            function mint8A059B6E(
+                bytes8 outcome,
+                uint256 value,
+                address referrer,
+                address recipient
+            ) external returns (uint256);
 
-        function burn854CC96E(
-            bytes8 outcome,
-            uint256 amount,
-            bool shouldEstimateShares,
-            uint256 minShares,
-            address referrer,
-            address recipient
-        ) external returns (uint256 burnedShares, uint256 fusdcReturned);
+            function burn854CC96E(
+                bytes8 outcome,
+                uint256 amount,
+                bool shouldEstimateShares,
+                uint256 minShares,
+                address referrer,
+                address recipient
+            ) external returns (uint256 burnedShares, uint256 fusdcReturned);
 
-        function quoteC0E17FC7(
-            bytes8 outcome,
-            uint256 fusdcValue
-        ) external returns (uint256 purchased, uint256 fees);
+            function quoteC0E17FC7(
+                bytes8 outcome,
+                uint256 fusdcValue
+            ) external returns (uint256 purchased, uint256 fees);
 
-        function estimateBurnE9B09A17(
-            bytes8 outcome,
-            uint256 shareAmount
-        ) external returns (uint256);
+            function estimateBurnE9B09A17(
+                bytes8 outcome,
+                uint256 shareAmount
+            ) external returns (uint256);
 
-        function claimAllFees332D7968(address recipient) external returns (uint256);
+            function claimAllFees332D7968(address recipient) external returns (uint256);
 
-        function addLiquidityB9DDA952(
-            uint256 liquidity,
-            address recipient,
-            uint256 minShares,
-            uint256 maxShares
-        ) external returns (
-            uint256 userLiquidity
-        );
+            function addLiquidityB9DDA952(
+                uint256 liquidity,
+                address recipient,
+                uint256 minShares,
+                uint256 maxShares
+            ) external returns (
+                uint256 userLiquidity
+            );
 
-        function removeLiquidity3C857A15(uint256 liquidity, address recipient) external returns (
-            uint256 fusdcAmount,
-            uint256 lpFeesEarned
-        );
+            function removeLiquidity3C857A15(uint256 liquidity, address recipient) external returns (
+                uint256 fusdcAmount,
+                uint256 lpFeesEarned
+            );
 
-        function priceA827ED27(bytes8 outcome) external returns (uint256);
+            function priceA827ED27(bytes8 outcome) external returns (uint256);
 
-        function decide(bytes8 outcome) external;
+            function decide(bytes8 outcome) external;
 
-        function payoffCB6F2565(
-            bytes8 outcomeId,
-            uint256 amount,
-            address recipient
-        ) external returns (uint256);
+            function payoffCB6F2565(
+                bytes8 outcomeId,
+                uint256 amount,
+                address recipient
+            ) external returns (uint256);
 
-        function details(bytes8 outcomeId) external view returns (
-            uint256 shares,
-            uint256 invested,
-            uint256 globalInvested,
-            bytes8 winner
-        );
+            function details(bytes8 outcomeId) external view returns (
+                uint256 shares,
+                uint256 invested,
+                uint256 globalInvested,
+                bytes8 winner
+            );
 
-        function isDpm() external pure returns (bool);
+            function isDpm() external pure returns (bool);
 
-        function isDppm() external pure returns (bool);
+            function isDppm() external pure returns (bool);
 
-        function globalShares() external view returns (uint256);
+            function globalShares() external view returns (uint256);
 
-        function invested() external view returns (uint256);
+            function invested() external view returns (uint256);
 
-        function timeEnding() external view returns (uint64);
+            function timeEnding() external view returns (uint64);
 
-        function timeStart() external view returns (uint64);
+            function timeStart() external view returns (uint64);
 
-        function shareAddr(bytes8 outcomeId) external view returns (address);
+            function shareAddr(bytes8 outcomeId) external view returns (address);
 
-        struct Fees {
-            uint256 feeCreator;
-            uint256 feeMinter;
-            uint256 feeLp;
-            uint256 feeReferrer;
-        }
+            struct Fees {
+                uint256 feeCreator;
+                uint256 feeMinter;
+                uint256 feeLp;
+                uint256 feeReferrer;
+            }
 
-        function version() external pure returns (string memory);
+            function version() external pure returns (string memory);
 
-        function fees62DAA154() external view returns (Fees memory);
+            function fees62DAA154() external view returns (Fees memory);
 
-        function userLiquidityShares(address spender) external view returns (uint256);
+            function userLiquidityShares(address spender) external view returns (uint256);
 
-        function outcomeList() external view returns (bytes8[] memory outcomes);
-}
+            function outcomeList() external view returns (bytes8[] memory outcomes);
+    }
 
     proptest! {
         #[test]

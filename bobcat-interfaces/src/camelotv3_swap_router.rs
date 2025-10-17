@@ -62,7 +62,7 @@ pub const fn make_fn_exact_output_single(
     )
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod test {
     use super::*;
 
@@ -72,7 +72,7 @@ mod test {
 
     use alloy_sol_types::SolCall;
 
-    use alloy_primitives::{Address as AAddress, U160, aliases::U24 as AU24, U256 as AU};
+    use alloy_primitives::{aliases::U24 as AU24, Address as AAddress, U160, U256 as AU};
 
     sol! {
         struct ExactInputSingleParams {

@@ -944,7 +944,12 @@ fn test_is_zeroes() {
     assert!(I::ONE.is_some());
 }
 
-#[cfg(all(test, feature = "alloy-enabled", feature = "std"))]
+#[cfg(all(
+    test,
+    feature = "alloy-enabled",
+    feature = "std",
+    not(target_arch = "wasm32")
+))]
 mod test {
     use proptest::prelude::*;
 
