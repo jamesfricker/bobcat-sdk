@@ -8,7 +8,6 @@ members = [
     "005-layerzero",
     "006-camelot-swapping"
 ]
-exclude = ["006-camelot-swapping/reference/Cargo.toml"]
 
 [workspace.dependencies]
 bobcat-sdk = { path = "../bobcat-sdk" }

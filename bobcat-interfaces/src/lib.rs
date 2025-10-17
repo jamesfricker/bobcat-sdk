@@ -7,4 +7,6 @@ pub mod eip2612;
 
 pub mod camelotv3_swap_router;
 
+pub mod ninelives;
+
 pub use bobcat_cd;

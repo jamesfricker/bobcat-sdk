@@ -44,8 +44,22 @@ doc = false
 bench = false
 
 [[bin]]
-name = "widening_mul"
-path = "fuzz_targets/widening_mul.rs"
+name = "mul_div"
+path = "fuzz_targets/mul_div.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "div_b"
+path = "fuzz_targets/div_b.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mul_b"
+path = "fuzz_targets/mul_b.rs"
 test = false
 doc = false
 bench = false

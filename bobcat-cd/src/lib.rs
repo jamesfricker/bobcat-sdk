@@ -350,6 +350,14 @@ pub const fn leftpad_u8(x: u8) -> [u8; 32] {
     concat_arrays!([0u8; 32 - 1], [x])
 }
 
+pub const fn leftpad_bool(x: bool) -> [u8; 32] {
+    leftpad_u8(x as u8)
+}
+
+pub const fn rightpad_b8(x: [u8; 8]) -> [u8; 32] {
+    concat_arrays!(x, [0u8; 32 - 8])
+}
+
 pub const fn const_keccak_sel(x: &[u8]) -> [u8; 4] {
     let x = const_keccak256(x).0;
     [x[0], x[1], x[2], x[3]]

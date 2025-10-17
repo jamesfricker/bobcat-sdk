@@ -104,6 +104,36 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
     b
 }
 
+fn wrapping_div_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
+    if denom == &[0u8; C] {
+        return [0u8; C];
+    }
+    let mut q = [0u8; C];
+    let mut r = [0u8; C];
+    let mut one = [0u8; C];
+    one[C - 1] = 1;
+    let mut two = [0u8; C];
+    two[C - 1] = 2;
+    let mut i = 0;
+    while i < C * 8 {
+        let bit = (x[i / 8] >> (7 - (i % 8))) & 1;
+        r = wrapping_mul_b::<C>(&r, &two);
+        if bit == 1 {
+            r = wrapping_add_b::<C>(&r, &one);
+        }
+        if r >= *denom {
+            r = wrapping_sub_b::<C>(&r, denom);
+            q[i / 8] |= 1 << (7 - (i % 8));
+        }
+        i += 1;
+    }
+    q
+}
+
+pub fn const_wrapping_div(x: &U, y: &U) -> U {
+    U(wrapping_div_b::<32>(&x.0, &y.0))
+}
+
 #[cfg_attr(test, mutants::skip)]
 pub fn checked_div(x: &U, y: &U) -> Option<U> {
     if y.is_zero() {
@@ -119,12 +149,12 @@ pub fn modd(x: &U, y: &U) -> U {
     b
 }
 
-pub const fn wrapping_add(x: &U, y: &U) -> U {
-    let mut r = [0u8; 32];
+const fn wrapping_add_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
+    let mut r = [0u8; C];
     let mut c = 0;
-    let mut i = 31;
+    let mut i = C - 1;
     loop {
-        let s = x.0[i] as u16 + y.0[i] as u16 + c;
+        let s = x[i] as u16 + y[i] as u16 + c;
         r[i] = s as u8;
         c = s >> 8;
         if i == 0 {
@@ -132,7 +162,11 @@ pub const fn wrapping_add(x: &U, y: &U) -> U {
         }
         i -= 1;
     }
-    U(r)
+    r
+}
+
+pub const fn wrapping_add(x: &U, y: &U) -> U {
+    U(wrapping_add_b(&x.0, &y.0))
 }
 
 #[cfg_attr(test, mutants::skip)]
@@ -154,15 +188,15 @@ pub fn saturating_add(x: &U, y: &U) -> U {
     checked_add(x, y).unwrap_or(U::MAX)
 }
 
-pub const fn wrapping_sub(x: &U, y: &U) -> U {
-    let mut neg_y = y.0;
+const fn wrapping_sub_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
+    let mut neg_y = *y;
     let mut i = 0;
-    while i < 32 {
+    while i < C {
         neg_y[i] = !neg_y[i];
         i += 1;
     }
     let mut c = 1u16;
-    let mut i = 31;
+    let mut i = C - 1;
     loop {
         let sum = neg_y[i] as u16 + c;
         neg_y[i] = sum as u8;
@@ -172,7 +206,11 @@ pub const fn wrapping_sub(x: &U, y: &U) -> U {
         }
         i -= 1;
     }
-    wrapping_add(x, &U(neg_y))
+    wrapping_add_b(x, &neg_y)
+}
+
+pub const fn wrapping_sub(x: &U, y: &U) -> U {
+    U(wrapping_sub_b::<32>(&x.0, &y.0))
 }
 
 pub fn saturating_sub(x: &U, y: &U) -> U {
@@ -188,32 +226,36 @@ pub fn checked_sub(x: &U, y: &U) -> Option<U> {
     }
 }
 
-pub const fn wrapping_mul(x: &U, y: &U) -> U {
-    let mut r = [0u8; 32];
+pub const fn wrapping_mul_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
+    let mut r = [0u8; C];
     let mut i = 0;
-    while i < 32 {
+    while i < C {
         let mut c = 0u16;
         let mut j = 0;
-        while j < 32 {
+        while j < C {
             let i_r = i + j;
-            if i_r >= 32 {
+            if i_r >= C {
                 break;
             }
-            let r_idx = 31 - i_r;
-            let xi = x.0[31 - i] as u16;
-            let yj = y.0[31 - j] as u16;
+            let r_idx = C - 1 - i_r;
+            let xi = x[C - 1 - i] as u16;
+            let yj = y[C - 1 - j] as u16;
             let prod = xi * yj + r[r_idx] as u16 + c;
             r[r_idx] = prod as u8;
             c = prod >> 8;
             j += 1;
         }
-        if i + j < 32 {
+        if i + j < C {
             let idx = 31 - (i + j);
             r[idx] = r[idx] + c as u8;
         }
         i += 1;
     }
-    U(r)
+    r
+}
+
+pub const fn wrapping_mul(x: &U, y: &U) -> U {
+    U(wrapping_mul_b(&x.0, &y.0))
 }
 
 #[cfg_attr(test, mutants::skip)]
@@ -461,7 +503,7 @@ impl U {
         Self(b)
     }
 
-    pub fn widening_mul(&self, y: &U) -> (U, U) {
+    pub fn widening_mul(&self, y: &U) -> [u8; 64] {
         let shift_128 = &U([
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0,
@@ -486,11 +528,27 @@ impl U {
         let mid_lo_shifted = mid_lo.mul_mod(shift_128, &U::MAX);
         let out_low = t0_lo + mid_lo_shifted;
         let out_high = t3 + t1_hi + t2_hi + mid_hi;
-        (out_high, out_low)
+        let mut o = [0u8; 64];
+        o[..32].copy_from_slice(&out_high.0);
+        o[32..].copy_from_slice(&out_low.0);
+        o
     }
 
-    pub fn mul_div(&self, _y: &U, _denom: &U) -> Option<(U, bool)> {
-        todo!()
+    pub fn mul_div(&self, y: &U, denom: &U) -> Option<(U, bool)> {
+        // TODO: this most certainly could be more efficient!
+        if denom.is_zero() {
+            return None;
+        }
+        let x = self.widening_mul(y);
+        let mut d = [0u8; 64];
+        d[64 - 32..].copy_from_slice(&denom.0);
+        let q = wrapping_div_b::<64>(&x, &d);
+        if q[..32] != [0u8; 32] {
+            return None;
+        }
+        let l: [u8; 32] = q[32..].try_into().unwrap();
+        let l = U::from(l);
+        Some((l, false))
     }
 
     pub fn mul_div_round_up(&self, y: &U, denom_and_rem: &U) -> Option<U> {
