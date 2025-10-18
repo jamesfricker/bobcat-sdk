@@ -4,7 +4,7 @@
 Tiny collection of examples of bobcat-sdk, including some testing to spot codesize
 increase between releases. Examples that are equivalent to the reference examples must be
 functionally identical. These are here for a comparison of the code profile of these
-examples, as thye don't need the allocator to be used, like the tests.
+examples, as they don't need the allocator to be used, like the tests.
 
 It's better to check e2e-tests for a better example of everything available with this sdk.
 Compilation of these examples must be done from the directories of each project.
