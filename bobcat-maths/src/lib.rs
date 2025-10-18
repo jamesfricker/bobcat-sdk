@@ -621,6 +621,12 @@ impl From<U> for [u8; 32] {
     }
 }
 
+impl From<U> for bool {
+    fn from(x: U) -> Self {
+        x.0[31] == 1
+    }
+}
+
 impl From<&[u8; 32]> for &U {
     fn from(x: &[u8; 32]) -> Self {
         unsafe { &*(x as *const [u8; 32] as *const U) }

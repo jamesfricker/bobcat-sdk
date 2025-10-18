@@ -108,6 +108,10 @@ macro_rules! storage_ops {
                     U(b)
                 }
 
+                pub fn [<$prefix _load_bool>](x: &U) -> bool {
+                    [<$prefix _load>](x).into()
+                }
+
                 /// Attempt to "exchange" a value, returning whether the expected value was set.
                 pub fn [<$prefix _exchange>](k: &U, exp: &U, new: &U) -> bool {
                     let t = [<$prefix _load>](k);
@@ -150,8 +154,16 @@ pub fn storage_store(x: &U, y: &U) {
     unsafe { storage_cache_bytes32(x.as_ptr(), y.as_ptr()) }
 }
 
+pub fn storage_store_bool(x: &U, y: bool) {
+    storage_store(x, &U::from(y))
+}
+
 pub fn transient_store(x: &U, y: &U) {
     unsafe { transient_store_bytes32(x.as_ptr(), y.as_ptr()) }
+}
+
+pub fn transient_store_bool(x: &U, y: bool) {
+    transient_store(x, &U::from(y))
 }
 
 pub fn flush_cache() {
@@ -217,6 +229,10 @@ pub fn reentrancy_guard<R>(k: &U, f: impl FnOnce() -> R) -> R {
     let v = f();
     reentrancy_guard_exit(k);
     v
+}
+
+pub fn reentrancy_guard_sel<R>(k: &[u8; 4], f: impl FnOnce() -> R) -> R {
+    reentrancy_guard::<R>(&U::from(k), f)
 }
 
 /// Compute the slot for a slice, and take it off the curve. Useful for

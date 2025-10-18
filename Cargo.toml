@@ -9,8 +9,7 @@ members = [
 	"bobcat-cd",
 	"bobcat-sdk",
 	"bobcat-interfaces",
-	"bobcat-call",
-	"e2e-test/chainlink-vrf-test"
+	"bobcat-call"
 ]
 exclude = ["fuzz"]
 

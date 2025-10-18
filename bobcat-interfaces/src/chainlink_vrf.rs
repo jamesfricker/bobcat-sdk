@@ -33,7 +33,11 @@ pub const REQUEST_WORDS_NATIVE_SLICE_BASE: usize = 32 * 5 + 4;
 /// allocator. The base length must be the length of the array without any
 /// padding, and the all length must be the entire allocation, inclusive
 /// of any padding that's needed. To find padding needed, ((x + 31) & ~31) - x
-pub const fn make_fn_request_words_in_native_slice<const BASE_LEN: usize, const PADDING: usize, const ALL_LEN: usize>(
+pub const fn make_fn_request_words_in_native_slice<
+    const BASE_LEN: usize,
+    const PADDING: usize,
+    const ALL_LEN: usize,
+>(
     callback_gas_limit: u32,
     request_confirmations: u16,
     num_words: u32,
@@ -50,7 +54,10 @@ pub const fn make_fn_request_words_in_native_slice<const BASE_LEN: usize, const 
         BASE_LEN % 32 == 0 || PADDING + BASE_LEN == (BASE_LEN + 31) & !31,
         "padding inconsistent"
     );
-    assert!((ALL_LEN - 4) % 32 == 0, "length needs extra word to be % 32 = 0");
+    assert!(
+        (ALL_LEN - 4) % 32 == 0,
+        "length needs extra word to be % 32 = 0"
+    );
     concat_arrays!(
         SEL_REQUEST_RANDOM_WORDS_IN_NATIVE,
         leftpad_u32(callback_gas_limit),
@@ -60,6 +67,19 @@ pub const fn make_fn_request_words_in_native_slice<const BASE_LEN: usize, const 
         leftpad_usize(BASE_LEN),
         extra_args,
         [0u8; PADDING]
+    )
+}
+
+pub fn make_fn_request_words_in_native_no_bytes(
+    callback_gas_limit: u32,
+    request_confirmations: u16,
+    num_words: u32,
+) -> [u8; REQUEST_WORDS_NATIVE_SLICE_BASE] {
+    make_fn_request_words_in_native_slice::<0, 0, REQUEST_WORDS_NATIVE_SLICE_BASE>(
+        callback_gas_limit,
+        request_confirmations,
+        num_words,
+        []
     )
 }
 
@@ -93,6 +113,33 @@ mod test {
     }
 
     proptest! {
+        #[test]
+        fn test_make_fn_request_words_in_native_no_bytes(
+            callback_gas_limit in any::<u32>(),
+            request_confirmations in any::<u16>(),
+            num_words in any::<u32>()
+        ) {
+            let e = requestRandomWordsInNativeCall {
+                callbackGasLimit: callback_gas_limit,
+                requestConfirmations: request_confirmations,
+                numWords: num_words,
+                extraArgs: Bytes::new()
+            }
+            .abi_encode();
+            let v = make_fn_request_words_in_native_no_bytes(
+                callback_gas_limit,
+                request_confirmations,
+                num_words
+            );
+            assert_eq!(
+              e,
+              v,
+              "{} != {}",
+              const_hex::encode(&e),
+              const_hex::encode(&v)
+            );
+        }
+
         #[test]
         fn test_make_fn_request_words_in_native_slice_tiny(
             callback_gas_limit in any::<u32>(),

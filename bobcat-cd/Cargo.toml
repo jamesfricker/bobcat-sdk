@@ -15,6 +15,4 @@ bobcat-maths = { version = "0.5.0", path = "../bobcat-maths" }
 array-concat = { workspace = true }
 proptest = { workspace = true, optional = true }
 bobcat-storage = { version = "0.5.0", path = "../bobcat-storage" }
-
-[dev-dependencies]
 const-hex = { workspace = true }

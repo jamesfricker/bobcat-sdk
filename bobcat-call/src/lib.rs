@@ -181,6 +181,20 @@ macro_rules! generate_call_variants {
                 (rc, size, b)
             }
 
+            /// Call a contract, returning a word of the returndata/revertdata. Complains
+            /// if the other party does not write exactly a word, regardless of the reason!
+            pub fn [<$base_fn _word>]<const DATA_CAP: usize>(
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+                offset: usize,
+            ) -> (bool, U) {
+                let (rc, len, v) = [<$base_fn _slice>]::<32>(contract, calldata, $($value_param,)? gas, offset);
+                assert!(len == 32, "response didn't write 32, wrote {len}");
+                (rc, U::from(v))
+            }
+
             /// Same as the other slice function, though returning Option if error.
             pub fn [<$base_fn _slice_opt>]<const DATA_CAP: usize>(
                 contract: Address,
@@ -379,6 +393,75 @@ macro_rules! generate_call_variants {
                     Ok(rd)
                 } else {
                     Ok(rd)
+                }
+            }
+
+            /// Call a contract, allocating a slice of a fixed length for the return type, but
+            /// choosing to use the allocator to get the revertdata, if any. This is the most
+            /// user friendly function here for this purpose. This function causes a panic if
+            /// the return value does not use the slice provided fully!
+            #[cfg(feature = "alloc")]
+            pub fn [<$base_fn _err_vec>]<const DATA_CAP: usize>(
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+                offset: usize,
+            ) -> (bool, [u8; DATA_CAP], Option<Vec<u8>>) {
+                let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
+                let size = rd_len - offset;
+                let mut suc_b = [0u8; DATA_CAP];
+                if rc {
+                    assert!(DATA_CAP == size, "capacity not used");
+                    unsafe { impls::read_return_data(suc_b.as_mut_ptr(), offset, size) };
+                    (rc, suc_b, None)
+                } else {
+                    let mut b = Vec::with_capacity(size);
+                    unsafe {
+                        impls::read_return_data(b.as_mut_ptr(), offset, size);
+                        b.set_len(size);
+                    }
+                    (rc, suc_b, Some(b))
+                }
+            }
+
+            /// Return a word if successful, a vector if a revert.
+            #[cfg(feature = "alloc")]
+            pub fn [<$base_fn _word_err_vec>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+            ) -> (bool, U, Option<Vec<u8>>) {
+                let (rc, suc_slice, rev_vec) = [<$base_fn _err_vec>]::<32>(
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas,
+                    0
+                );
+                (rc, U::from(suc_slice), rev_vec)
+            }
+
+            /// Return a U word using a Result, or the vector for an error.
+            #[cfg(feature = "alloc")]
+            pub fn [<$base_fn _word_err_vec_res>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+            ) -> Result<U, Vec<u8>> {
+                let (rc, suc_slice, rev_vec) = [<$base_fn _err_vec>]::<32>(
+                    contract,
+                    calldata,
+                    $($value_param,)?
+                    gas,
+                    0
+                );
+                if rc {
+                    Ok(U::from(suc_slice))
+                } else {
+                    Err(rev_vec.unwrap())
                 }
             }
 

@@ -107,6 +107,10 @@ pub fn write_result_slice(s: &[u8]) {
     unsafe { impls::write_result(s.as_ptr(), s.len()) }
 }
 
+pub fn write_result_word(s: &U) {
+    write_result_slice(&s.0)
+}
+
 pub use bobcat_cd::leftpad_addr;
 
 /// Like write_result_exit_call, except it only reverts with the
@@ -121,6 +125,23 @@ macro_rules! revert_if_bad_call_vec {
             return 1;
         }
         rd
+    }};
+}
+
+/// Reverts if the underlying call failed, using the vector that was
+/// returned as the third argument as slice.
+#[macro_export]
+macro_rules! revert_if_bad_call_slice_vec {
+    ($e:expr) => {{
+        let (rc, returndata, revertdata) = $e;
+        match (rc, revertdata) {
+            (false, Some(v)) => {
+                $crate::write_result_slice(&v);
+                return 1;
+            }
+            (false, _) => return 1,
+            _ => returndata
+        }
     }};
 }
 

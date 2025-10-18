@@ -1,0 +1,13 @@
+[workspace]
+resolver = "3"
+members = ["chainlink-vrf-test"]
+
+[workspace.dependencies]
+bobcat-sdk = { path = "../bobcat-sdk" }
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+panic = "abort"
+opt-level = "z"

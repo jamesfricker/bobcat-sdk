@@ -1,3 +1,5 @@
 [profile.default]
 out = "out"
-libs = ["forge-lib"]
+libs = ["forge-libs"]
+test = "e2e-test"
+fs_permissions = [{ access = "read", path = "e2e-test/chainlink-vrf-test.wasm"}]

@@ -4,7 +4,19 @@ pub use bobcat_maths::U;
 
 pub use bobcat_storage::const_keccak256;
 
+pub use const_hex::const_decode_to_array as const_hex_decode_to_array;
+
 use array_concat::concat_arrays;
+
+#[macro_export]
+macro_rules! address {
+    ($a:expr) => {{
+        match $crate::const_hex_decode_to_array::<20>($a) {
+            Ok(v) => v,
+            Err(_) => panic!("bad address")
+        }
+    }}
+}
 
 #[macro_export]
 macro_rules! read_word_slices {
@@ -378,9 +390,14 @@ pub const fn const_keccak_sel(x: &[u8]) -> [u8; 4] {
 #[test]
 fn test_access() {
     use bobcat_maths::Address;
-    let cd = const_hex::const_decode_to_array::<{ 32 * 2 + 4 }>(b"a9059cbb0000000000000000000000006221a9c005f6e47eb398fd867784cacfdcfff4e7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
-    let a = const_hex::const_decode_to_array::<20>(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7")
+    let cd = const_hex_decode_to_array::<{ 32 * 2 + 4 }>(b"a9059cbb0000000000000000000000006221a9c005f6e47eb398fd867784cacfdcfff4e7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
+    let a = const_hex_decode_to_array::<20>(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7")
         .unwrap();
     let (addr, amt) = read_word_slices!(&cd[4..], 2);
     assert_eq!((a, U::MAX), (Address::from(U::from(*addr)), U::from(*amt)));
+}
+
+#[test]
+fn test_address() {
+    address!(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7");
 }

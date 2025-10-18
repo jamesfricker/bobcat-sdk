@@ -3,24 +3,23 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 
-interface BobcatVrfCallback {
+import {IArbFoundry} from "./IArbFoundry.sol";
+
+interface VrfCallback {
+    function initiate() external;
 }
 
 contract ChainlinkVrfTest is Test {
-    Counter public counter;
+    VrfCallback vrfCallback;
 
     function setUp() public {
-        counter = new Counter();
-        counter.setNumber(0);
+        vm.createSelectFork("https://sepolia-rollup.arbitrum.io/rpc", 205928753);
+        vrfCallback = VrfCallback(IArbFoundry(address(vm)).deployStylusCode(
+            "e2e-test/chainlink-vrf-test.wasm"
+        ));
     }
 
-    function test_Increment() public {
-        counter.increment();
-        assertEq(counter.number(), 1);
-    }
-
-    function testFuzz_SetNumber(uint256 x) public {
-        counter.setNumber(x);
-        assertEq(counter.number(), x);
+    function testInitiate() public {
+        vrfCallback.initiate();
     }
 }
