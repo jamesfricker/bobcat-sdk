@@ -1024,7 +1024,10 @@ mod test {
         ) {
             let numerator_u = U::from(numerator);
             let denominator_u = U::from(denominator);
-            prop_assert_eq!(const_wrapping_div(&numerator_u, &denominator_u).0, wrapping_div_b::<32>(&numerator, &denominator));
+            prop_assert_eq!(
+                const_wrapping_div(&numerator_u, &denominator_u).0,
+                wrapping_div_b::<32>(&numerator, &denominator)
+            );
         }
 
         #[test]
@@ -1079,9 +1082,7 @@ mod test {
 
             prop_assert_eq!(u128::from(rounded), expected);
         }
-    }
 
-    proptest! {
         #[test]
         fn test_u_is_zero(x in any::<[u8; 32]>()) {
             let x = U::from(x);
