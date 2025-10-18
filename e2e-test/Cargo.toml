@@ -1,9 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["chainlink-vrf-test"]
+members = ["chainlink-vrf-test", "transient-exchange"]
 
 [workspace.dependencies]
-bobcat-sdk = { path = "../bobcat-sdk" }
+bobcat-sdk = { path = "../bobcat-sdk", features = ["panic", "alloc"] }
+mini-alloc = "1.0.0"
 
 [profile.release]
 codegen-units = 1

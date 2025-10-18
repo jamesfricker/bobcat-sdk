@@ -1,8 +1,8 @@
 [package]
-name = "chainlink-vrf-test"
+name = "transient-exchange"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bobcat-sdk.workspace = true
+bobcat-sdk = { workspace = true, features = ["panic"] }
 mini-alloc.workspace = true

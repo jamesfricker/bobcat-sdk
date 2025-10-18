@@ -111,6 +111,10 @@ pub fn write_result_word(s: &U) {
     write_result_slice(&s.0)
 }
 
+pub fn write_result_bool(v: bool) {
+    write_result_slice(&U::from(v).0)
+}
+
 pub use bobcat_cd::leftpad_addr;
 
 /// Like write_result_exit_call, except it only reverts with the
