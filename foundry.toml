@@ -1,0 +1,3 @@
+[profile.default]
+out = "out"
+libs = ["forge-lib"]

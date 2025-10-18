@@ -7,6 +7,9 @@ pub mod eip2612;
 
 pub mod camelotv3_swap_router;
 
+pub mod chainlink_price_feed;
+pub mod chainlink_vrf;
+
 pub mod ninelives;
 
 pub use bobcat_cd;

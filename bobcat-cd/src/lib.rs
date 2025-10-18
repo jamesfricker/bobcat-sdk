@@ -338,8 +338,8 @@ macro_rules! read_word_slices {
     }};
 }
 
-pub const fn leftpad_addr(x: [u8; 20]) -> [u8; 32] {
-    concat_arrays!([0u8; 32 - 20], x)
+pub const fn leftpad_bool(x: bool) -> [u8; 32] {
+    leftpad_u8(x as u8)
 }
 
 pub const fn leftpad_u24(x: [u8; 3]) -> [u8; 32] {
@@ -350,12 +350,24 @@ pub const fn leftpad_u8(x: u8) -> [u8; 32] {
     concat_arrays!([0u8; 32 - 1], [x])
 }
 
-pub const fn leftpad_bool(x: bool) -> [u8; 32] {
-    leftpad_u8(x as u8)
-}
-
 pub const fn rightpad_b8(x: [u8; 8]) -> [u8; 32] {
     concat_arrays!(x, [0u8; 32 - 8])
+}
+
+pub const fn leftpad_addr(x: [u8; 20]) -> [u8; 32] {
+    concat_arrays!([0u8; 32 - 20], x)
+}
+
+pub const fn leftpad_u16(x: u16) -> [u8; 32] {
+    concat_arrays!([0u8; 32 - 2], x.to_be_bytes())
+}
+
+pub const fn leftpad_usize(x: usize) -> [u8; 32] {
+    concat_arrays!([0u8; 32 - core::mem::size_of::<usize>()], x.to_be_bytes())
+}
+
+pub const fn leftpad_u32(x: u32) -> [u8; 32] {
+    concat_arrays!([0u8; 32 - 4], x.to_be_bytes())
 }
 
 pub const fn const_keccak_sel(x: &[u8]) -> [u8; 4] {
