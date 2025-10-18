@@ -7,6 +7,7 @@ import {IArbFoundry} from "./IArbFoundry.sol";
 
 interface VrfCallback {
     function initiate() external;
+    function wasCalled() external view returns (bool);
 }
 
 contract ChainlinkVrfTest is Test {
@@ -17,6 +18,10 @@ contract ChainlinkVrfTest is Test {
         vrfCallback = VrfCallback(IArbFoundry(address(vm)).deployStylusCode(
             "e2e-test/chainlink-vrf-test.wasm"
         ));
+    }
+
+    function testCallback() public {
+        assert(!vrfCallback.wasCalled());
     }
 
     function testInitiate() public {

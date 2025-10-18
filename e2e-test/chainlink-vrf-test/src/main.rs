@@ -23,6 +23,9 @@ pub const SEL_INITIATE: [u8; 4] = const_keccak_sel(b"initiate()");
 pub const SEL_RAW_FULFILL_RANDOM_WORDS: [u8; 4] =
     const_keccak_sel(b"rawFulfillRandomWords(uint256,uint256[])");
 
+pub const SEL_WAS_CALLED: [u8; 4] =
+    const_keccak_sel(b"wasCalled()");
+
 // Number of words we're going to request from Chainlink.
 pub const WORD_COUNT: usize = 5;
 
@@ -39,9 +42,9 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     // fun to show off this way.
     reentrancy_guard_sel(&sel, || match sel {
         SEL_INITIATE => {
-            // This allocates a word for a simple U256 return, or reverts depending
-            // on what happens. For the allocation of the request for the random
-            // words, we don't need any values, so we use the simple version.
+            // This allocates a word for a simple U256 return, or reverts with a vec
+            // if that's what's needed. For the allocation of the request for the
+            // random words, we don't need any values, so we use the simple version.
             write_result_word(&revert_if_bad_call_slice_vec!(call_word_err_vec(
                 ADDR_CHAINLINK_VRF_COORDINATOR_SEPOLIA,
                 &make_fn_request_words_in_native_no_bytes(100, 2, WORD_COUNT as u32),
@@ -54,6 +57,10 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             storage_store(&U::ZERO, &U::from(true));
             0
         }
-        _ => unimplemented!(),
+        SEL_WAS_CALLED => {
+            write_result_word(&storage_load(&U::ZERO));
+            0
+        }
+        _ => 1
     })
 }
