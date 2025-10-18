@@ -37,9 +37,6 @@ pub const WORD_BUFFER: usize = (WORD_COUNT + 2) * 32;
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let args = &read_args_safe!(args_len, { WORD_BUFFER + 4 });
     let sel: [u8; 4] = args[..4].try_into().unwrap();
-    // In this example, we use a Vyper-style reentrancy guard, using the
-    // selector to prevent reentrancy. Though, this isn't needed, it's also
-    // fun to show off this way.
     match sel {
         SEL_INITIATE => {
             // This allocates a word for a simple U256 return, or reverts with a vec
