@@ -32,7 +32,7 @@ pub const REQUEST_WORDS_NATIVE_SLICE_BASE: usize = 32 * 5 + 4;
 /// Make a request words in native slice argument without using the
 /// allocator. The base length must be the length of the array without any
 /// padding, and the all length must be the entire allocation, inclusive
-/// of any padding that's needed.
+/// of any padding that's needed. To find padding needed, ((x + 31) & ~31) - x
 pub const fn make_fn_request_words_in_native_slice<const BASE_LEN: usize, const PADDING: usize, const ALL_LEN: usize>(
     callback_gas_limit: u32,
     request_confirmations: u16,
@@ -94,6 +94,40 @@ mod test {
 
     proptest! {
         #[test]
+        fn test_make_fn_request_words_in_native_slice_tiny(
+            callback_gas_limit in any::<u32>(),
+            request_confirmations in any::<u16>(),
+            num_words in any::<u32>(),
+            extra_args in any::<[u8; 2]>()
+        ) {
+            let e = requestRandomWordsInNativeCall {
+                callbackGasLimit: callback_gas_limit,
+                requestConfirmations: request_confirmations,
+                numWords: num_words,
+                extraArgs: Bytes::copy_from_slice(&extra_args)
+            }
+            .abi_encode();
+            let v = make_fn_request_words_in_native_slice::<
+                2,
+                30,
+                { 32 + REQUEST_WORDS_NATIVE_SLICE_BASE },
+
+            > (
+                callback_gas_limit,
+                request_confirmations,
+                num_words,
+                extra_args
+            );
+            assert_eq!(
+              e,
+              v,
+              "{} != {}",
+              const_hex::encode(&e),
+              const_hex::encode(&v)
+            );
+        }
+
+        #[test]
         fn test_make_fn_request_words_in_native_slice_even(
             callback_gas_limit in any::<u32>(),
             request_confirmations in any::<u16>(),
@@ -110,7 +144,6 @@ mod test {
                 extraArgs: Bytes::copy_from_slice(&extra_args)
             }
             .abi_encode();
-            dbg!( 32 + REQUEST_WORDS_NATIVE_SLICE_BASE );
             let v = make_fn_request_words_in_native_slice::<
                 32,
                 0,
