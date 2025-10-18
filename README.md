@@ -12,44 +12,45 @@ official stylus-sdk repo.
 
 ## Usage
 
+Note: generated storage selector coming soon.
+
 ```rust
 // main.rs
-use bobcat_storage::{storage, StorageU};
-use bobcat_maths::U;
-use bobcat_cd::{ToError, RevertMsg, bobcat_entrypoints};
-use bobcat_entry::{read_args, exit_contract, BobcatEntrypoint};
 
-pub use bobcat_entry::mark_used;
-pub use bobcat_panic::panic_handler;
+#![no_main]
+#![no_std]
 
-#[derive(Debug, PartialEq, Clone, Storage)]
-pub struct Storage {
-    pub counter: StorageU,
-}
+use bobcat_sdk::{
+    cd::{const_keccak_sel, read_word_slices},
+    entry::*,
+    maths::U,
+    storage::*,
+};
 
-#[derive(Debug, PartialEq, Clone, RevertMsg)]
-#[repr(u8)]
-enum Error {
-    CountOverflow,
-}
+const SEL_NUMBER: [u8; 4] = const_keccak_sel(b"number()");
+const SEL_SET_NUMBER: [u8; 4] = const_keccak_sel(b"setNumber(uint256)");
+const SEL_MUL_NUMBER: [u8; 4] = const_keccak_sel(b"mulNumber(uint256)");
+const SEL_ADD_NUMBER: [u8; 4] = const_keccak_sel(b"addNumber(uint256)");
+const SEL_INCREMENT: [u8; 4] = const_keccak_sel(b"increment()");
+const SEL_ADD_FROM_MSG_VALUE: [u8; 4] = const_keccak_sel(b"addFromMsgValue()");
 
-#[derive(BobcatEntrypoint)]
-impl Storage {
-    pub fn add_count(&mut self, c: U) -> Result<(), Error> {
-        self.counter.chk_add(c).ok_or(Error::CountOverflow)?;
-        Ok(())
-    }
-
-    pub fn get_counter(&self) -> U {
-        self.counter.get()
-    }
-}
-
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
-    let c = StorageCounter::default();
-    exit_contract(c.bobcat_pick_entry(args_len))
+    let args = read_args_safe!(args_len, { 32 + 4 });
+    let sel: [u8; 4] = args[..4].try_into().unwrap();
+    let w = read_word_slices!(&args[4..], 1);
+    flush_guard(|| match sel {
+        SEL_NUMBER => write_result_word(&storage_load(&U::ZERO)),
+        SEL_SET_NUMBER => storage_store(&U::ZERO, w),
+        SEL_MUL_NUMBER => storage_wrapping_mul(&U::ZERO, w),
+        SEL_ADD_NUMBER => storage_wrapping_add(&U::ZERO, w),
+        SEL_INCREMENT => storage_wrapping_add(&U::ONE, w),
+        SEL_ADD_FROM_MSG_VALUE => storage_wrapping_add(&msg_value(), w),
+        _ => unimplemented!(),
+    });
+    0
 }
+
 ```
 
 ## Goals
