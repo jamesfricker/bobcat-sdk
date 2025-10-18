@@ -40,7 +40,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     // In this example, we use a Vyper-style reentrancy guard, using the
     // selector to prevent reentrancy. Though, this isn't needed, it's also
     // fun to show off this way.
-    reentrancy_guard_sel(&sel, || match sel {
+    match sel {
         SEL_INITIATE => {
             // This allocates a word for a simple U256 return, or reverts with a vec
             // if that's what's needed. For the allocation of the request for the
@@ -62,5 +62,5 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             0
         }
         _ => 1
-    })
+    }
 }

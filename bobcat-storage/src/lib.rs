@@ -327,5 +327,13 @@ mod test {
              assert!(!transient_exchange_bool(&x, true));
             assert!(transient_load(&x).is_some());
         }
+
+        #[test]
+        fn test_reentrancy_guard_sel(x in any::<[u8; 4]>()) {
+            reentrancy_guard_sel(&x, || {
+                assert!(transient_load(&U::from(x)).is_true());
+            });
+            assert!(transient_load(&U::from(x)).is_zero());
+        }
     }
 }
