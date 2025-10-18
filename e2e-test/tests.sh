@@ -2,4 +2,4 @@
 
 make
 
-arbos-forge test -vv
+arbos-forge test $@

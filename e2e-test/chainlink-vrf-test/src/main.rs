@@ -13,7 +13,7 @@ use bobcat_sdk::{
     cd::*,
     entry::*,
     interfaces::{
-        chainlink_vrf::make_fn_request_words_in_native_no_bytes, eip20::make_fn_balance_of,
+        chainlink_vrf::make_fn_request_words_in_native_no_bytes,
     },
     storage::*,
 };
@@ -22,8 +22,6 @@ type Address = [u8; 20];
 
 pub const ADDR_CHAINLINK_VRF_COORDINATOR_SEPOLIA: Address =
     address!(b"50d47e4142598E3411aA864e08a44284e471AC6f");
-
-pub const ADDR_ERC20: Address = address!(b"0xf3c3351d6bd0098eeb33ca8f830faf2a141ea2e1");
 
 pub const SEL_INITIATE: [u8; 4] = const_keccak_sel(b"initiate()");
 
@@ -46,13 +44,6 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
         let sel: [u8; 4] = args[..4].try_into().unwrap();
         match sel {
             SEL_INITIATE => {
-                write_result_word(&revert_if_bad_call_slice_vec!(call_word_err_vec(
-                    ADDR_ERC20,
-                    &make_fn_balance_of(ADDR_ERC20),
-                    &U::ZERO,
-                    u64::MAX
-                )));
-                return 0;
                 // This allocates a word for a simple U256 return, or reverts with a vec
                 // if that's what's needed. For the allocation of the request for the
                 // random words, we don't need any values, so we use the simple version.
@@ -69,7 +60,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
                 0
             }
             SEL_WAS_CALLED => {
-                write_result_word(&storage_load(&U::ZERO));
+                write_result_bool(storage_load_bool(&U::ZERO));
                 0
             }
             _ => 1,
