@@ -7,7 +7,7 @@ Bobcat SDK is an opinionated SDK for Arbitrum Stylus, intended for advanced user
 
 ## Codesize savings
 
-bobcat-sdk is smaller than stylus-sdk. Check `examples/` to see a comparison for a few
+bobcat-sdk is smaller than stylus-sdk. Check `examples/` to see a comparison of a few
 items, and some discussion of the methodology.
 
 ## Disclaimer
@@ -97,7 +97,8 @@ trying to reduce their codesize presence might wish to reduce their use of these
 ## Non-goals
 
 1. Test mocking features (like setting the sender). Use ArbOS-Foundry for e2e testing!
-These functions will be provided, but you can't set to them.
+These functions will be provided, but you can't set to them. Check `e2e-test` to see an
+example of this in practice!
 
 2. Solidity code generation of the ABI.
 
@@ -105,7 +106,7 @@ These functions will be provided, but you can't set to them.
 
 4. Any support for the host environment outside wasm.
 
-5. Storage of integers other than U256.
+5. Storage of integers other than U256. Conversion is okay.
 
 6. Visibility setting on the functions.
 
