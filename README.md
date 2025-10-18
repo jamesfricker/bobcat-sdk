@@ -1,5 +1,5 @@
 
-<img src="logo.svg" alt="bobcat-sdk loog" width="120"/>
+<img src="logo.svg" alt="bobcat-sdk loog" width="160"/>
 
 # bobcat-sdk
 
