@@ -944,11 +944,12 @@ fn test_is_zeroes() {
 
 #[cfg(all(
     test,
-    feature = "proptest-enabled",
     feature = "alloy-enabled",
+    feature = "proptest-enabled",
+    feature = "std",
     not(target_arch = "wasm32")
 ))]
-mod property_tests {
+mod test {
     use proptest::prelude::*;
 
     use super::*;
@@ -1079,18 +1080,6 @@ mod property_tests {
             prop_assert_eq!(u128::from(rounded), expected);
         }
     }
-}
-
-#[cfg(all(
-    test,
-    feature = "alloy-enabled",
-    feature = "std",
-    not(target_arch = "wasm32")
-))]
-mod test {
-    use proptest::prelude::*;
-
-    use super::*;
 
     proptest! {
         #[test]
