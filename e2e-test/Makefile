@@ -51,4 +51,11 @@ beacon.wasm: ${BUILT}
 	@./wasm-post.sh ${RELEASE}/beacon.wasm beacon.wasm
 
 clean:
-	@rm -rf target
+	@rm -rf \
+		target \
+		chainlink-vrf-test.wasm \
+		transient-exchange.wasm \
+		console-log-txt.wasm \
+		counter.wasm \
+		mul-div.wasm \
+		beacon.wasm
