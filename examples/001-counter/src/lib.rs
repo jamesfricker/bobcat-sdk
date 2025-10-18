@@ -1,7 +1,12 @@
 #![no_main]
 #![no_std]
 
-use bobcat_sdk::{cd::read_word_slices, entry::*, maths::U, storage::*};
+use bobcat_sdk::{
+    cd::{const_keccak_sel, read_word_slices},
+    entry::*,
+    maths::U,
+    storage::*,
+};
 
 pub fn get_number() -> U {
     storage_load(&U::ZERO)
@@ -24,18 +29,26 @@ unsafe extern "C" {
     fn msg_reentrant() -> bool;
 }
 
+pub const SEL_NUMBER: [u8; 4] = const_keccak_sel(b"number()");
+pub const SEL_SET_NUMBER: [u8; 4] = const_keccak_sel(b"setNumber(uint256)");
+pub const SEL_MUL_NUMBER: [u8; 4] = const_keccak_sel(b"mulNumber(uint256)");
+pub const SEL_ADD_NUMBER: [u8; 4] = const_keccak_sel(b"addNumber(uint256)");
+pub const SEL_INCREMENT: [u8; 4] = const_keccak_sel(b"increment()");
+pub const SEL_ADD_FROM_MSG_VALUE: [u8; 4] = const_keccak_sel(b"addFromMsgValue()");
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
-    assert!(! unsafe { msg_reentrant() });
+    assert!(!unsafe { msg_reentrant() });
     let args = read_args_safe!(args_len, { 32 + 4 });
+    let sel: [u8; 4] = args[..4].try_into().unwrap();
     let w = read_word_slices!(&args[4..], 1);
-    flush_guard(|| match args[..4] {
-        [0x83, 0x81, 0xf5, 0x8a] => write_result_slice(get_number().as_slice()),
-        [0x3f, 0xb5, 0xc1, 0xcb] => set_number(w),
-        [0x4d, 0x4f, 0x58, 0xd1] => mul_number(w),
-        [0xfc, 0xe6, 0x80, 0x23] => add_number(w),
-        [0xd0, 0x9d, 0xe0, 0x8a] => add_number(&U::ONE),
-        [0xcd, 0x87, 0xba, 0xff] => add_number(&msg_value()),
+    flush_guard(|| match sel {
+        SEL_NUMBER => write_result_slice(get_number().as_slice()),
+        SEL_SET_NUMBER => set_number(w),
+        SEL_MUL_NUMBER => mul_number(w),
+        SEL_ADD_NUMBER => add_number(w),
+        SEL_INCREMENT => add_number(&U::ONE),
+        SEL_ADD_FROM_MSG_VALUE => add_number(&msg_value()),
         _ => unimplemented!(),
     });
     0
