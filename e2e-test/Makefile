@@ -13,7 +13,7 @@ PROJECTS := \
 
 all: wasm
 
-.PHONY: wasm
+.PHONY: wasm clean
 
 ${BUILT}: $(shell find ${PROJECTS} Cargo.toml -type f)
 	@cargo build --target wasm32-unknown-unknown --release
@@ -49,3 +49,6 @@ mul-div.wasm: ${BUILT}
 beacon.wasm: ${BUILT}
 	@rm -f beacon.wasm
 	@./wasm-post.sh ${RELEASE}/beacon.wasm beacon.wasm
+
+clean:
+	@rm -rf target

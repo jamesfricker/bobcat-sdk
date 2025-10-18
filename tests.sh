@@ -10,4 +10,10 @@ cd examples
 
 cargo build --target wasm32-unknown-unknown --release
 
+cd ../e2e-test
+
+./tests.sh
+
+cd ..
+
 ./check-codesize.sh

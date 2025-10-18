@@ -8,7 +8,7 @@ if [ -z "$PRIVATE_KEY" ]; then
 fi
 
 cargo stylus deploy \
-	--wasm-file "bozo.wasm" \
+	--wasm-file "$1" \
 	--private-key "$PRIVATE_KEY" \
 	--endpoint "$url" \
 	--no-verify \

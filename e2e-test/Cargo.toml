@@ -5,7 +5,8 @@ members = [
 	"console-log-txt",
 	"transient-exchange",
 	"counter",
-	"mul-div"
+	"mul-div",
+	"beacon"
 ]
 
 [workspace.dependencies]

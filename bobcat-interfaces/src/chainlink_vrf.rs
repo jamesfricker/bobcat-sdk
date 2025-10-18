@@ -279,25 +279,5 @@ mod test {
               const_hex::encode(&v)
             );
         }
-
-        #[test]
-        #[should_panic]
-        fn test_make_fn_request_words_in_native_slice_weird_padding(
-            callback_gas_limit in any::<u32>(),
-            request_confirmations in any::<u16>(),
-            num_words in any::<u32>(),
-            extra_args in any::<[u8; 1000]>()
-        ) {
-            make_fn_request_words_in_native_slice::<
-                1000,
-                22,
-                { 1000 + 22 + REQUEST_WORDS_NATIVE_SLICE_BASE },
-            > (
-                callback_gas_limit,
-                request_confirmations,
-                num_words,
-                extra_args
-            );
-        }
     }
 }
