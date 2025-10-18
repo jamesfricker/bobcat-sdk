@@ -164,3 +164,7 @@ development practices when we go off the beaten path (which happens a lot). We'r
 often a victim of coderot in the main SDK. We wanted something small and versatile that
 would let us lean on ArbOS-Foundry for contract end to end testing, with the bare minimum
 of features that we need.
+
+## Credits
+
+Credit to Marko (Blazeaster) for the logo!
