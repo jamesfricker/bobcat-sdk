@@ -27,15 +27,19 @@ contract HelloWorld1 {
 
 contract HelloWorld2 {
     function spnPeople() external pure returns (string[] memory) {
-        string[] memory p = new string[](4);
-        p[0] = "Alex";
-        p[1] = "Eli";
-        p[2] = "Erik";
-        p[3] = "Ivan";
-        p[4] = "Marko";
-        p[5] = "Ogous";
-        p[6] = "Paxia";
-        p[7] = "Shahmeer";
+        string[] memory p = new string[](12);
+        p[0] ="Alex";
+        p[1] = "Bati";
+        p[2] = "Eli";
+        p[3] = "Erik";
+        p[4] = "Ivan";
+        p[5] = "Judy";
+        p[6] = "Marko";
+        p[7] = "Ogous";
+        p[8] = "Paxia";
+        p[9] = "Shahmeer";
+        p[10] = "Suzu";
+        p[11] = "Yoel";
         return p;
     }
 }
