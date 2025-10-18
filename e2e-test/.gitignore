@@ -1,2 +1,1 @@
-chainlink-vrf-test.wasm
-transient-exchange.wasm
+*.wasm

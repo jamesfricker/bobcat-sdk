@@ -11,3 +11,6 @@ pub use bobcat_call as call;
 
 #[cfg(feature = "panic")]
 pub use bobcat_panic as panic;
+
+#[cfg(feature = "alloc")]
+pub use bobcat_console as console;

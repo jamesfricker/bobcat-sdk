@@ -5,4 +5,5 @@ test = "e2e-test"
 fs_permissions = [
 	{ access = "read", path = "e2e-test/chainlink-vrf-test.wasm"},
 	{ access = "read", path = "e2e-test/transient-exchange.wasm"},
+	{ access = "read", path = "e2e-test/console-log-txt.wasm"},
 ]

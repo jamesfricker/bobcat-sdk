@@ -1,0 +1,8 @@
+[package]
+name = "console-log-txt"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bobcat-sdk = { workspace = true, features = ["alloc"] }
+mini-alloc.workspace = true

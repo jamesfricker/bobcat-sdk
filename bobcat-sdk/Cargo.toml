@@ -20,6 +20,7 @@ bobcat-storage = { version = "0.5.0", path = "../bobcat-storage" }
 bobcat-cd = { version = "0.5.0", path = "../bobcat-cd" }
 bobcat-interfaces = { version = "0.5.0", path = "../bobcat-interfaces" }
 bobcat-call = { version = "0.5.0", path = "../bobcat-call" }
+bobcat-console = { version = "0.5.0", path = "../bobcat-console", optional = true }
 
 [features]
 std = [
@@ -35,6 +36,7 @@ alloc = [
 	"bobcat-entry/alloc",
 	"bobcat-maths/alloc",
 	"bobcat-call/alloc",
+	"bobcat-console"
 ]
 console = ["bobcat-panic/console"]
 arbitrary-enabled = ["bobcat-maths/arbitrary-enabled"]

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["chainlink-vrf-test", "transient-exchange"]
+members = ["chainlink-vrf-test", "console-log-txt", "transient-exchange"]
 
 [workspace.dependencies]
 bobcat-sdk = { path = "../bobcat-sdk", features = ["panic", "alloc"] }

@@ -8,14 +8,11 @@
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
+extern crate alloc;
+
 use bobcat_sdk::{
-    call::call_word_err_vec,
-    cd::*,
-    entry::*,
-    interfaces::{
-        chainlink_vrf::make_fn_request_words_in_native_no_bytes,
-    },
-    storage::*,
+    call::call_word_err_vec, cd::*, entry::*,
+    interfaces::chainlink_vrf::make_fn_request_words_in_native_no_bytes, storage::*,
 };
 
 type Address = [u8; 20];
