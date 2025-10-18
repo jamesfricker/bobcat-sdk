@@ -291,11 +291,7 @@ pub fn checked_mul(x: &U, y: &U) -> Option<U> {
         None
     } else {
         let z = x.mul_mod(y, &U::MAX);
-        if z.is_zero() {
-            Some(U::MAX)
-        } else {
-            Some(z)
-        }
+        if z.is_zero() { Some(U::MAX) } else { Some(z) }
     }
 }
 
@@ -815,11 +811,7 @@ fn i_div(x: &I, y: &I) -> I {
 
 fn i_rem(x: &I, y: &I) -> I {
     let r = modd(&x.abs(), &y.abs());
-    if x.is_neg() {
-        I(r.0).neg()
-    } else {
-        I(r.0)
-    }
+    if x.is_neg() { I(r.0).neg() } else { I(r.0) }
 }
 
 impl Add for I {
@@ -950,124 +942,142 @@ fn test_is_zeroes() {
     assert!(I::ONE.is_some());
 }
 
-#[cfg(test)]
-mod unit_tests {
+#[cfg(all(
+    test,
+    feature = "proptest-enabled",
+    feature = "alloy-enabled",
+    not(target_arch = "wasm32")
+))]
+mod property_tests {
+    use proptest::prelude::*;
+
     use super::*;
 
-    fn u_from_u128(value: u128) -> U {
-        let mut bytes = [0u8; 32];
-        bytes[16..].copy_from_slice(&value.to_be_bytes());
-        U(bytes)
+    fn u_from_u64(value: u64) -> U {
+        U::from(value)
     }
 
-    fn u_to_u128(value: &U) -> u128 {
-        u128::from_be_bytes(value.0[16..].try_into().unwrap())
-    }
+    proptest! {
+        #[test]
+        fn wrapping_div_b_zero_denominator_yields_zero(numerator in any::<[u8; 4]>()) {
+            let zero = [0u8; 4];
+            prop_assert_eq!(wrapping_div_b::<4>(&numerator, &zero), zero);
+        }
 
-    fn arr_from_u32(value: u32) -> [u8; 4] {
-        value.to_be_bytes()
-    }
+        #[test]
+        fn wrapping_div_b_matches_integer_division(
+            numerator in any::<[u8; 4]>(),
+            denominator in any::<[u8; 4]>().prop_filter("denominator must be non-zero", |d| *d != [0u8; 4])
+        ) {
+            let numerator_u32 = u32::from_be_bytes(numerator);
+            let denominator_u32 = u32::from_be_bytes(denominator);
+            let expected = numerator_u32 / denominator_u32;
+            prop_assert_eq!(
+                wrapping_div_b::<4>(&numerator, &denominator),
+                expected.to_be_bytes()
+            );
+        }
 
-    #[test]
-    fn wrapping_div_b_zero_denominator_yields_zero() {
-        let numerator = [0x12, 0x34, 0x56, 0x78];
-        let denominator = [0u8; 4];
-        assert_eq!(wrapping_div_b::<4>(&numerator, &denominator), [0u8; 4]);
-    }
+        #[test]
+        fn wrapping_mod_b_matches_integer_modulo(
+            numerator in any::<[u8; 4]>(),
+            denominator in any::<[u8; 4]>().prop_filter("denominator must be non-zero", |d| *d != [0u8; 4])
+        ) {
+            let numerator_u32 = u32::from_be_bytes(numerator);
+            let denominator_u32 = u32::from_be_bytes(denominator);
+            let expected = numerator_u32 % denominator_u32;
+            prop_assert_eq!(
+                wrapping_mod_b::<4>(&numerator, &denominator),
+                expected.to_be_bytes()
+            );
+        }
 
-    #[test]
-    fn wrapping_div_b_matches_integer_division() {
-        let numerator = arr_from_u32(0xDEAD_BEEF);
-        let denominator = arr_from_u32(0x0000_00F0);
-        let quotient = wrapping_div_b::<4>(&numerator, &denominator);
-        assert_eq!(u32::from_be_bytes(quotient), 0xDEAD_BEEF / 0xF0);
+        #[test]
+        fn wrapping_add_b_handles_carry(lhs in any::<[u8; 4]>(), rhs in any::<[u8; 4]>()) {
+            let lhs_u32 = u32::from_be_bytes(lhs);
+            let rhs_u32 = u32::from_be_bytes(rhs);
+            let expected = lhs_u32.wrapping_add(rhs_u32);
+            prop_assert_eq!(wrapping_add_b::<4>(&lhs, &rhs), expected.to_be_bytes());
+        }
 
-        let smaller = arr_from_u32(0x0000_00EF);
-        assert_eq!(wrapping_div_b::<4>(&smaller, &denominator), [0u8; 4]);
+        #[test]
+        fn wrapping_sub_b_handles_borrow(lhs in any::<[u8; 4]>(), rhs in any::<[u8; 4]>()) {
+            let lhs_u32 = u32::from_be_bytes(lhs);
+            let rhs_u32 = u32::from_be_bytes(rhs);
+            let expected = lhs_u32.wrapping_sub(rhs_u32);
+            prop_assert_eq!(wrapping_sub_b::<4>(&lhs, &rhs), expected.to_be_bytes());
+        }
 
-        let equal = arr_from_u32(0x0000_00F0);
-        assert_eq!(wrapping_div_b::<4>(&equal, &denominator), arr_from_u32(1));
-    }
+        #[test]
+        fn wrapping_mul_b_matches_wrapping_arithmetic(lhs in any::<[u8; 32]>(), rhs in any::<[u8; 32]>()) {
+            let lhs_u = U::from(lhs);
+            let rhs_u = U::from(rhs);
+            let expected = lhs_u.wrapping_mul(&rhs_u);
+            prop_assert_eq!(wrapping_mul_b::<32>(&lhs, &rhs), expected.0);
+        }
 
-    #[test]
-    fn wrapping_mod_b_matches_integer_modulo() {
-        let numerator = arr_from_u32(0xFEED_FACE);
-        let denominator = arr_from_u32(0x0000_0101);
-        let remainder = wrapping_mod_b::<4>(&numerator, &denominator);
-        assert_eq!(u32::from_be_bytes(remainder), 0xFEED_FACE % 0x0101);
+        #[test]
+        fn const_wrapping_div_agrees_with_wrapping_div_b(
+            numerator in any::<[u8; 32]>(),
+            denominator in any::<[u8; 32]>().prop_filter("denominator must be non-zero", |d| *d != [0u8; 32])
+        ) {
+            let numerator_u = U::from(numerator);
+            let denominator_u = U::from(denominator);
+            prop_assert_eq!(const_wrapping_div(&numerator_u, &denominator_u).0, wrapping_div_b::<32>(&numerator, &denominator));
+        }
 
-        let below = arr_from_u32(0x0000_00F0);
-        assert_eq!(wrapping_mod_b::<4>(&below, &denominator), below);
-    }
+        #[test]
+        fn u_predicates_track_zero_and_true(bytes in any::<[u8; 32]>()) {
+            let value = U::from(bytes);
+            let is_zero = bytes.iter().all(|&b| b == 0);
+            prop_assert_eq!(value.is_zero(), is_zero);
+            prop_assert_eq!(value.is_some(), !is_zero);
+            prop_assert_eq!(value.is_true(), bytes[31] == 1);
+        }
 
-    #[test]
-    fn wrapping_add_b_handles_carry() {
-        let lhs = [0xFF, 0xFF, 0xFF, 0xFF];
-        let rhs = [0x00, 0x00, 0x00, 0x01];
-        let sum = wrapping_add_b::<4>(&lhs, &rhs);
-        assert_eq!(sum, [0x00, 0x00, 0x00, 0x00]);
-    }
+        #[test]
+        fn mul_div_returns_expected_quotient_and_carry(
+            lhs in any::<u64>(),
+            rhs in any::<u64>(),
+            denom in any::<u64>().prop_filter("denominator must be non-zero", |d| *d != 0)
+        ) {
+            let lhs_u = u_from_u64(lhs);
+            let rhs_u = u_from_u64(rhs);
+            let denom_u = u_from_u64(denom);
+            let (q, carry) = lhs_u.mul_div(&rhs_u, &denom_u).expect("division should succeed");
 
-    #[test]
-    fn wrapping_sub_b_handles_borrow() {
-        let lhs = arr_from_u32(0x0001_0000);
-        let rhs = arr_from_u32(0x0000_0001);
-        let difference = wrapping_sub_b::<4>(&lhs, &rhs);
-        assert_eq!(u32::from_be_bytes(difference), 0x0000_FFFF);
-    }
+            let product = (lhs as u128) * (rhs as u128);
+            let denom_u128 = denom as u128;
+            let expected_q = product / denom_u128;
+            let expected_rem = product % denom_u128;
 
-    #[test]
-    fn wrapping_mul_b_matches_wrapping_arithmetic() {
-        let lhs = U256::from(0x0123_4567_89AB_CDEF_u128);
-        let rhs = U256::from(0x0011_2233_4455_6677_u128);
-        let product = wrapping_mul_b::<32>(&lhs.to_be_bytes::<32>(), &rhs.to_be_bytes::<32>());
-        let expected = (lhs * rhs).to_be_bytes::<32>();
-        assert_eq!(product, expected);
-    }
+            prop_assert_eq!(u128::from(q), expected_q);
+            prop_assert_eq!(carry, expected_rem != 0);
+        }
 
-    #[test]
-    fn const_wrapping_div_agrees_with_wrapping_div_b() {
-        let lhs = U256::from(0x0123_4567_89AB_CDEF_u128);
-        let rhs = U256::from(0x0000_0000_0000_0101_u128);
-        let lhs_bytes = lhs.to_be_bytes::<32>();
-        let rhs_bytes = rhs.to_be_bytes::<32>();
-        let by_const = const_wrapping_div(&U(lhs_bytes), &U(rhs_bytes));
-        let by_helper = wrapping_div_b::<32>(&lhs_bytes, &rhs_bytes);
-        assert_eq!(by_const.0, by_helper);
-    }
+        #[test]
+        fn mul_div_round_up_accounts_for_carry(
+            lhs in any::<u64>(),
+            rhs in any::<u64>(),
+            denom in any::<u64>().prop_filter("denominator must be non-zero", |d| *d != 0)
+        ) {
+            let lhs_u = u_from_u64(lhs);
+            let rhs_u = u_from_u64(rhs);
+            let denom_u = u_from_u64(denom);
+            let rounded = lhs_u
+                .mul_div_round_up(&rhs_u, &denom_u)
+                .expect("rounding should succeed");
 
-    #[test]
-    fn u_predicates_respect_zero_and_one() {
-        let zero = U::ZERO;
-        let one = U::ONE;
-        let two = u_from_u128(2);
-        assert!(!zero.is_true());
-        assert!(one.is_true());
-        assert!(!two.is_true());
-        assert!(!zero.is_some());
-        assert!(one.is_some());
-        assert!(two.is_some());
-    }
+            let product = (lhs as u128) * (rhs as u128);
+            let denom_u128 = denom as u128;
+            let expected = if product % denom_u128 == 0 {
+                product / denom_u128
+            } else {
+                (product / denom_u128) + 1
+            };
 
-    #[test]
-    fn mul_div_returns_expected_quotient_and_carry() {
-        let lhs = u_from_u128(42);
-        let rhs = u_from_u128(30);
-        let denom = u_from_u128(16);
-        let (q, carry) = lhs.mul_div(&rhs, &denom).expect("division should succeed");
-        assert_eq!(u_to_u128(&q), (42 * 30) / 16);
-        assert!(carry);
-    }
-
-    #[test]
-    fn mul_div_round_up_accounts_for_carry() {
-        let lhs = u_from_u128(9);
-        let rhs = u_from_u128(7);
-        let denom = u_from_u128(5);
-        let rounded = lhs
-            .mul_div_round_up(&rhs, &denom)
-            .expect("rounding should succeed");
-        assert_eq!(u_to_u128(&rounded), ((9 * 7) + 5 - 1) / 5);
+            prop_assert_eq!(u128::from(rounded), expected);
+        }
     }
 }
 
