@@ -20,8 +20,5 @@ paste = "1.0.15"
 [dev-dependencies]
 const-hex = { workspace = true }
 
-[target.'cfg(not(target_arch = "wasm32"))'.features]
-std = ["proptest"]
-
 [features]
 std = []

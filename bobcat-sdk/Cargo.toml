@@ -39,5 +39,6 @@ alloc = [
 console = ["bobcat-panic/console"]
 arbitrary-enabled = ["bobcat-maths/arbitrary-enabled"]
 proptest-enabled = ["bobcat-maths/proptest-enabled"]
+proptest = ["proptest-enabled", "bobcat-storage/proptest"]
 panic = ["bobcat-panic"]
 dont-define-symbols = ["bobcat-entry/dont-define-symbols"]
