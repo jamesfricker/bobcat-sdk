@@ -1,5 +1,7 @@
 
-# Bobcat SDK
+<img src="logo.svg" alt="bobcat-sdk loog" width="60"/>
+
+# bobcat-sdk
 
 Bobcat SDK is an opinionated SDK for Arbitrum Stylus, intended for advanced users.
 

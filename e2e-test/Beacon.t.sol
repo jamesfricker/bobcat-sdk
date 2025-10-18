@@ -59,5 +59,7 @@ contract ChainlinkVrfTest is Test {
         address impl = beaconDeployer.deploy(address(beacon));
         beacon.setImpl(address(helloWorld1));
         assertEq(helloWorld1.hello(), HelloWorld1(impl).hello());
+        beacon.setImpl(address(helloWorld2));
+        assertEq(helloWorld2.spnPeople(), HelloWorld2(impl).spnPeople());
     }
 }
