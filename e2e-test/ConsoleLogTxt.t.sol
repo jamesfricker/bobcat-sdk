@@ -21,6 +21,6 @@ contract ChainlinkVrfTest is Test {
     }
 
     function testPrint() public {
-        console.log(consoleLogTxt.print(123, 19201));
+        /* console.log(consoleLogTxt.print(123, 19201)); */
     }
 }

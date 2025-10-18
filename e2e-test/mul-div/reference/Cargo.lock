@@ -24,6 +24,7 @@ dependencies = [
  "itoa",
  "paste",
  "ruint",
+ "sha3",
  "tiny-keccak",
 ]
 

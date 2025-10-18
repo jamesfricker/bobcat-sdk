@@ -422,6 +422,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "bobcat-console"
+version = "0.5.0"
+
+[[package]]
 name = "bobcat-create"
 version = "0.5.0"
 dependencies = [
@@ -488,6 +492,7 @@ version = "0.5.0"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",
+ "bobcat-console",
  "bobcat-create",
  "bobcat-entry",
  "bobcat-interfaces",

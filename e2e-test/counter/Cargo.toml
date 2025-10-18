@@ -1,0 +1,16 @@
+[package]
+name = "counter"
+version = "0.1.11"
+edition = "2024"
+
+[dependencies]
+bobcat-sdk.workspace = true
+mini-alloc.workspace = true
+
+[[bin]]
+name = "counter"
+path = "src/main.rs"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+name = "libcounter"

@@ -1,0 +1,12 @@
+[package]
+name = "mul-div"
+version = "0.5.0"
+edition = "2024"
+
+[dependencies]
+bobcat-sdk.workspace = true
+mini-alloc.workspace = true
+
+[[bin]]
+name = "mul-div"
+path = "src/main.rs"
