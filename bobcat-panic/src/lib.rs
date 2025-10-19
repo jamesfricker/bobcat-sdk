@@ -11,7 +11,7 @@ mod wasm {
     }
 }
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(not(feature = "std"), target_arch = "wasm32"))]
 #[panic_handler]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     #[cfg(feature = "console")]
@@ -19,5 +19,5 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         let msg = alloc::format!("{_msg}");
         unsafe { wasm::log_txt(msg.as_ptr(), msg.len()) }
     }
-    unreachable!()
+    core::arch::wasm32::unreachable()
 }
