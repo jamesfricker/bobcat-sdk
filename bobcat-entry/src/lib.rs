@@ -135,16 +135,32 @@ macro_rules! revert_if_bad_call_vec {
 /// Reverts if the underlying call failed, using the vector that was
 /// returned as the third argument as slice.
 #[macro_export]
-macro_rules! revert_if_bad_call_slice_vec {
+macro_rules! revert_if_bad_call_unit_vec {
     ($e:expr) => {{
-        let (rc, returndata, revertdata) = $e;
+        let (rc, revertdata) = $e;
         match (rc, revertdata) {
+            (true, _) => (),
             (false, Some(v)) => {
                 $crate::write_result_slice(&v);
                 return 1;
             }
             (false, _) => return 1,
-            _ => returndata
+        }
+    }};
+}
+
+/// Reverts with a message if the revertdata is Some, and if the rc is false.
+#[macro_export]
+macro_rules! revert_if_bad_call_slice_vec {
+    ($e:expr) => {{
+        let (rc, returndata, revertdata) = $e;
+        match (rc, revertdata) {
+            (true, _) => returndata,
+            (false, Some(v)) => {
+                $crate::write_result_slice(&v);
+                return 1;
+            }
+            (false, _) => return 1,
         }
     }};
 }
