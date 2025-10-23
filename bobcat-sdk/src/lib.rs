@@ -9,7 +9,7 @@ pub use bobcat_maths as maths;
 pub use bobcat_proxy as proxy;
 pub use bobcat_storage as storage;
 
-#[cfg(any(feature = "panic", feature = "panic-unwind"))]
+#[cfg(any(feature = "panic", feature = "panic-revert"))]
 pub use bobcat_panic as panic;
 
 #[cfg(feature = "alloc")]

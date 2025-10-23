@@ -1,15 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "panic-unwind")]
-use bobcat_entry::{U, write_result_slice};
+#[cfg(feature = "panic-revert")]
+use bobcat_entry::{write_result_slice, U};
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "panic-unwind")]
+#[cfg(feature = "panic-revert")]
 use alloc::vec::Vec;
 
-#[cfg(feature = "panic-unwind")]
+#[cfg(feature = "panic-revert")]
 use core::fmt::{Result as FmtResult, Write};
 
 #[cfg(target_arch = "wasm32")]
@@ -18,11 +18,11 @@ mod wasm {
     #[allow(unused)]
     unsafe extern "C" {
         pub(crate) fn log_txt(ptr: *const u8, len: usize);
-        pub(crate) fn exit_early(code: i32);
+        pub(crate) fn exit_early(code: i32) -> !;
     }
 }
 
-#[cfg(feature = "panic-unwind")]
+#[cfg(feature = "panic-revert")]
 const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
     b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
 ) {
@@ -30,10 +30,10 @@ const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 
     Err(_) => panic!(),
 };
 
-#[cfg(feature = "panic-unwind")]
+#[cfg(feature = "panic-revert")]
 struct VecWriter<'a>(&'a mut Vec<u8>);
 
-#[cfg(feature = "panic-unwind")]
+#[cfg(feature = "panic-revert")]
 impl<'a> Write for VecWriter<'a> {
     fn write_str(&mut self, s: &str) -> FmtResult {
         self.0.extend_from_slice(s.as_bytes());
@@ -49,7 +49,7 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         let msg = alloc::format!("{_msg}");
         unsafe { wasm::log_txt(msg.as_ptr(), msg.len()) }
     }
-    #[cfg(feature = "panic-unwind")]
+    #[cfg(feature = "panic-revert")]
     {
         let mut d = ERROR_PREAMBLE.to_vec();
         let mut b = Vec::new();
@@ -60,7 +60,6 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         d.append(&mut b);
         d.resize(l + p, 0);
         write_result_slice(&b);
-        unsafe { wasm::exit_early(1) }
     }
-    core::arch::wasm32::unreachable()
+    unsafe { wasm::exit_early(1) }
 }

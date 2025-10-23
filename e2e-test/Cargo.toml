@@ -7,11 +7,11 @@ members = [
 	"counter",
 	"mul-div",
 	"beacon",
-	"panic-unwind"
+	"panic-revert"
 ]
 
 [workspace.dependencies]
-bobcat-sdk = { path = "../bobcat-sdk", features = ["alloc", "panic-unwind"] }
+bobcat-sdk = { path = "../bobcat-sdk", features = ["alloc", "panic-revert"] }
 mini-alloc = "1.0.0"
 
 [profile.release]

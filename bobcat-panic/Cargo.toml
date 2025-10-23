@@ -14,7 +14,7 @@ name = "bobcat_panic"
 alloc = []
 console = ["alloc"]
 std = []
-panic-unwind = ["alloc"]
+panic-revert = ["alloc"]
 
 [dependencies]
 bobcat-entry = { version = "0.5.0", path = "../bobcat-entry" }

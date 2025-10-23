@@ -7,20 +7,20 @@ import {Test} from "forge-std/Test.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
-interface IPanicUnwind {
+interface IPanicRevert {
     function panic() external;
 }
 
-contract PanicUnwind is Test {
-    IPanicUnwind panicUnwind;
+contract PanicRevert is Test {
+    IPanicRevert panicRevert;
 
     function setUp() public {
-        panicUnwind = IPanicUnwind(IArbFoundry(address(vm)).deployStylusCode(
-            "e2e-test/panic-unwind.wasm"
+        panicRevert = IPanicRevert(IArbFoundry(address(vm)).deployStylusCode(
+            "e2e-test/panic-revert.wasm"
         ));
     }
 
     function testPanic() public {
-        /* panicUnwind.panic(); */
+        /* panicRevert.panic(); */
     }
 }

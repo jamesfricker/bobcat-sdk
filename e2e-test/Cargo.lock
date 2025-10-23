@@ -292,7 +292,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "panic-unwind"
+name = "panic-revert"
 version = "0.1.0"
 dependencies = [
  "bobcat-sdk",

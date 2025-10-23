@@ -10,7 +10,7 @@ PROJECTS := \
 	counter \
 	mul-div \
 	beacon \
-	panic-unwind
+	panic-revert
 
 all: wasm
 
@@ -26,7 +26,7 @@ wasm: \
 	counter.wasm \
 	mul-div.wasm \
 	beacon.wasm \
-	panic-unwind.wasm
+	panic-revert.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -52,9 +52,9 @@ beacon.wasm: ${BUILT}
 	@rm -f beacon.wasm
 	@./wasm-post.sh ${RELEASE}/beacon.wasm beacon.wasm
 
-panic-unwind: ${BUILT}
-	@rm -f panic-unwind.wasm
-	@./wasm-post.sh ${RELEASE}/panic-unwind.wasm panic-unwind.wasm
+panic-revert.wasm: ${BUILT}
+	@rm -f panic-revert.wasm
+	@./wasm-post.sh ${RELEASE}/panic-revert.wasm panic-revert.wasm
 
 clean:
 	@rm -rf \
@@ -65,4 +65,4 @@ clean:
 		counter.wasm \
 		mul-div.wasm \
 		beacon.wasm \
-		panic-unwind.wasm
+		panic-revert.wasm
