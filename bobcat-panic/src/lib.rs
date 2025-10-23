@@ -61,5 +61,12 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         d.resize(l + p, 0);
         write_result_slice(&b);
     }
-    unsafe { wasm::exit_early(1) }
+    #[cfg(feature = "panic-revert")]
+    unsafe {
+        wasm::exit_early(1)
+    }
+    // Prefer the normal behaviour if the user hasn't opted into this
+    // feature. Why? Maybe the user has special handling here. SPN does!
+    #[allow(unreachable_code)]
+    core::arch::wasm32::unreachable()
 }
