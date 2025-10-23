@@ -104,9 +104,9 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
     b
 }
 
-fn wrapping_div_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
+fn wrapping_div_quo_rem_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> ([u8; C], [u8; C]) {
     if denom == &[0u8; C] {
-        return [0u8; C];
+        return ([0u8; C], [0u8; C])
     }
     let mut q = [0u8; C];
     let mut r = [0u8; C];
@@ -127,35 +127,11 @@ fn wrapping_div_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
         }
         i += 1;
     }
-    q
-}
-
-fn wrapping_mod_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
-    if denom == &[0u8; C] {
-        return [0u8; C];
-    }
-    let mut r = [0u8; C];
-    let mut one = [0u8; C];
-    one[C - 1] = 1;
-    let mut two = [0u8; C];
-    two[C - 1] = 2;
-    let mut i = 0;
-    while i < C * 8 {
-        let bit = (x[i / 8] >> (7 - (i % 8))) & 1;
-        r = wrapping_mul_b::<C>(&r, &two);
-        if bit == 1 {
-            r = wrapping_add_b::<C>(&r, &one);
-        }
-        if r >= *denom {
-            r = wrapping_sub_b::<C>(&r, denom);
-        }
-        i += 1;
-    }
-    r
+    (q, r)
 }
 
 pub fn const_wrapping_div(x: &U, y: &U) -> U {
-    U(wrapping_div_b::<32>(&x.0, &y.0))
+    U(wrapping_div_quo_rem_b::<32>(&x.0, &y.0).0)
 }
 
 #[cfg_attr(test, mutants::skip)]
@@ -562,13 +538,12 @@ impl U {
         let x = self.widening_mul(y);
         let mut d = [0u8; 64];
         d[32..].copy_from_slice(&denom.0);
-        let q = wrapping_div_b::<64>(&x, &d);
+        let (q, rem) = wrapping_div_quo_rem_b::<64>(&x, &d);
         if q[..32] != [0u8; 32] {
             return None;
         }
         let l: [u8; 32] = q[32..].try_into().unwrap();
         let l = U::from(l);
-        let rem = wrapping_mod_b::<64>(&x, &d);
         let has_carry = rem[32..] != [0u8; 32];
         Some((l, has_carry))
     }
@@ -773,7 +748,7 @@ macro_rules! from_ints {
     };
 }
 
-from_ints! { u8, u16, u32, u64, u128 }
+from_ints! { u8, u16, u32, u64, u128, usize }
 
 impl From<I> for [u8; 32] {
     fn from(x: I) -> Self {
@@ -962,7 +937,7 @@ mod test {
         #[test]
         fn wrapping_div_b_zero_denominator_yields_zero(numerator in any::<[u8; 4]>()) {
             let zero = [0u8; 4];
-            prop_assert_eq!(wrapping_div_b::<4>(&numerator, &zero), zero);
+            prop_assert_eq!(wrapping_div_quo_rem_b::<4>(&numerator, &zero).0, zero);
         }
 
         #[test]
@@ -974,7 +949,7 @@ mod test {
             let denominator_u32 = u32::from_be_bytes(denominator);
             let expected = numerator_u32 / denominator_u32;
             prop_assert_eq!(
-                wrapping_div_b::<4>(&numerator, &denominator),
+                wrapping_div_quo_rem_b::<4>(&numerator, &denominator).0,
                 expected.to_be_bytes()
             );
         }
@@ -988,7 +963,7 @@ mod test {
             let denominator_u32 = u32::from_be_bytes(denominator);
             let expected = numerator_u32 % denominator_u32;
             prop_assert_eq!(
-                wrapping_mod_b::<4>(&numerator, &denominator),
+                wrapping_div_quo_rem_b::<4>(&numerator, &denominator).1,
                 expected.to_be_bytes()
             );
         }
@@ -1026,7 +1001,7 @@ mod test {
             let denominator_u = U::from(denominator);
             prop_assert_eq!(
                 const_wrapping_div(&numerator_u, &denominator_u).0,
-                wrapping_div_b::<32>(&numerator, &denominator)
+                wrapping_div_quo_rem_b::<32>(&numerator, &denominator).0
             );
         }
 

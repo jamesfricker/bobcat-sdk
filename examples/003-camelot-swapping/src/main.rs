@@ -6,7 +6,7 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 use bobcat_sdk::{
     call::{call_word_err_vec, safe_call_unit_err_vec},
-    cd::{const_keccak_sel, read_word_slices},
+    cd::{const_keccak_sel, read_words},
     entry::*,
     interfaces::{
         camelotv3_swap_router::make_fn_exact_input_single,
@@ -32,7 +32,7 @@ const SEL: [u8; 4] = const_keccak_sel(b"makeSwap(address,address,uint256,uint256
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     assert!(!unsafe { msg_reentrant() });
     let args = read_args_safe!(args_len, { 32 * 4 + 4 });
-    let (token_in, token_out, amount_in, amount_out_min) = read_word_slices!(&args[4..], 4);
+    let (token_in, token_out, amount_in, amount_out_min) = read_words!(&args[4..], 4);
     if args[..4] != SEL {
         return 1;
     }

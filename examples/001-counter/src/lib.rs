@@ -2,7 +2,7 @@
 #![no_std]
 
 use bobcat_sdk::{
-    cd::{const_keccak_sel, read_word_slices},
+    cd::{const_keccak_sel, read_words},
     entry::*,
     maths::U,
     storage::*,
@@ -25,7 +25,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
    assert!(! unsafe { msg_reentrant() });
     let args = read_args_safe!(args_len, { 32 + 4 });
     let sel: [u8; 4] = args[..4].try_into().unwrap();
-    let w = read_word_slices!(&args[4..], 1);
+    let w = read_words!(&args[4..], 1);
     flush_guard(|| match sel {
         SEL_NUMBER => write_result_word(&storage_load(&U::ZERO)),
         SEL_SET_NUMBER => storage_store(&U::ZERO, w),

@@ -3,7 +3,7 @@ name = "bobcat-proxy"
 version = "0.5.1"
 edition = "2024"
 license = "MIT"
-description = "Bobcat SDK utilities for creating proxy code on Arbitrum Stylus."
+description = "bobcat-sdk utilities for creating proxy code on Arbitrum Stylus."
 homepage = "https://bobcat.so"
 repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 

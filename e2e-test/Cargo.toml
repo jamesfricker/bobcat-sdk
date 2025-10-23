@@ -6,11 +6,12 @@ members = [
 	"transient-exchange",
 	"counter",
 	"mul-div",
-	"beacon"
+	"beacon",
+	"panic-unwind"
 ]
 
 [workspace.dependencies]
-bobcat-sdk = { path = "../bobcat-sdk", features = ["panic", "alloc"] }
+bobcat-sdk = { path = "../bobcat-sdk", features = ["alloc", "panic-unwind"] }
 mini-alloc = "1.0.0"
 
 [profile.release]

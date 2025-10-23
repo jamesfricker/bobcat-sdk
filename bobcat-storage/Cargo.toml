@@ -3,7 +3,7 @@ name = "bobcat-storage"
 version = "0.5.0"
 edition = "2024"
 license = "MIT"
-description = "Bobcat SDK utilities for accessing storage on Arbitrum Stylus."
+description = "bobcat-sdk utilities for accessing storage on Arbitrum Stylus."
 homepage = "https://bobcat.so"
 repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 

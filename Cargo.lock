@@ -475,10 +475,14 @@ dependencies = [
 [[package]]
 name = "bobcat-panic"
 version = "0.5.0"
+dependencies = [
+ "bobcat-entry",
+ "const-hex",
+]
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "array-concat",
  "bobcat-interfaces",
@@ -488,7 +492,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",

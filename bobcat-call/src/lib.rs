@@ -464,7 +464,7 @@ macro_rules! generate_call_variants {
                     (false, Some(e)) => Err(e),
                     (false, None) => {
                         // How did this happen?
-                        Err(Vec::new())
+                        unimplemented!()
                     }
                     (true, None) | (true, Some(_)) => Ok(())
                 }

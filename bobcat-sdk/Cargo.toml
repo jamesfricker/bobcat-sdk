@@ -3,7 +3,7 @@ name = "bobcat-sdk"
 version = "0.5.1"
 edition = "2024"
 license = "MIT"
-description = "Bobcat SDK is a codesize efficent SDK for developing on Arbitrum Stylus."
+description = "bobcat-sdk is a codesize efficient Arbitrum Stylus SDK"
 homepage = "https://bobcat.so"
 repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
@@ -36,11 +36,13 @@ alloc = [
 	"bobcat-entry/alloc",
 	"bobcat-maths/alloc",
 	"bobcat-call/alloc",
-	"bobcat-console"
+	"bobcat-console",
+	"bobcat-panic/alloc"
 ]
 console = ["bobcat-panic/console"]
 arbitrary-enabled = ["bobcat-maths/arbitrary-enabled"]
 proptest-enabled = ["bobcat-maths/proptest-enabled"]
 proptest = ["proptest-enabled", "bobcat-storage/proptest"]
 panic = ["bobcat-panic"]
+panic-unwind = ["bobcat-panic", "bobcat-panic/panic-unwind"]
 dont-define-symbols = ["bobcat-entry/dont-define-symbols"]

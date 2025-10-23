@@ -11,5 +11,11 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 name = "bobcat_panic"
 
 [features]
-console = []
+alloc = []
+console = ["alloc"]
 std = []
+panic-unwind = ["alloc"]
+
+[dependencies]
+bobcat-entry = { version = "0.5.0", path = "../bobcat-entry" }
+const-hex.workspace = true

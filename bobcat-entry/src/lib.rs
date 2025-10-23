@@ -10,7 +10,7 @@ pub use bobcat_maths::U;
 
 pub type Address = [u8; 20];
 
-pub use bobcat_cd::read_word_slices;
+pub use bobcat_cd::read_words;
 
 #[cfg(target_arch = "wasm32")]
 mod impls {

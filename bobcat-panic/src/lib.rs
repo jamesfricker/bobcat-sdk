@@ -1,13 +1,43 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "console")]
+#[cfg(feature = "panic-unwind")]
+use bobcat_entry::{U, write_result_slice};
+
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(all(target_arch = "wasm32", feature = "console"))]
+#[cfg(feature = "panic-unwind")]
+use alloc::vec::Vec;
+
+#[cfg(feature = "panic-unwind")]
+use core::fmt::{Result as FmtResult, Write};
+
+#[cfg(target_arch = "wasm32")]
 mod wasm {
     #[link(wasm_import_module = "vm_hooks")]
+    #[allow(unused)]
     unsafe extern "C" {
         pub(crate) fn log_txt(ptr: *const u8, len: usize);
+        pub(crate) fn exit_early(code: i32);
+    }
+}
+
+#[cfg(feature = "panic-unwind")]
+const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
+    b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
+) {
+    Ok(v) => v,
+    Err(_) => panic!(),
+};
+
+#[cfg(feature = "panic-unwind")]
+struct VecWriter<'a>(&'a mut Vec<u8>);
+
+#[cfg(feature = "panic-unwind")]
+impl<'a> Write for VecWriter<'a> {
+    fn write_str(&mut self, s: &str) -> FmtResult {
+        self.0.extend_from_slice(s.as_bytes());
+        Ok(())
     }
 }
 
@@ -18,6 +48,19 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     {
         let msg = alloc::format!("{_msg}");
         unsafe { wasm::log_txt(msg.as_ptr(), msg.len()) }
+    }
+    #[cfg(feature = "panic-unwind")]
+    {
+        let mut d = ERROR_PREAMBLE.to_vec();
+        let mut b = Vec::new();
+        write!(VecWriter(&mut b), "{}", _msg).unwrap();
+        let l = b.len();
+        let p = (32 - (l % 32)) % 32;
+        d.extend_from_slice(&U::from(l).0);
+        d.append(&mut b);
+        d.resize(l + p, 0);
+        write_result_slice(&b);
+        unsafe { wasm::exit_early(1) }
     }
     core::arch::wasm32::unreachable()
 }
