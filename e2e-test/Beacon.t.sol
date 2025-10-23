@@ -44,7 +44,7 @@ contract HelloWorld2 {
     }
 }
 
-contract Beacon is Test {
+contract TestBeacon is Test {
     IBeaconDeployer beaconDeployer;
     Beacon beacon;
     HelloWorld1 helloWorld1;

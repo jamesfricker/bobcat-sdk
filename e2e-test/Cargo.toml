@@ -18,5 +18,5 @@ mini-alloc = "1.0.0"
 codegen-units = 1
 strip = true
 lto = true
-panic = "abort"
+panic = "unwind"
 opt-level = "z"
