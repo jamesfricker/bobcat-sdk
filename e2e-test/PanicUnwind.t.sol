@@ -11,7 +11,7 @@ interface IPanicUnwind {
     function panic() external;
 }
 
-contract ChainlinkVrfTest is Test {
+contract PanicUnwind is Test {
     IPanicUnwind panicUnwind;
 
     function setUp() public {
