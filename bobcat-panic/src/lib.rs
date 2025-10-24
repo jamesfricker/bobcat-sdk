@@ -14,10 +14,14 @@ use core::fmt::{Result as FmtResult, Write};
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
+    #[link(wasm_import_module = "console")]
+    unsafe extern "C" {
+        pub(crate) fn log_txt(ptr: *const u8, len: usize);
+    }
+
     #[link(wasm_import_module = "vm_hooks")]
     #[allow(unused)]
     unsafe extern "C" {
-        pub(crate) fn log_txt(ptr: *const u8, len: usize);
         pub(crate) fn exit_early(code: i32) -> !;
     }
 }
@@ -63,7 +67,7 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         unsafe { wasm::exit_early(1) }
     }
     // Prefer the normal behaviour if the user hasn't opted into this
-    // feature. Why? Maybe the user has special handling here. SPN does!
-    #[allow(unreachable_code)]
+    // feature. Maybe it's better to wipe out the revertdata if this happens,
+    // the other behaviour is different.
     core::arch::wasm32::unreachable()
 }
