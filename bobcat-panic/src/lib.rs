@@ -49,21 +49,18 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         let msg = alloc::format!("{_msg}");
         unsafe { wasm::log_txt(msg.as_ptr(), msg.len()) }
     }
+    let mut d = ERROR_PREAMBLE.to_vec();
+    let mut b = Vec::new();
     #[cfg(feature = "panic-revert")]
     {
-        let mut d = ERROR_PREAMBLE.to_vec();
-        let mut b = Vec::new();
-        write!(VecWriter(&mut b), "{}", _msg).unwrap();
+        write!(VecWriter(&mut b), "{_msg}").unwrap();
         let l = b.len();
         let p = (32 - (l % 32)) % 32;
         d.extend_from_slice(&U::from(l).0);
         d.append(&mut b);
-        d.resize(l + p, 0);
-        write_result_slice(&b);
-    }
-    #[cfg(feature = "panic-revert")]
-    unsafe {
-        wasm::exit_early(1)
+        d.resize(d.len() + p, 0);
+        write_result_slice(&d);
+        unsafe { wasm::exit_early(1) }
     }
     // Prefer the normal behaviour if the user hasn't opted into this
     // feature. Why? Maybe the user has special handling here. SPN does!
