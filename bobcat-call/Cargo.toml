@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-call"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 license = "MIT"
 description = "bobcat-sdk utilities for calling contracts on Arbitrum Stylus."
@@ -14,5 +14,5 @@ name = "bobcat_call"
 alloc = []
 
 [dependencies]
-bobcat-maths = { version = "0.5.0", path = "../bobcat-maths" }
+bobcat-maths = { version = "0.6.0", path = "../bobcat-maths" }
 paste = "1.0.15"

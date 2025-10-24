@@ -15,6 +15,7 @@ use core::fmt::{Result as FmtResult, Write};
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     #[link(wasm_import_module = "console")]
+    #[cfg(feature = "console")]
     unsafe extern "C" {
         pub(crate) fn log_txt(ptr: *const u8, len: usize);
     }
@@ -53,10 +54,10 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         let msg = alloc::format!("{_msg}");
         unsafe { wasm::log_txt(msg.as_ptr(), msg.len()) }
     }
-    let mut d = ERROR_PREAMBLE.to_vec();
-    let mut b = Vec::new();
     #[cfg(feature = "panic-revert")]
     {
+        let mut d = ERROR_PREAMBLE.to_vec();
+        let mut b = Vec::new();
         write!(VecWriter(&mut b), "{_msg}").unwrap();
         let l = b.len();
         let p = (32 - (l % 32)) % 32;
@@ -69,5 +70,6 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     // Prefer the normal behaviour if the user hasn't opted into this
     // feature. Maybe it's better to wipe out the revertdata if this happens,
     // the other behaviour is different.
+    #[allow(unreachable_code)]
     core::arch::wasm32::unreachable()
 }
