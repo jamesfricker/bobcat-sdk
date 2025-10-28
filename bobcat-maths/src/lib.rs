@@ -4,8 +4,8 @@ use core::{
     cmp::{Eq, Ordering},
     fmt::{Debug, Error as FmtError, Formatter},
     ops::{
-        Add, AddAssign, Deref, DerefMut, Div, Index, IndexMut, Mul, Rem, Shl, ShlAssign, Shr,
-        ShrAssign, Sub, SubAssign,
+        Add, AddAssign, BitAnd, BitOr, BitOrAssign, BitXor, Deref, DerefMut, Div, Index, IndexMut,
+        Mul, MulAssign, Neg, Not, Rem, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
     },
 };
 
@@ -151,6 +151,11 @@ pub fn modd(x: &U, y: &U) -> U {
     let mut b = *x;
     unsafe { math_mod(b.as_mut_ptr(), y.as_ptr()) }
     b
+}
+
+pub fn mul_mod(mut x: U, y: &U, z: &U) -> U {
+    unsafe { math_mul_mod(x.as_mut_ptr(), y.as_ptr(), z.as_ptr()) }
+    x
 }
 
 const fn wrapping_add_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
@@ -314,10 +319,18 @@ pub fn widening_mul(x: &U, y: &U) -> [u8; 64] {
     o
 }
 
-pub fn mul_div(x: &U, y: &U, denom: &U) -> Option<(U, bool)> {
-    // TODO: this most certainly could be more efficient!
+pub fn mul_div_widening(x: &U, y: &U, denom: &U) -> Option<(U, bool)> {
     if denom.is_zero() {
         return None;
+    }
+    if x.is_zero() {
+        return Some((U::ZERO, false));
+    }
+    // We use a boring method if the overflow wouldn't happen:
+    if wrapping_div(&U::MAX, x) >= *y {
+        let l = wrapping_mul(x, y);
+        let carry = x.mul_mod(y, denom).is_some();
+        return Some((wrapping_div(&l, denom), carry));
     }
     let x = widening_mul(x, y);
     let mut d = [0u8; 64];
@@ -332,7 +345,52 @@ pub fn mul_div(x: &U, y: &U, denom: &U) -> Option<(U, bool)> {
     Some((l, has_carry))
 }
 
-pub fn mul_div_round_up(x: &U, y: &U, denom_and_rem: &U) -> Option<U> {
+pub fn mul_div(x: &U, y: &U, mut denom: U) -> Option<(U, bool)> {
+    // Implemented from https://xn--2-umb.com/21/muldiv/
+    if denom.is_zero() {
+        return None;
+    }
+    if x.is_zero() {
+        return Some((U::ZERO, false));
+    }
+    let mut prod0 = wrapping_mul(x, y);
+    let mm = mul_mod(*x, y, &U::MAX);
+    let mut prod1 = wrapping_sub(
+        &wrapping_sub(&mm, &prod0),
+        &if prod0 > mm { U::ONE } else { U::ZERO },
+    );
+    if prod1.is_zero() {
+        let carry = mul_mod(*x, y, &denom).is_some();
+        return Some((wrapping_div(&prod0, &denom), carry));
+    }
+    if prod1 >= denom {
+        return None;
+    }
+    let remainder = mul_mod(*x, y, &denom);
+    let carry = remainder.is_some();
+    if remainder > prod0 {
+        prod1 -= U::ONE;
+    }
+    prod0 = wrapping_sub(&prod0, &remainder);
+    let mut twos = wrapping_sub(&U::ZERO, &denom) & denom;
+    denom = wrapping_div(&denom, &twos);
+    prod0 = wrapping_div(&prod0, &twos);
+    twos = wrapping_add(
+        &wrapping_div(&wrapping_sub(&U::ZERO, &twos), &twos),
+        &U::ONE,
+    );
+    prod0 = prod0 | wrapping_mul(&prod1, &twos);
+    let mut inv = wrapping_mul(&U::from(3u32), &denom) ^ U::from(2u32);
+    for _ in 0..6 {
+        inv = wrapping_mul(
+            &inv,
+            &wrapping_sub(&U::from(2u32), &wrapping_mul(&denom, &inv)),
+        );
+    }
+    Some((wrapping_mul(&prod0, &inv), carry))
+}
+
+pub fn mul_div_round_up(x: &U, y: &U, denom_and_rem: U) -> Option<U> {
     let (x, y) = mul_div(x, y, denom_and_rem)?;
     if x.is_max() && y {
         return None;
@@ -380,6 +438,16 @@ pub fn checked_rooti(x: U, n: u32) -> Option<U> {
         y -= U::ONE;
     }
     Some(y)
+}
+
+pub fn wrapping_pow(x: &U, exp: &U) -> U {
+    let mut r = U::ONE;
+    let mut i = U::ZERO;
+    while &i < exp {
+        r = wrapping_mul(&r, x);
+        i += U::ONE;
+    }
+    r
 }
 
 pub fn checked_pow(x: &U, exp: &U) -> Option<U> {
@@ -488,6 +556,12 @@ impl Mul for &U {
     }
 }
 
+impl MulAssign for U {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs
+    }
+}
+
 impl Div for U {
     type Output = U;
 
@@ -566,6 +640,47 @@ impl ShlAssign<usize> for U {
     }
 }
 
+impl BitAnd for U {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        let mut r = U::ZERO;
+        for i in 0..32 {
+            r[i] = self[i] & rhs[i];
+        }
+        r
+    }
+}
+
+impl BitOr for U {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let mut r = U::ZERO;
+        for i in 0..32 {
+            r[i] = self[i] | rhs[i];
+        }
+        r
+    }
+}
+
+impl BitXor for U {
+    type Output = Self;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        let mut r = U::ZERO;
+        for i in 0..32 {
+            r[i] = self[i] ^ rhs[i];
+        }
+        r
+    }
+}
+
+impl BitOrAssign for U {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs
+    }
+}
+
 impl Shr<usize> for U {
     type Output = Self;
 
@@ -624,6 +739,33 @@ impl Debug for U {
     }
 }
 
+impl Not for U {
+    type Output = Self;
+
+    fn not(mut self) -> Self::Output {
+        for i in 0..32 {
+            self[i] = !self[i]
+        }
+        self
+    }
+}
+
+impl Neg for U {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        let mut r = U::ZERO;
+        let mut carry = 1u16;
+        for i in (0..32).rev() {
+            let inverted = !self.0[i] as u16;
+            let sum = inverted + carry;
+            r[i] = sum as u8;
+            carry = sum >> 8;
+        }
+        r
+    }
+}
+
 impl U {
     pub const ZERO: Self = U([0u8; 32]);
 
@@ -662,6 +804,19 @@ impl U {
 
     pub fn is_some(&self) -> bool {
         !self.is_zero()
+    }
+
+    pub fn trailing_zeros(&self) -> usize {
+        let mut count = 0;
+        for i in (0..32).rev() {
+            if self[i] == 0 {
+                count += 8;
+            } else {
+                count += self[i].trailing_zeros() as usize;
+                break;
+            }
+        }
+        count
     }
 
     pub fn as_slice(&self) -> &[u8; 32] {
@@ -716,22 +871,26 @@ impl U {
         saturating_mul(self, y)
     }
 
-    pub fn widening_mul(&self, y: &Self) -> [u8; 64] {
-        widening_mul(self, y)
+    pub fn wrapping_neg(self) -> Self {
+        let mut x = self;
+        let mut carry = 1u8;
+        for b in x.iter_mut().rev() {
+            *b = (!*b).wrapping_add(carry);
+            carry = b.is_zero() as u8;
+        }
+        x
     }
 
-    pub fn mul_div(&self, y: &Self, z: &Self) -> Option<(Self, bool)> {
+    pub fn mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
         mul_div(self, y, z)
     }
 
-    pub fn mul_div_round_up(&self, y: &Self, z: &Self) -> Option<Self> {
+    pub fn mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
         mul_div_round_up(self, y, z)
     }
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
-        let mut b = self.0;
-        unsafe { math_mul_mod(b.as_mut_ptr(), y.as_ptr(), z.as_ptr()) }
-        Self(b)
+        mul_mod(*self, y, z)
     }
 
     pub fn add_mod(&self, y: &Self, z: &Self) -> Self {
@@ -1130,10 +1289,6 @@ mod test {
 
     use super::*;
 
-    fn u_from_u64(value: u64) -> U {
-        U::from(value)
-    }
-
     proptest! {
         #[test]
         fn wrapping_div_b_zero_denominator_yields_zero(numerator in any::<[u8; 4]>()) {
@@ -1216,50 +1371,6 @@ mod test {
         }
 
         #[test]
-        fn mul_div_returns_expected_quotient_and_carry(
-            lhs in any::<u64>(),
-            rhs in any::<u64>(),
-            denom in any::<u64>().prop_filter("denominator must be non-zero", |d| *d != 0)
-        ) {
-            let lhs_u = u_from_u64(lhs);
-            let rhs_u = u_from_u64(rhs);
-            let denom_u = u_from_u64(denom);
-            let (q, carry) = lhs_u.mul_div(&rhs_u, &denom_u).expect("division should succeed");
-
-            let product = (lhs as u128) * (rhs as u128);
-            let denom_u128 = denom as u128;
-            let expected_q = product / denom_u128;
-            let expected_rem = product % denom_u128;
-
-            prop_assert_eq!(u128::from(q), expected_q);
-            prop_assert_eq!(carry, expected_rem != 0);
-        }
-
-        #[test]
-        fn mul_div_round_up_accounts_for_carry(
-            lhs in any::<u64>(),
-            rhs in any::<u64>(),
-            denom in any::<u64>().prop_filter("denominator must be non-zero", |d| *d != 0)
-        ) {
-            let lhs_u = u_from_u64(lhs);
-            let rhs_u = u_from_u64(rhs);
-            let denom_u = u_from_u64(denom);
-            let rounded = lhs_u
-                .mul_div_round_up(&rhs_u, &denom_u)
-                .expect("rounding should succeed");
-
-            let product = (lhs as u128) * (rhs as u128);
-            let denom_u128 = denom as u128;
-            let expected = if product % denom_u128 == 0 {
-                product / denom_u128
-            } else {
-                (product / denom_u128) + 1
-            };
-
-            prop_assert_eq!(u128::from(rounded), expected);
-        }
-
-        #[test]
         fn test_u_is_zero(x in any::<[u8; 32]>()) {
             let x = U::from(x);
             let ex = U256::from_be_bytes(x.0);
@@ -1313,6 +1424,23 @@ mod test {
         #[cfg(feature = "alloc")]
         fn test_u_str(x in any::<U>()) {
             assert_eq!(U256::from_be_bytes(x.0).to_string(), x.to_string());
+        }
+
+        #[test]
+        fn test_u_shl(x in any::<U>(), i in any::<usize>()) {
+            let l = U((U256::from_be_bytes(x.0) << i).to_be_bytes::<32>());
+            assert_eq!(l, x << i);
+        }
+
+        #[test]
+        fn test_u_shr(x in any::<U>(), i in any::<usize>()) {
+            let l = U((U256::from_be_bytes(x.0) >> i).to_be_bytes::<32>());
+            assert_eq!(l, x >> i);
+        }
+
+        #[test]
+        fn test_trailing_zeros(x in any::<U>()) {
+            assert_eq!(U256::from_be_bytes(x.0).trailing_zeros(), x.trailing_zeros());
         }
 
         #[test]

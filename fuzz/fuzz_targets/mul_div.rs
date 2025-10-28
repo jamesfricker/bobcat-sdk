@@ -5,7 +5,7 @@ use libfuzzer_sys::{
     fuzz_target,
 };
 
-use bobcat_maths::{U};
+use bobcat_maths::{mul_div, U};
 
 use ruint::aliases::{U256};
 
@@ -39,14 +39,14 @@ fuzz_target!(|mul: MulDiv| {
         U256::from_be_bytes(y.0),
         U256::from_be_bytes(z.0),
     );
-    let v = x.mul_div(&y, &z);
+    let v = mul_div(&x, &y, z);
     match (e, v) {
-        (Some((e, e0)), Some((v, v0))) => {
-            assert_eq!((e.to_be_bytes::<32>(), e0), (v.0, v0), "{e} != {v}")
+        (Some((e, ec)), Some((v, vc))) => {
+            assert_eq!((U(e.to_be_bytes::<32>()), ec), (v, vc), "({x}, {y}, {z}), ({e}, {ec}) != ({v}, {vc})")
         },
         (None, None) => (),
         (l, r) => {
-            panic!("{l:?} != {r:?}");
+            panic!("({x}, {y}, {z}), {l:?} != {r:?}");
         }
     }
 });
