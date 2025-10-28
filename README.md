@@ -7,8 +7,8 @@ bobcat-sdk is an opinionated SDK for Arbitrum Stylus, intended for advanced user
 
 ## Codesize savings
 
-bobcat-sdk is smaller than stylus-sdk. Check `examples/` to see a comparison of a few
-items, and some discussion of the methodology.
+bobcat-sdk is smaller than stylus-sdk. Check `examples` to see a comparison of a few
+testing items, and some discussion of the methodology.
 
 ## Disclaimer
 

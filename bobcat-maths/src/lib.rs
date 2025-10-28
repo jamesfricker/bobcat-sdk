@@ -2,7 +2,11 @@
 
 use core::{
     cmp::{Eq, Ordering},
-    ops::{Add, Deref, DerefMut, Div, Index, Mul, Rem, Sub},
+    fmt::{Debug, Error as FmtError, Formatter},
+    ops::{
+        Add, AddAssign, Deref, DerefMut, Div, Index, IndexMut, Mul, Rem, Shl, ShlAssign, Shr,
+        ShrAssign, Sub, SubAssign,
+    },
 };
 
 use num_traits::{One, Zero};
@@ -13,8 +17,8 @@ use borsh::{BorshDeserialize, BorshSerialize};
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "std")]
-use core::fmt::{Display, Formatter};
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec};
 
 pub type Address = [u8; 20];
 
@@ -83,14 +87,14 @@ mod alloy {
 #[cfg(feature = "alloy-enabled")]
 use alloy::*;
 
-#[derive(Copy, Clone, Debug, PartialEq, Hash)]
+#[derive(Copy, Clone, PartialEq, Hash)]
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
 #[repr(transparent)]
 pub struct U(pub [u8; 32]);
 
-#[derive(Copy, Clone, Debug, PartialEq, Hash)]
+#[derive(Copy, Clone, PartialEq, Hash, Debug)]
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
@@ -106,7 +110,7 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
 
 fn wrapping_div_quo_rem_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> ([u8; C], [u8; C]) {
     if denom == &[0u8; C] {
-        return ([0u8; C], [0u8; C])
+        return ([0u8; C], [0u8; C]);
     }
     let mut q = [0u8; C];
     let mut r = [0u8; C];
@@ -267,12 +271,125 @@ pub fn checked_mul(x: &U, y: &U) -> Option<U> {
         None
     } else {
         let z = x.mul_mod(y, &U::MAX);
-        if z.is_zero() { Some(U::MAX) } else { Some(z) }
+        if z.is_zero() {
+            Some(U::MAX)
+        } else {
+            Some(z)
+        }
     }
 }
 
 pub fn saturating_mul(x: &U, y: &U) -> U {
     checked_mul(x, y).unwrap_or(U::MAX)
+}
+
+pub fn widening_mul(x: &U, y: &U) -> [u8; 64] {
+    let shift_128 = &U([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0,
+    ]);
+    let x_hi = x / shift_128;
+    let x_lo = x % shift_128;
+    let y_hi = y / shift_128;
+    let y_lo = y % shift_128;
+    let t0 = x_lo.mul_mod(&y_lo, &U::MAX);
+    let t1 = x_hi.mul_mod(&y_lo, &U::MAX);
+    let t2 = x_lo.mul_mod(&y_hi, &U::MAX);
+    let t3 = x_hi.mul_mod(&y_hi, &U::MAX);
+    let t0_hi = &t0 / shift_128;
+    let t0_lo = &t0 % shift_128;
+    let t1_hi = &t1 / shift_128;
+    let t1_lo = &t1 % shift_128;
+    let t2_hi = &t2 / shift_128;
+    let t2_lo = &t2 % shift_128;
+    let mid = (t0_hi + t1_lo) + t2_lo;
+    let mid_hi = &mid / shift_128;
+    let mid_lo = &mid % shift_128;
+    let mid_lo_shifted = mid_lo.mul_mod(shift_128, &U::MAX);
+    let out_low = t0_lo + mid_lo_shifted;
+    let out_high = t3 + t1_hi + t2_hi + mid_hi;
+    let mut o = [0u8; 64];
+    o[..32].copy_from_slice(&out_high.0);
+    o[32..].copy_from_slice(&out_low.0);
+    o
+}
+
+pub fn mul_div(x: &U, y: &U, denom: &U) -> Option<(U, bool)> {
+    // TODO: this most certainly could be more efficient!
+    if denom.is_zero() {
+        return None;
+    }
+    let x = widening_mul(x, y);
+    let mut d = [0u8; 64];
+    d[32..].copy_from_slice(&denom.0);
+    let (q, rem) = wrapping_div_quo_rem_b::<64>(&x, &d);
+    if q[..32] != [0u8; 32] {
+        return None;
+    }
+    let l: [u8; 32] = q[32..].try_into().unwrap();
+    let l = U::from(l);
+    let has_carry = rem[32..] != [0u8; 32];
+    Some((l, has_carry))
+}
+
+pub fn mul_div_round_up(x: &U, y: &U, denom_and_rem: &U) -> Option<U> {
+    let (x, y) = mul_div(x, y, denom_and_rem)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
+/// Rooti iterative method based on the 9lives implementation. Using this
+/// operation is the equivalent of pow(x, 1/n).
+pub fn checked_rooti(x: U, n: u32) -> Option<U> {
+    if n == 0 {
+        return None;
+    }
+    if x.is_zero() {
+        return Some(U::ZERO);
+    }
+    if n == 1 {
+        return Some(x);
+    }
+    // Due to the nature of this iterative method, we hardcode some
+    // values to have consistency with the 9lives reference.
+    if x == U::from(4u32) && n == 2 {
+        return Some(U::from(2u32));
+    }
+    let n_u256 = U::from(n);
+    let n_1 = n_u256 - U::ONE;
+    // Initial guess: 2^ceil(bits(x)/n)
+    let mut b = 0;
+    let mut t = x;
+    while t.is_some() {
+        b += 1;
+        t >>= 1;
+    }
+    let shift = (b + n as usize - 1) / n as usize;
+    let mut z = U::ONE << shift;
+    let mut y = x;
+    // Newton's method:
+    while z < y {
+        y = z;
+        let p = z.checked_pow(&n_1)?;
+        z = ((x / p) + (z * n_1)) / n_u256;
+    }
+    // Correct overshoot:
+    if y.checked_pow(&n_u256)? > x {
+        y -= U::ONE;
+    }
+    Some(y)
+}
+
+pub fn checked_pow(x: &U, exp: &U) -> Option<U> {
+    let mut r = U::ONE;
+    let mut i = U::ZERO;
+    while &i < exp {
+        r = checked_mul(&r, x)?;
+        i += U::ONE;
+    }
+    Some(r)
 }
 
 impl Add for U {
@@ -303,6 +420,12 @@ impl Add for &U {
     }
 }
 
+impl AddAssign for U {
+    fn add_assign(&mut self, o: Self) {
+        *self = *self + o;
+    }
+}
+
 impl Sub for U {
     type Output = U;
 
@@ -328,6 +451,12 @@ impl Sub for &U {
                 wrapping_sub(self, rhs)
             }
         }
+    }
+}
+
+impl SubAssign for U {
+    fn sub_assign(&mut self, o: Self) {
+        *self = *self - o;
     }
 }
 
@@ -403,6 +532,74 @@ impl Rem for &U {
     }
 }
 
+impl Shl<usize> for U {
+    type Output = Self;
+
+    fn shl(self, shift: usize) -> Self::Output {
+        if shift >= 256 {
+            return U::ZERO;
+        }
+        let mut result = [0u8; 32];
+        let byte_shift = shift / 8;
+        let bit_shift = shift % 8;
+        if bit_shift == 0 {
+            for i in 0..(32 - byte_shift) {
+                result[i] = self.0[i + byte_shift];
+            }
+        } else {
+            let mut carry = 0u8;
+            for i in (byte_shift..32).rev() {
+                let src_idx = i;
+                let dst_idx = i - byte_shift;
+                let byte = self.0[src_idx];
+                result[dst_idx] = (byte << bit_shift) | carry;
+                carry = byte >> (8 - bit_shift);
+            }
+        }
+        U(result)
+    }
+}
+
+impl ShlAssign<usize> for U {
+    fn shl_assign(&mut self, rhs: usize) {
+        *self = *self << rhs
+    }
+}
+
+impl Shr<usize> for U {
+    type Output = Self;
+
+    fn shr(self, shift: usize) -> Self::Output {
+        if shift >= 256 {
+            return U::ZERO;
+        }
+        let mut result = U::ZERO;
+        let byte_shift = shift / 8;
+        let bit_shift = shift % 8;
+        if bit_shift == 0 {
+            for i in byte_shift..32 {
+                result[i] = self.0[i - byte_shift];
+            }
+        } else {
+            let mut carry = 0u8;
+            for i in 0..(32 - byte_shift) {
+                let src_idx = i;
+                let dst_idx = i + byte_shift;
+                let byte = self.0[src_idx];
+                result[dst_idx] = (byte >> bit_shift) | carry;
+                carry = byte << (8 - bit_shift);
+            }
+        }
+        result
+    }
+}
+
+impl ShrAssign<usize> for U {
+    fn shr_assign(&mut self, rhs: usize) {
+        *self = *self >> rhs
+    }
+}
+
 impl Eq for U {}
 
 impl PartialOrd for U {
@@ -414,6 +611,16 @@ impl PartialOrd for U {
 impl Ord for U {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
+    }
+}
+
+impl Debug for U {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        let mut b = [0u8; 20 * 2];
+        let Ok(s) = const_hex::encode_to_str(self.0, &mut b) else {
+            return Err(FmtError);
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -431,8 +638,26 @@ impl U {
         self.0[31] == 1
     }
 
-    pub fn is_zero(&self) -> bool {
-        *self == Self::ZERO
+    pub const fn is_zero(&self) -> bool {
+        let mut i = 0;
+        while i < 32 {
+            if self.0[i] != 0 {
+                return false;
+            }
+            i += 1;
+        }
+        true
+    }
+
+    pub const fn is_max(&self) -> bool {
+        let mut i = 0;
+        while i < 32 {
+            if self.0[i] != u8::MAX {
+                return false;
+            }
+            i += 1;
+        }
+        true
     }
 
     pub fn is_some(&self) -> bool {
@@ -457,6 +682,10 @@ impl U {
 
     pub fn checked_div(&self, y: &Self) -> Option<Self> {
         checked_div(self, y)
+    }
+
+    pub fn checked_pow(&self, exp: &U) -> Option<Self> {
+        checked_pow(self, exp)
     }
 
     pub fn wrapping_add(&self, y: &Self) -> U {
@@ -487,6 +716,18 @@ impl U {
         saturating_mul(self, y)
     }
 
+    pub fn widening_mul(&self, y: &Self) -> [u8; 64] {
+        widening_mul(self, y)
+    }
+
+    pub fn mul_div(&self, y: &Self, z: &Self) -> Option<(Self, bool)> {
+        mul_div(self, y, z)
+    }
+
+    pub fn mul_div_round_up(&self, y: &Self, z: &Self) -> Option<Self> {
+        mul_div_round_up(self, y, z)
+    }
+
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
         let mut b = self.0;
         unsafe { math_mul_mod(b.as_mut_ptr(), y.as_ptr(), z.as_ptr()) }
@@ -499,64 +740,14 @@ impl U {
         Self(b)
     }
 
-    pub fn widening_mul(&self, y: &U) -> [u8; 64] {
-        let shift_128 = &U([
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ]);
-        let x_hi = self / shift_128;
-        let x_lo = self % shift_128;
-        let y_hi = y / shift_128;
-        let y_lo = y % shift_128;
-        let t0 = x_lo.mul_mod(&y_lo, &U::MAX);
-        let t1 = x_hi.mul_mod(&y_lo, &U::MAX);
-        let t2 = x_lo.mul_mod(&y_hi, &U::MAX);
-        let t3 = x_hi.mul_mod(&y_hi, &U::MAX);
-        let t0_hi = &t0 / shift_128;
-        let t0_lo = &t0 % shift_128;
-        let t1_hi = &t1 / shift_128;
-        let t1_lo = &t1 % shift_128;
-        let t2_hi = &t2 / shift_128;
-        let t2_lo = &t2 % shift_128;
-        let mid = (t0_hi + t1_lo) + t2_lo;
-        let mid_hi = &mid / shift_128;
-        let mid_lo = &mid % shift_128;
-        let mid_lo_shifted = mid_lo.mul_mod(shift_128, &U::MAX);
-        let out_low = t0_lo + mid_lo_shifted;
-        let out_high = t3 + t1_hi + t2_hi + mid_hi;
-        let mut o = [0u8; 64];
-        o[..32].copy_from_slice(&out_high.0);
-        o[32..].copy_from_slice(&out_low.0);
-        o
-    }
-
-    pub fn mul_div(&self, y: &U, denom: &U) -> Option<(U, bool)> {
-        // TODO: this most certainly could be more efficient!
-        if denom.is_zero() {
-            return None;
-        }
-        let x = self.widening_mul(y);
-        let mut d = [0u8; 64];
-        d[32..].copy_from_slice(&denom.0);
-        let (q, rem) = wrapping_div_quo_rem_b::<64>(&x, &d);
-        if q[..32] != [0u8; 32] {
-            return None;
-        }
-        let l: [u8; 32] = q[32..].try_into().unwrap();
-        let l = U::from(l);
-        let has_carry = rem[32..] != [0u8; 32];
-        Some((l, has_carry))
-    }
-
-    pub fn mul_div_round_up(&self, y: &U, denom_and_rem: &U) -> Option<U> {
-        let (x, y) = self.mul_div(y, denom_and_rem)?;
-        Some(if y { x + U::ONE } else { x })
+    pub fn checked_rooti(self, x: u32) -> Option<Self> {
+        checked_rooti(self, x)
     }
 }
 
-#[cfg(feature = "std")]
-impl Display for U {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+#[cfg(feature = "alloc")]
+impl core::fmt::Display for U {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let mut result = vec![0u8];
         for &byte in &self.0 {
             let mut carry = byte as u32;
@@ -657,6 +848,12 @@ impl Index<usize> for U {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl IndexMut<usize> for U {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
     }
 }
 
@@ -786,7 +983,11 @@ fn i_div(x: &I, y: &I) -> I {
 
 fn i_rem(x: &I, y: &I) -> I {
     let r = modd(&x.abs(), &y.abs());
-    if x.is_neg() { I(r.0).neg() } else { I(r.0) }
+    if x.is_neg() {
+        I(r.0).neg()
+    } else {
+        I(r.0)
+    }
 }
 
 impl Add for I {

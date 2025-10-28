@@ -12,13 +12,13 @@ extern crate alloc;
 
 use bobcat_sdk::{
     call::call_word_err_vec, cd::*, entry::*,
-    interfaces::chainlink_vrf::make_fn_request_words_in_native_no_bytes, storage::*,
+    interfaces::chainlink_vrf::make_fn_request_words_in_native_no_bytes, maths::U, storage::*,
 };
 
 type Address = [u8; 20];
 
 pub const ADDR_CHAINLINK_VRF_COORDINATOR_SEPOLIA: Address =
-    address!(b"50d47e4142598E3411aA864e08a44284e471AC6f");
+    address!(b"29576aB8152A09b9DC634804e4aDE73dA1f3a3CC");
 
 pub const SEL_INITIATE: [u8; 4] = const_keccak_sel(b"initiate()");
 
@@ -31,7 +31,7 @@ pub const SEL_WAS_CALLED: [u8; 4] = const_keccak_sel(b"wasCalled()");
 pub const WORD_COUNT: usize = 5;
 
 // We're going to request 5 words from Chainlink. We need space for the
-// length, the offset:
+// length, the offset, when we receive the callback:
 pub const WORD_BUFFER: usize = (WORD_COUNT + 2) * 32;
 
 #[unsafe(no_mangle)]
@@ -44,10 +44,18 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
                 // This allocates a word for a simple U256 return, or reverts with a vec
                 // if that's what's needed. For the allocation of the request for the
                 // random words, we don't need any values, so we use the simple version.
+                panic!(
+                    "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC {}",
+                    const_hex::encode(&make_fn_request_words_in_native_no_bytes(
+                        100_000,
+                        2,
+                        WORD_COUNT as u32
+                    ))
+                );
                 write_result_word(&revert_if_bad_call_slice_vec!(call_word_err_vec(
                     ADDR_CHAINLINK_VRF_COORDINATOR_SEPOLIA,
-                    &make_fn_request_words_in_native_no_bytes(100, 2, WORD_COUNT as u32),
-                    &U::ZERO,
+                    &make_fn_request_words_in_native_no_bytes(100_000, 2, WORD_COUNT as u32),
+                    &msg_value(),
                     u64::MAX
                 )));
                 0
@@ -60,7 +68,9 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
                 write_result_bool(storage_load_bool(&U::ZERO));
                 0
             }
-            _ => 1,
+            _ => {
+                panic!("{:?}", &args[4..]);
+            }
         }
     })
 }
