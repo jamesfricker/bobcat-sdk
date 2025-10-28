@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-panic"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
 license = "MIT"
 description = "Bobcat utilities with a panic handler on Arbitrum Stylus."
@@ -17,5 +17,5 @@ std = []
 panic-revert = ["alloc"]
 
 [dependencies]
-bobcat-entry = { version = "0.6.0", path = "../bobcat-entry" }
+bobcat-entry = { version = "0.6.1", path = "../bobcat-entry" }
 const-hex.workspace = true

@@ -46,7 +46,7 @@ checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
 name = "bobcat-call"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bobcat-maths",
  "paste",
@@ -54,7 +54,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-cd"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -64,11 +64,11 @@ dependencies = [
 
 [[package]]
 name = "bobcat-console"
-version = "0.6.0"
+version = "0.6.1"
 
 [[package]]
 name = "bobcat-create"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bobcat-maths",
  "bobcat-proxy",
@@ -77,7 +77,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-entry"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bobcat-cd",
  "bobcat-maths",
@@ -86,7 +86,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-interfaces"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "array-concat",
  "bobcat-cd",
@@ -97,7 +97,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-maths"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "cfg-if",
  "const-hex",
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-panic"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bobcat-entry",
  "const-hex",
@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "array-concat",
  "bobcat-interfaces",
@@ -125,7 +125,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",
@@ -141,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-storage"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -327,9 +327,9 @@ dependencies = [
 
 [[package]]
 name = "proptest"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bb0be07becd10686a0bb407298fb425360a5c44a663774406340c59a22de4ce"
+checksum = "bee689443a2bd0a16ab0348b52ee43e3b2d1b1f931c8aa5c9f8de4c86fbe8c40"
 dependencies = [
  "bitflags",
  "num-traits",

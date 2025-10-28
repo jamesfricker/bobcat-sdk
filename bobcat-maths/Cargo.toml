@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-maths"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
 license = "MIT"
 description = "bobcat-sdk utilities performing codesize efficient math on Arbitrum Stylus."

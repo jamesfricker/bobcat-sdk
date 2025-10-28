@@ -44,14 +44,6 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
                 // This allocates a word for a simple U256 return, or reverts with a vec
                 // if that's what's needed. For the allocation of the request for the
                 // random words, we don't need any values, so we use the simple version.
-                panic!(
-                    "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC {}",
-                    const_hex::encode(&make_fn_request_words_in_native_no_bytes(
-                        100_000,
-                        2,
-                        WORD_COUNT as u32
-                    ))
-                );
                 write_result_word(&revert_if_bad_call_slice_vec!(call_word_err_vec(
                     ADDR_CHAINLINK_VRF_COORDINATOR_SEPOLIA,
                     &make_fn_request_words_in_native_no_bytes(100_000, 2, WORD_COUNT as u32),
