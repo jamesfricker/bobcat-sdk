@@ -92,7 +92,7 @@ use impls::{
     static_call_contract as static_call,
 };
 
-fn code_size(addr: Address) -> usize {
+pub fn code_size(addr: Address) -> usize {
     unsafe { impls::account_code_size(addr.as_ptr()) }
 }
 
@@ -177,13 +177,13 @@ macro_rules! generate_call_variants {
                 let size = rd_len - offset;
                 assert!(DATA_CAP >= size, "not enough capacity");
                 let mut b = [0u8; DATA_CAP];
-                unsafe { impls::read_return_data(b.as_mut_ptr(), 0, DATA_CAP) };
+                unsafe { impls::read_return_data(b.as_mut_ptr(), offset, DATA_CAP) };
                 (rc, size, b)
             }
 
             /// Call a contract, returning a word of the returndata/revertdata. Complains
             /// if the other party does not write exactly a word, regardless of the reason!
-            pub fn [<$base_fn _word>]<const DATA_CAP: usize>(
+            pub fn [<$base_fn _word>](
                 contract: Address,
                 calldata: &[u8],
                 $($value_param: $value_ty,)?
@@ -236,14 +236,12 @@ macro_rules! generate_call_variants {
                 if rc {
                     Ok((len, c))
                 } else {
-                    Ok((len, c))
+                    Err((len, c))
                 }
             }
 
             /// Same as the slice variant, except check the length of the code for the
-            /// address first. If code doesn't exist, then we return None. This might
-            /// be useful for implementing ERC20 when you relax the check on the
-            /// return value.
+            /// address first. If code doesn't exist, then we return None.
             pub fn [<safe_ $base_fn _slice>]<const DATA_CAP: usize>(
                 contract: Address,
                 calldata: &[u8],
@@ -299,13 +297,7 @@ macro_rules! generate_call_variants {
                 gas: u64,
             ) -> bool {
                 if code_size(contract) > 0 {
-                    let (rc, l, v) = [<$base_fn _slice>]::<1>(
-                        contract, calldata, $($value_param,)? gas, 31,
-                    );
-                    match (rc, l) {
-                        (true, 1) => v[0] == 1,
-                        (x, _) => x
-                    }
+                    [<$base_fn _bool>](contract, calldata, $($value_param,)? gas)
                 } else {
                     false
                 }
@@ -375,7 +367,7 @@ macro_rules! generate_call_variants {
             /// Same as the other vec function, returning Result depending on
             /// return or revert.
             #[cfg(feature = "alloc")]
-            pub fn [<$base_fn _vec_res>]<const DATA_CAP: usize>(
+            pub fn [<$base_fn _vec_res>](
                 contract: Address,
                 calldata: &[u8],
                 $($value_param: $value_ty,)?
@@ -392,7 +384,7 @@ macro_rules! generate_call_variants {
                 if rc {
                     Ok(rd)
                 } else {
-                    Ok(rd)
+                    Err(rd)
                 }
             }
 

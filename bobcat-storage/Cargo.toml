@@ -15,7 +15,7 @@ bobcat-maths = { version = "0.6.2", path = "../bobcat-maths" }
 keccak-const = "0.2.0"
 proptest = { workspace = true, optional = true }
 array-concat = { workspace = true }
-paste = "1.0.15"
+paste.workspace = true
 
 [dev-dependencies]
 const-hex = { workspace = true }

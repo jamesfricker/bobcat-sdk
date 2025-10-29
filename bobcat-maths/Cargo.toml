@@ -20,6 +20,8 @@ borsh = { version = "1.5.7", default-features = false, features = ["derive"], op
 mutants = "0.0.3"
 cfg-if = "1.0.3"
 const-hex.workspace = true
+paste.workspace = true
+array-concat.workspace = true
 
 [features]
 std = []

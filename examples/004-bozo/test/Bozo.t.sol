@@ -5,28 +5,35 @@ import {Test} from "forge-std/Test.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
-import {TestErc20} from "./TestErc20.sol";
-
 import {IBozo} from "../src/IBozo.sol";
+
+interface IWETH10 {
+    function deposit() payable external;
+    function balanceOf(address) external view returns (uint256);
+    function approve(address, uint256) external;
+    function allowance(address, address) external view returns (uint256);
+}
 
 contract Bozo is Test {
     IBozo c;
-    TestErc20 token;
+    IWETH10 weth = IWETH10(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
 
     function setUp() external {
+        vm.createSelectFork("https://arb1.arbitrum.io/rpc");
         c = IBozo(IArbFoundry(address(vm)).deployStylusCode(
             "bozo.wasm"
         ));
-        vm.etch("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", TestErc20.bytecode);
+        vm.deal(address(this), 10e18);
+        weth.deposit{value: 10e18}();
+        weth.approve(address(c), type(uint256).max);
+        assertEq(type(uint256).max, weth.allowance(address(this), address(c)));
     }
 
     function test_contractDeployed() public view {
         assertNotEq(address(0), address(c));
     }
 
-    function test_assetWorking() public view {
-        assertEq(0x015580BaeBBdD8dDacDD7c66fBF3008564B06359, c.poolAsset());
+    function test_play() external {
+        c.play(address(weth), 0, block.timestamp + 1, 1e18, address(this));
     }
-
-    function test_
 }

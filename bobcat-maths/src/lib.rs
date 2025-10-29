@@ -1190,17 +1190,26 @@ impl From<&U> for Address {
 macro_rules! from_ints {
     ($($t:ty),+ $(,)?) => {
         $(
-            impl From<$t> for U {
-                fn from(x: $t) -> Self {
-                    let mut b = [0u8; 32];
-                    b[32 - core::mem::size_of::<$t>()..].copy_from_slice(&x.to_be_bytes());
-                    U(b)
+            paste::paste! {
+                impl U {
+                    pub const fn [<from_ $t>](x: $t) -> U {
+                        U(array_concat::concat_arrays!(
+                            [0u8; 32-core::mem::size_of::<$t>()],
+                            x.to_be_bytes())
+                        )
+                    }
                 }
-            }
 
-            impl From<U> for $t {
-                fn from(x: U) -> Self {
-                    Self::from_be_bytes(x.into())
+                impl From<$t> for U {
+                    fn from(x: $t) -> Self {
+                        U::[<from_ $t>](x)
+                    }
+                }
+
+                impl From<U> for $t {
+                    fn from(x: U) -> Self {
+                        Self::from_be_bytes(x.into())
+                    }
                 }
             }
         )+

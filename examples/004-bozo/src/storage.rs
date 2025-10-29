@@ -17,7 +17,7 @@ macro_rules! storage {
         items: [$name:ident($($param:ident),*) $(, $($rest:tt)*)?]
     ) => {
         pub mod $name {
-            use bobcat_sdk::storage::*;
+            pub(crate) use bobcat_sdk::storage::*;
             use bobcat_sdk::maths::U;
 
             storage!(@impl $counter, [$($param),*]);
@@ -41,12 +41,12 @@ macro_rules! storage {
             storage_store(&slot_map(&U::from($counter), $param1), x)
         }
 
-        pub fn add($param1: &U, x: &U) {
-            storage_add(&slot_map(&U::from($counter), $param1), x)
+        pub fn add($param1: &U, x: &U) -> Option<()> {
+            storage_checked_add(&slot_map(&U::from($counter), $param1), x)
         }
 
-        pub fn sub($param1: &U, x: &U) {
-            storage_sub(&slot_map(&U::from($counter), $param1), x)
+        pub fn sub($param1: &U, x: &U) -> Option<()> {
+            storage_checked_sub(&slot_map(&U::from($counter), $param1), x)
         }
     };
 
@@ -59,12 +59,12 @@ macro_rules! storage {
             storage_store(&slot_map(&slot_map(&U::from($counter), $param1), $param2), x)
         }
 
-        pub fn add($param1: &U, $param2: &U, x: &U) {
-            storage_add(&slot_map(&slot_map(&U::from($counter), $param1), $param2), x)
+        pub fn add($param1: &U, $param2: &U, x: &U) -> Option<()> {
+            storage_checked_add(&slot_map(&slot_map(&U::from($counter), $param1), $param2), x)
         }
 
-        pub fn sub($param1: &U, $param2: &U, x: &U) {
-            storage_sub(&slot_map(&slot_map(&U::from($counter), $param1), $param2), x)
+        pub fn sub($param1: &U, $param2: &U, x: &U) -> Option<()> {
+            storage_checked_sub(&slot_map(&slot_map(&U::from($counter), $param1), $param2), x)
         }
     };
 }
@@ -83,15 +83,16 @@ pub mod epoch {
 
 storage! {
     last_bettor_addr(epoch),
-    last_bettor_amt_usd(epoch),
+    last_bettor_amt(epoch),
     fee_paid(epoch),
+    // The entire amount invested in this epoch.
     pool_size(epoch),
+    // The count of early participants for this game.
     early_participants(epoch),
+    // The global amount of tickets in circulation.
     global_tickets(epoch),
-    user_lottery_tickets(epoch, user),
-    global_lottery_tickets(epoch),
-    lottery_paid_out(epoch),
-    lottery_ticket_search(epoch, user),
-    assets_supplied(epoch, number),
-    assets_supplied_count(epoch)
+    // Very simple append-only storage of addresses that have played the game this epoch.
+    user_lottery_addresses(epoch, pos),
+    // Very simple epoch => address => storage of the tickets an address has earned.
+    user_lottery_ticket_len(epoch),
 }

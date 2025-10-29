@@ -1,14 +1,11 @@
 [package]
-name = "bozo"
+name = "bobcat-examples-004"
 version = "0.1.0"
 edition = "2024"
 
-[lib]
-name = "bozo"
-crate-type   = ["rlib", "cdylib"]
-
 [dependencies]
-bobcat-sdk = { workspace = true, features = ["panic"] }
+bobcat-sdk = { workspace = true, features = ["panic-revert", "alloc"] }
+mini-alloc = "1.0.0"
 
 [profile.release]
 codegen-units = 1

@@ -269,7 +269,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-maths"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "alloy-primitives",
  "arbitrary",
