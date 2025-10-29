@@ -20,3 +20,5 @@ reuse presumably.
 
 A major shortcoming with this testing is that we're using this in the context of 9lives
 without an isolated testing envrionment. That needs doing to be sure about this.
+
+There is some work that needs to be done here to take things further! It should be doable.
