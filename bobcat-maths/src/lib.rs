@@ -291,6 +291,75 @@ pub fn saturating_mul(x: &U, y: &U) -> U {
     checked_mul(x, y).unwrap_or(U::MAX)
 }
 
+pub fn widening_mul(x: &U, y: &U) -> [u8; 64] {
+    let shift_128 = &U([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0,
+    ]);
+    let x_hi = x / shift_128;
+    let x_lo = x % shift_128;
+    let y_hi = y / shift_128;
+    let y_lo = y % shift_128;
+    let t0 = x_lo.mul_mod(&y_lo, &U::MAX);
+    let t1 = x_hi.mul_mod(&y_lo, &U::MAX);
+    let t2 = x_lo.mul_mod(&y_hi, &U::MAX);
+    let t3 = x_hi.mul_mod(&y_hi, &U::MAX);
+    let t0_hi = &t0 / shift_128;
+    let t0_lo = &t0 % shift_128;
+    let t1_hi = &t1 / shift_128;
+    let t1_lo = &t1 % shift_128;
+    let t2_hi = &t2 / shift_128;
+    let t2_lo = &t2 % shift_128;
+    let mid = (t0_hi + t1_lo) + t2_lo;
+    let mid_hi = &mid / shift_128;
+    let mid_lo = &mid % shift_128;
+    let mid_lo_shifted = mid_lo.mul_mod(shift_128, &U::MAX);
+    let out_low = t0_lo + mid_lo_shifted;
+    let out_high = t3 + t1_hi + t2_hi + mid_hi;
+    let mut o = [0u8; 64];
+    o[..32].copy_from_slice(&out_high.0);
+    o[32..].copy_from_slice(&out_low.0);
+    o
+}
+
+/// Widening mul div that's cheaper in codesize that's safe for cold
+/// operations. The most expensive in gas costs.
+pub fn widening_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
+    if denom.is_zero() {
+        return None;
+    }
+    if x.is_zero() {
+        return Some((U::ZERO, false));
+    }
+    // We use a boring method if the overflow wouldn't happen:
+    if wrapping_div(&U::MAX, x) >= *y {
+        let l = wrapping_mul(x, y);
+        let carry = x.mul_mod(y, &denom).is_some();
+        return Some((wrapping_div(&l, &denom), carry));
+    }
+    let x = widening_mul(x, y);
+    let mut d = [0u8; 64];
+    d[32..].copy_from_slice(&denom.0);
+    let (q, rem) = wrapping_div_quo_rem_b::<64>(&x, &d);
+    if q[..32] != [0u8; 32] {
+        return None;
+    }
+    let l: [u8; 32] = q[32..].try_into().unwrap();
+    let l = U::from(l);
+    let has_carry = rem[32..] != [0u8; 32];
+    Some((l, has_carry))
+}
+
+pub fn widening_mul_div_round_up(x: &U, y: &U, denom: U) -> Option<U> {
+    let (x, y) = widening_mul_div(x, y, denom)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
+/// Muldiv that's used in practice by Uniswap and other on-chain dapps.
+/// Middling in gas costs.
 pub fn mul_div(x: &U, y: &U, mut denom: U) -> Option<(U, bool)> {
     // Implemented from https://xn--2-umb.com/21/muldiv/
     if denom.is_zero() {
@@ -344,6 +413,7 @@ pub fn mul_div_round_up(x: &U, y: &U, denom_and_rem: U) -> Option<U> {
     Some(if y { x + U::ONE } else { x })
 }
 
+/// The cheapest muldiv operation, but the most expensive in codesize muldiv.
 #[cfg(feature = "ruint-enabled")]
 pub fn ruint_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
     if denom.is_zero() {
@@ -863,6 +933,22 @@ impl U {
 
     pub fn mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
         mul_div_round_up(self, y, z)
+    }
+
+    pub fn widening_mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
+        widening_mul_div(self, y, z)
+    }
+
+    pub fn widening_mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
+        widening_mul_div_round_up(self, y, z)
+    }
+
+    pub fn ruint_mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
+        ruint_mul_div(self, y, z)
+    }
+
+    pub fn ruint_mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
+        ruint_mul_div_round_up(self, y, z)
     }
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
