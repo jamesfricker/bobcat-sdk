@@ -2,18 +2,18 @@
 #![no_main]
 
 use bobcat_sdk::{
-    call::{call_bool, code_size, call_word, call_word_err_vec, safe_call_bool},
+    call::{call_bool, call_word_err_vec},
     cd::{address, const_keccak_sel, read_words},
     entry::{
         contract_address, msg_sender, read_args_safe, revert_if_bad_call_slice_vec,
-        write_result_word,
+        write_result_word
     },
     interfaces::{
         camelotv3_swap_router::make_fn_exact_input_single,
         eip20::{make_fn_approve, make_fn_transfer_from},
     },
     maths::U,
-    storage::reentrancy_guard_sel,
+    storage::{flush_guard, reentrancy_guard_sel},
 };
 
 #[global_allocator]
@@ -64,7 +64,9 @@ fn state_play(
     if asset != ASSET {
         // Transfer the asset to us:
         assert!(
-            safe_call_bool(
+            // FIXME: there's a bug in arbos-foundry with codesize checking right
+            // now. Use safe_call_bool instead.
+            call_bool(
                 asset,
                 &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
                 &U::ZERO,
@@ -96,7 +98,7 @@ fn state_play(
             ),
             &U::ZERO,
             u64::MAX
-        ))
+        ));
     }
     let fee_paid = amt.mul_div_round_up(&FEE, ONE_HUNDRED).unwrap();
     let epoch = storage::epoch::get();
@@ -120,6 +122,7 @@ fn state_play(
     storage::pool_size::add(&epoch, &amt);
     storage::last_bettor_addr::set(&epoch, &U::from(msg_sender()));
     storage::last_bettor_amt::set(&epoch, &amt);
+    write_result_word(&epoch);
     0
 }
 
@@ -132,16 +135,18 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
         // View functions:
         SEL_POOL_SIZE => view_pool_size(),
         SEL_POOL_ASSET => view_pool_asset(),
-        SEL_PLAY => reentrancy_guard_sel(&SEL_PLAY, || {
-            let (asset, camelot_min_asset_out, camelot_deadline, amt, recipient) =
-                read_words!(&args[4..], 5);
-            state_play(
-                asset.into(),
-                camelot_min_asset_out,
-                camelot_deadline,
-                *amt,
-                recipient.into(),
-            )
+        SEL_PLAY => flush_guard(|| {
+            reentrancy_guard_sel(&SEL_PLAY, || {
+                let (asset, camelot_min_asset_out, camelot_deadline, amt, recipient) =
+                    read_words!(&args[4..], 5);
+                state_play(
+                    asset.into(),
+                    camelot_min_asset_out,
+                    camelot_deadline,
+                    *amt,
+                    recipient.into(),
+                )
+            })
         }),
         SEL_DISTRIBUTE_REWARDS => 0,
         _ => 1,
