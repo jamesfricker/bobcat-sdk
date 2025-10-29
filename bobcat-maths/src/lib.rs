@@ -31,6 +31,9 @@ unsafe extern "C" {
     fn math_mul_mod(a: *mut u8, b: *const u8, c: *const u8);
 }
 
+#[cfg(feature = "ruint-enabled")]
+use alloy_primitives::{U256, ruint};
+
 #[cfg(feature = "alloy-enabled")]
 mod alloy {
     use core::ptr::copy_nonoverlapping;
@@ -335,6 +338,36 @@ pub fn mul_div(x: &U, y: &U, mut denom: U) -> Option<(U, bool)> {
 
 pub fn mul_div_round_up(x: &U, y: &U, denom_and_rem: U) -> Option<U> {
     let (x, y) = mul_div(x, y, denom_and_rem)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
+#[cfg(feature = "ruint-enabled")]
+pub fn ruint_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
+    if denom.is_zero() {
+        return None;
+    }
+    let x = U256::from_be_slice(x.as_slice());
+    let y = U256::from_be_slice(y.as_slice());
+    let mut denom = U256::from_be_slice(denom.as_slice());
+    let mut mul_and_quo = x.widening_mul::<256, 4, 512, 8>(y);
+    unsafe {
+        ruint::algorithms::div(mul_and_quo.as_limbs_mut(), denom.as_limbs_mut());
+    }
+    let limbs = mul_and_quo.into_limbs();
+    if limbs[4..] != [0_u64; 4] {
+        return None;
+    }
+    let has_carry = !denom.is_zero();
+    let r = U(U256::from_limbs_slice(&limbs[0..4]).to_be_bytes::<32>());
+    Some((r, has_carry))
+}
+
+#[cfg(feature = "ruint-enabled")]
+pub fn ruint_mul_div_round_up(x: &U, y: &U, denom: U) -> Option<U> {
+    let (x, y) = ruint_mul_div(x, y, denom)?;
     if x.is_max() && y {
         return None;
     }
@@ -1289,6 +1322,19 @@ mod test {
             let rhs_u = U::from(rhs);
             let expected = lhs_u.wrapping_mul(&rhs_u);
             prop_assert_eq!(wrapping_mul_b::<32>(&lhs, &rhs), expected.0);
+        }
+
+        #[test]
+        fn const_wrapping_div_agrees_with_wrapping_div_b(
+            numerator in any::<[u8; 32]>(),
+            denominator in any::<[u8; 32]>().prop_filter("denominator must be non-zero", |d| *d != [0u8; 32])
+        ) {
+            let numerator_u = U::from(numerator);
+            let denominator_u = U::from(denominator);
+            prop_assert_eq!(
+                const_wrapping_div(&numerator_u, &denominator_u).0,
+                wrapping_div_quo_rem_b::<32>(&numerator, &denominator).0
+            );
         }
 
         #[test]
