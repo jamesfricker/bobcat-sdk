@@ -6,7 +6,7 @@ use bobcat_sdk::{
     cd::{address, const_keccak_sel, read_words},
     entry::{
         contract_address, msg_sender, read_args_safe, revert_if_bad_call_slice_vec,
-        write_result_word
+        write_result_slice, write_result_word,
     },
     interfaces::{
         camelotv3_swap_router::make_fn_exact_input_single,
@@ -15,6 +15,8 @@ use bobcat_sdk::{
     maths::U,
     storage::{flush_guard, reentrancy_guard_sel},
 };
+
+use array_concat::concat_arrays;
 
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
@@ -58,7 +60,7 @@ fn state_play(
     camelot_min_asset_out: &U,
     camelot_deadline: &U,
     mut amt: U,
-    _recipient: Address,
+    recipient: Address,
 ) -> usize {
     assert!(amt.is_some(), "amount is zero");
     if asset != ASSET {
@@ -102,8 +104,6 @@ fn state_play(
     }
     let fee_paid = amt.mul_div_round_up(&FEE, ONE_HUNDRED).unwrap();
     let epoch = storage::epoch::get();
-    // Track the user's fee earned:
-    storage::fee_paid::add(&epoch, &fee_paid);
     // Get the last deposit made by a user to know how much to beat:
     let extra_amt = storage::last_bettor_amt::get(&epoch)
         .mul_div_round_up(&U::from(5u32), U::from(100u32))
@@ -118,11 +118,27 @@ fn state_play(
     } else {
         amt
     };
-    storage::global_tickets::add(&epoch, &lottery_tickets);
-    storage::pool_size::add(&epoch, &amt);
     storage::last_bettor_addr::set(&epoch, &U::from(msg_sender()));
     storage::last_bettor_amt::set(&epoch, &amt);
-    write_result_word(&epoch);
+    storage::fee_paid::add(&epoch, &fee_paid);
+    storage::pool_size::add(&epoch, &amt);
+    storage::early_participants::add(&epoch, &U::ONE);
+    storage::global_tickets::add(&epoch, &lottery_tickets);
+    let recipient = U::from(recipient);
+    let existing_tickets = storage::user_lottery_tickets::get(&epoch, &recipient);
+    if existing_tickets.is_zero() {
+        // If this is the first time that the recipient is playing, we need to track them:
+        let ticket_len = storage::user_lottery_ticket_len::get(&epoch);
+        storage::user_lottery_addresses::set(&epoch, &ticket_len, &recipient);
+        storage::user_lottery_ticket_len::set(&epoch, &(ticket_len + U::ONE));
+    }
+    storage::user_lottery_tickets::set(
+        &epoch,
+        &recipient,
+        &existing_tickets.checked_add(&lottery_tickets).unwrap(),
+    );
+    let r: [u8; 32 * 2] = concat_arrays!(epoch.0, amt.0);
+    write_result_slice(&r);
     0
 }
 

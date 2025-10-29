@@ -8,7 +8,7 @@ interface IBozo {
         uint256 camelotDeadline,
         uint256 amount,
         address recipient
-    ) external returns (uint256 epoch);
+    ) external returns (uint256 epoch, uint256 deposited);
 
     struct WinAmount {
         address winner;

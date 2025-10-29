@@ -34,6 +34,13 @@ contract Bozo is Test {
     }
 
     function test_play() external {
-        c.play(address(weth), 0, block.timestamp + 1, 1e18, address(this));
+        (uint256 epoch,) = c.play(
+            address(weth),
+            0,
+            block.timestamp + 1,
+            1e18,
+            address(this)
+        );
+        assertEq(0, epoch);
     }
 }

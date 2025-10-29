@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+array-concat = "0.5.5"
 bobcat-sdk = { workspace = true, features = ["panic-revert", "alloc"] }
+concat-arrays = "0.1.2"
 mini-alloc = "1.0.0"
 
 [profile.release]

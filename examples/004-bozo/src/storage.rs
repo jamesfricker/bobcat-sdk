@@ -87,12 +87,15 @@ storage! {
     fee_paid(epoch),
     // The entire amount invested in this epoch.
     pool_size(epoch),
-    // The count of early participants for this game.
+    // The count of early purchases in this game.
     early_participants(epoch),
     // The global amount of tickets in circulation.
     global_tickets(epoch),
-    // Very simple append-only storage of addresses that have played the game this epoch.
+    // Very simple append-only storage of addresses that have played the game
+    // this epoch. epoch => uint => address
     user_lottery_addresses(epoch, pos),
-    // Very simple epoch => address => storage of the tickets an address has earned.
+    // Amount of lottery tickets the user has. epoch => address => uint
+    user_lottery_tickets(epoch, address),
+    // Count of the users in the lottery tickets array.
     user_lottery_ticket_len(epoch),
 }
