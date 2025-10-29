@@ -2,7 +2,7 @@
 # Gas and codesize implications of the muldiv functions
 
 Anecdotally, the order of costs for the various muldiv functions look like this, when we
-used it in the 9lives repo:
+used it in the 9lives repo for our DPPM code:
 
 |            Name           |   Precision      |  Codesize cost   | Estimated 9lives mint gas cost |
 |---------------------------|------------------|------------------|--------------------------------|
