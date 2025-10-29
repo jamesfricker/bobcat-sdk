@@ -15,7 +15,10 @@ interface IBozo {
         uint256 amountReceived;
     }
 
-    function distributeRewards(address rewardRecipient) external returns (
+    function distributeRewards(
+        address rewardRecipient,
+        uint256 rngWord
+    ) external returns (
         uint256 callerReward,
         WinAmount[] memory winners
     );

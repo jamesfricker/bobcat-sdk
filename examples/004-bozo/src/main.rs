@@ -26,7 +26,10 @@ pub mod storage;
 type Address = [u8; 20];
 
 /// Asset that assets are converted to, to be used in the game.
-const ASSET: [u8; 20] = address!(b"af88d065e77c8cC2239327C5EDb3A432268e5831");
+const ADDR_ASSET: [u8; 20] = address!(b"af88d065e77c8cC2239327C5EDb3A432268e5831");
+
+/// Swap router that we use with Camelot to get the asset into the one we support here.
+const ADDR_CAMELOT_SWAP_ROUTER: Address = address!(b"1f721e2e82f6676fce4ea07a5958cf098d339e18");
 
 /// Fee taken from the users. 3% fee at a dividend
 const FEE: U = U::from_u32(3);
@@ -39,7 +42,7 @@ const SEL_POOL_ASSET: [u8; 4] = const_keccak_sel(b"poolAsset()");
 // ~~~~~ Stateful functions: ~~~~
 //
 const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(address,uint256,uint256,uint256,address)");
-const SEL_DISTRIBUTE_REWARDS: [u8; 4] = const_keccak_sel(b"distributeRewards(address)");
+const SEL_DISTRIBUTE_REWARDS: [u8; 4] = const_keccak_sel(b"distributeRewards(address,uint256)");
 
 fn view_pool_size() -> usize {
     write_result_word(&storage::pool_size::get(&storage::epoch::get()));
@@ -47,13 +50,11 @@ fn view_pool_size() -> usize {
 }
 
 fn view_pool_asset() -> usize {
-    write_result_word(&U::from(ASSET));
+    write_result_word(&U::from(ADDR_ASSET));
     0
 }
 
 const ONE_HUNDRED: U = U::from_u32(100);
-
-const ADDR_CAMELOT_SWAP_ROUTER: Address = address!(b"1f721e2e82f6676fce4ea07a5958cf098d339e18");
 
 fn state_play(
     asset: Address,
@@ -63,7 +64,7 @@ fn state_play(
     recipient: Address,
 ) -> usize {
     assert!(amt.is_some(), "amount is zero");
-    if asset != ASSET {
+    if asset != ADDR_ASSET {
         // Transfer the asset to us:
         assert!(
             // FIXME: there's a bug in arbos-foundry with codesize checking right
@@ -91,7 +92,7 @@ fn state_play(
             ADDR_CAMELOT_SWAP_ROUTER,
             &make_fn_exact_input_single(
                 asset,
-                ASSET,
+                ADDR_ASSET,
                 contract_address(),
                 *camelot_deadline,
                 amt,
@@ -142,6 +143,12 @@ fn state_play(
     0
 }
 
+fn state_distribute_rewards(recipient: Address, rng: &U) -> usize {
+    let r: [u8; 32 * 3] = concat_arrays!([0u8; 32], U::from(64u32).0, [0u8; 32]);
+    write_result_slice(&r);
+    0
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     // Allocate the full amount that we will see possibly:
@@ -151,6 +158,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
         // View functions:
         SEL_POOL_SIZE => view_pool_size(),
         SEL_POOL_ASSET => view_pool_asset(),
+        // Side effect generating functions:
         SEL_PLAY => flush_guard(|| {
             reentrancy_guard_sel(&SEL_PLAY, || {
                 let (asset, camelot_min_asset_out, camelot_deadline, amt, recipient) =
@@ -164,7 +172,10 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
                 )
             })
         }),
-        SEL_DISTRIBUTE_REWARDS => 0,
+        SEL_DISTRIBUTE_REWARDS => flush_guard(|| {
+            let (recipient, rng) = read_words!(&args[4..], 2);
+            state_distribute_rewards(recipient.into(), rng)
+        }),
         _ => 1,
     }
 }

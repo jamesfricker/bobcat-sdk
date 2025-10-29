@@ -89,6 +89,7 @@ dependencies = [
  "array-concat",
  "bobcat-sdk",
  "concat-arrays",
+ "const-hex",
  "mini-alloc",
 ]
 
