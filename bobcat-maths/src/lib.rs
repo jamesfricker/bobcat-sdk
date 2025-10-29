@@ -32,7 +32,7 @@ unsafe extern "C" {
 }
 
 #[cfg(feature = "ruint-enabled")]
-use alloy_primitives::{U256, ruint};
+use alloy_primitives::{ruint, U256};
 
 #[cfg(feature = "alloy-enabled")]
 mod alloy {
@@ -291,6 +291,37 @@ pub fn saturating_mul(x: &U, y: &U) -> U {
     checked_mul(x, y).unwrap_or(U::MAX)
 }
 
+fn gcd(mut x: U, mut y: U) -> U {
+    while y.is_some() {
+        (x, y) = (y, x % y);
+    }
+    x
+}
+
+pub fn gcd_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
+    if denom.is_zero() {
+        return None;
+    }
+    let g1 = gcd(*x, denom);
+    let x_reduced = x / &g1;
+    let denom_reduced = denom / g1;
+    let g2 = gcd(*y, denom_reduced);
+    let y_reduced = y / &g2;
+    let denom_final = denom_reduced / g2;
+    let product = x_reduced.checked_mul(&y_reduced)?;
+    let result = (x_reduced * y_reduced) / denom_final;
+    let remainder = product % denom_final;
+    Some((result, remainder.is_some()))
+}
+
+pub fn gcd_mul_div_round_up(x: &U, y: &U, denom: U) -> Option<U> {
+    let (x, y) = gcd_mul_div(x, y, denom)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
 pub fn widening_mul(x: &U, y: &U) -> [u8; 64] {
     let shift_128 = &U([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -322,7 +353,7 @@ pub fn widening_mul(x: &U, y: &U) -> [u8; 64] {
     o
 }
 
-/// Widening mul div that's cheaper in codesize that's safe for cold
+/// Widening then truncate mul div that's cheaper in codesize that's safe for cold
 /// operations. The most expensive in gas costs.
 pub fn widening_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
     if denom.is_zero() {
@@ -943,12 +974,22 @@ impl U {
         widening_mul_div_round_up(self, y, z)
     }
 
+    #[cfg(feature = "ruint-enabled")]
     pub fn ruint_mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
         ruint_mul_div(self, y, z)
     }
 
+    #[cfg(feature = "ruint-enabled")]
     pub fn ruint_mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
         ruint_mul_div_round_up(self, y, z)
+    }
+
+    pub fn gcd_mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
+        gcd_mul_div(self, y, z)
+    }
+
+    pub fn gcd_mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
+        gcd_mul_div_round_up(self, y, z)
     }
 
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
