@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-call"
-version = "0.6.2"
+version = "0.6.3"
 edition = "2024"
 license = "MIT"
 description = "bobcat-sdk utilities for calling contracts on Arbitrum Stylus."
@@ -15,6 +15,6 @@ alloc = []
 dont-define-symbols = ["bobcat-entry/dont-define-symbols"]
 
 [dependencies]
-bobcat-entry = { version = "0.6.2", path = "../bobcat-entry" }
-bobcat-maths = { version = "0.6.2", path = "../bobcat-maths" }
+bobcat-entry = { version = "0.6.3", path = "../bobcat-entry" }
+bobcat-maths = { version = "0.6.3", path = "../bobcat-maths" }
 paste.workspace = true
