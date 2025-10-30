@@ -1,0 +1,18 @@
+
+type Comment {
+    wallet: String!
+    content: String!
+}
+
+type Query {
+    comments: [Comment!]!
+}
+
+type Mutation {
+    postComment(
+        content: String!,
+        rr: String!,
+        ss: String!,
+        v: Int!
+    ): Boolean
+}
