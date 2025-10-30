@@ -18,7 +18,6 @@ interface BozoModalProps {
   onOpenChange: (open: boolean) => void;
   game: GameState;
   isConnected: boolean;
-  onConnect: () => void;
 }
 
 const CHAINS = [
@@ -34,7 +33,7 @@ const ASSETS = [
   { value: 'USDT', label: 'USDT' }
 ];
 
-export function BozoModal({ open, onOpenChange, game, isConnected, onConnect }: BozoModalProps) {
+export function BozoModal({ open, onOpenChange, game, isConnected }: BozoModalProps) {
   const [sourceChain, setSourceChain] = useState('base');
   const [sourceAsset, setSourceAsset] = useState('ETH');
   const [amountUsd, setAmountUsd] = useState('');
@@ -67,7 +66,7 @@ export function BozoModal({ open, onOpenChange, game, isConnected, onConnect }: 
         slippageBps: 50
       });
       setQuote(result);
-      
+
       if (!result.meetsMinPct) {
         toast.error('Amount too low', {
           description: `Minimum required: ${formatUsd(game.minToResetUsd)}`
@@ -94,13 +93,13 @@ export function BozoModal({ open, onOpenChange, game, isConnected, onConnect }: 
     setIsDepositing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       if (sourceChain !== game.chain) {
         toast.success('Pending intent created — you\'re on the clock.');
       } else {
         toast.success('Deposit confirmed. Timer reset to 60:00. RIP BOZO! 🤡');
       }
-      
+
       onOpenChange(false);
       setAmountUsd('');
       setComment('');
@@ -134,8 +133,7 @@ export function BozoModal({ open, onOpenChange, game, isConnected, onConnect }: 
             <p className="text-center text-muted-foreground">
               Connect your wallet to deposit
             </p>
-            <Button 
-              onClick={onConnect}
+            <Button
               className="w-full bg-[#FF4B4B] hover:bg-[#FF4B4B]/90 text-[#FFF2E1]"
               size="lg"
             >
@@ -271,8 +269,8 @@ export function BozoModal({ open, onOpenChange, game, isConnected, onConnect }: 
           {/* Confirmation Checkbox */}
           {quote && quote.meetsMinPct && (
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="agree" 
+              <Checkbox
+                id="agree"
                 checked={agreed}
                 onCheckedChange={(checked) => setAgreed(checked as boolean)}
                 className="border-border data-[state=checked]:bg-[#FF4B4B] data-[state=checked]:border-[#FF4B4B]"

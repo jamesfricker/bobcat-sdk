@@ -20,7 +20,7 @@
 }
 
 #define macro CONSTRUCTOR() = takes(0) returns(0) {
-    0xc145ABd8D641ca1aE5627b81EBe4884cFD31a79a 0x0 0x0
+    0x1000000000000000000000000000000000000001 0x0 0x0
     dup3 [SLOT_IMPL] sstore
     0x09 __codesize(MAIN) __codesize(CONSTRUCTOR) add
     codesize sub sub

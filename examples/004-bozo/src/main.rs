@@ -7,8 +7,8 @@ use bobcat_sdk::{
     call::{call_bool, call_word_err_vec, safe_call_bool},
     cd::{address, const_keccak_sel, read_words},
     entry::{
-        contract_address, msg_sender, read_args_safe, revert_if_bad_call_slice_vec,
-        write_result_slice, write_result_word,
+        block_timestamp, contract_address, msg_sender, read_args_safe,
+        revert_if_bad_call_slice_vec, write_result_slice, write_result_word,
     },
     interfaces::{
         camelotv3_swap_router::make_fn_exact_input_single,
@@ -50,8 +50,12 @@ const ADDR_CAMELOT_SWAP_ROUTER: Address = address!(b"1f721e2e82f6676fce4ea07a595
 /// Fee taken from the users. 3% fee at a dividend
 const FEE: U = U::from_u32(3);
 
+/// Two days extra time.
+const EXTRA_TIME: U = U::from_u32(172800);
+
 // ~~~~~ View functions: ~~~~
 //
+const SEL_DEADLINE: [u8; 4] = const_keccak_sel(b"deadline()");
 const SEL_POOL_SIZE: [u8; 4] = const_keccak_sel(b"poolSize()");
 const SEL_POOL_ASSET: [u8; 4] = const_keccak_sel(b"poolAsset()");
 const SEL_PLAYER_COUNT: [u8; 4] = const_keccak_sel(b"playerCount()");
@@ -59,10 +63,16 @@ const SEL_TICKET_COUNT: [u8; 4] = const_keccak_sel(b"ticketCount()");
 
 // ~~~~~ Stateful functions: ~~~~
 //
+const SEL_INIT: [u8; 4] = const_keccak_sel(b"initialise(address)");
 const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(address,uint256,uint256,uint256,address)");
 const SEL_DISTRIBUTE_REWARDS: [u8; 4] = const_keccak_sel(b"distributeRewards(address,uint256)");
 const SEL_UPGRADE: [u8; 4] = const_keccak_sel(b"upgrade(address)");
 const SEL_CHANGE_ADMIN: [u8; 4] = const_keccak_sel(b"changeAdmin(address)");
+
+fn view_deadline() -> usize {
+    write_result_word(&storage::ts_deadline::get(&storage::epoch::get()));
+    0
+}
 
 fn view_pool_size() -> usize {
     write_result_word(&storage::pool_size::get(&storage::epoch::get()));
@@ -75,7 +85,9 @@ fn view_pool_asset() -> usize {
 }
 
 fn view_player_count() -> usize {
-    write_result_word(&storage::user_lottery_ticket_len::get(&storage::epoch::get()));
+    write_result_word(&storage::user_lottery_ticket_len::get(
+        &storage::epoch::get(),
+    ));
     0
 }
 
@@ -86,6 +98,13 @@ fn view_ticket_count() -> usize {
 
 const ONE_HUNDRED: U = U::from_u32(100);
 
+fn state_init(admin: Address) -> usize {
+    assert!(!storage::initialised::get(), "already created");
+    storage_store(&SLOT_ADMIN, &admin.into());
+    storage::initialised::set(true);
+    0
+}
+
 fn state_play(
     asset: Address,
     camelot_min_asset_out: &U,
@@ -94,6 +113,16 @@ fn state_play(
     recipient: Address,
 ) -> usize {
     assert!(amt.is_some(), "amount is zero");
+    let epoch = storage::epoch::get();
+    let timestamp = U::from(block_timestamp());
+    {
+        let deadline = storage::ts_deadline::get(&epoch);
+        // Make sure that we're within the deadline, or that it wasn't set:
+        assert!(
+            deadline.is_zero() || storage::ts_deadline::get(&epoch) >= timestamp,
+            "deadline expired"
+        );
+    }
     // Transfer the asset to us:
     assert!(
         safe_call_bool(
@@ -132,7 +161,6 @@ fn state_play(
         ));
     }
     let fee_paid = amt.mul_div_round_up(&FEE, ONE_HUNDRED).unwrap();
-    let epoch = storage::epoch::get();
     // Get the last deposit made by a user to know how much to beat:
     let extra_amt = storage::last_bettor_amt::get(&epoch)
         .mul_div_round_up(&U::from(5u32), U::from(100u32))
@@ -166,6 +194,7 @@ fn state_play(
         &recipient,
         &existing_tickets.checked_add(&lottery_tickets).unwrap(),
     );
+    storage::ts_deadline::add(&epoch, &(timestamp + EXTRA_TIME));
     let r: [u8; 32 * 2] = concat_arrays!(epoch.0, amt.0);
     write_result_slice(&r);
     0
@@ -174,6 +203,10 @@ fn state_play(
 fn state_distribute_rewards(rng: &U) -> usize {
     assert_eq!(ADDR_OPERATOR, msg_sender(), "operator only");
     let epoch = storage::epoch::get();
+    assert!(
+        U::from(block_timestamp()) > storage::ts_deadline::get(&epoch),
+        "not concluded"
+    );
     // Take 80% of the pool, and send to the winning depositor:
     let last_bettor_addr: Address = storage::last_bettor_addr::get(&epoch).into();
     let ticket_count = storage::global_tickets::get(&epoch)
@@ -292,11 +325,16 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let sel: [u8; 4] = args[..4].try_into().unwrap();
     match sel {
         // View functions:
+        SEL_DEADLINE => view_deadline(),
         SEL_POOL_SIZE => view_pool_size(),
         SEL_POOL_ASSET => view_pool_asset(),
         SEL_PLAYER_COUNT => view_player_count(),
         SEL_TICKET_COUNT => view_ticket_count(),
         // Side effect generating functions:
+        SEL_INIT => flush_guard(|| {
+            let admin = read_words!(&args[4..], 1);
+            state_init(admin.into())
+        }),
         SEL_PLAY => flush_guard(|| {
             reentrancy_guard_sel(&SEL_PLAY, || {
                 let (asset, camelot_min_asset_out, camelot_deadline, amt, recipient) =

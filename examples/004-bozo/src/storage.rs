@@ -2,7 +2,7 @@ macro_rules! storage {
     ($($name:ident($($param:ident),*)),* $(,)?) => {
         storage! {
             @internal
-            counter: 1u8,
+            counter: 2u8,
             items: [$($name($($param),*)),*]
         }
     };
@@ -69,23 +69,38 @@ macro_rules! storage {
     };
 }
 
+pub mod initialised {
+    use bobcat_sdk::{maths::U, storage::*};
+
+    pub fn get() -> bool {
+        storage_load_bool(&U::ZERO)
+    }
+
+    pub fn set(x: bool) {
+        storage_store_bool(&U::ZERO, x)
+    }
+}
+
 pub mod epoch {
     use bobcat_sdk::{maths::U, storage::*};
 
     pub fn get() -> U {
-        storage_load(&U::ZERO)
+        storage_load(&U::ONE)
     }
 
     pub fn set(x: &U) {
-        storage_store(&U::ZERO, x)
+        storage_store(&U::ONE, x)
     }
 
     pub fn incr() {
-        storage_checked_add(&U::ZERO, &U::ONE).unwrap()
+        storage_checked_add(&U::ONE, &U::ONE).unwrap()
     }
 }
 
 storage! {
+    // The point where this contract is considered as having hit its
+    // deadline, and won't run:
+    ts_deadline(epoch),
     // Last amount invested's address.
     last_bettor_addr(epoch),
     // Last amount invested by a user.

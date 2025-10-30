@@ -14,23 +14,28 @@ import { formatAddress, formatTokenAmount, formatUsd, getTimeRemaining } from '.
 import { Loader2, Trophy, AlertTriangle, Settings, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
+import { useAccount } from 'wagmi';
+
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+
 export function Game() {
   const navigate = useNavigate();
   const [game, setGame] = useState<GameState | null>(null);
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isConnected, setIsConnected] = useState(false);
   const [bozoModalOpen, setBozoModalOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [winners, setWinners] = useState<Winners | null>(null);
   const [roundWinners, setRoundWinners] = useState<RoundWinner[]>([]);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
+  const { address, isConnected } = useAccount();
+
   useEffect(() => {
     loadGame();
     loadDeposits();
     loadRoundWinners();
-    
+
     // Poll for updates every 5 seconds
     const interval = setInterval(() => {
       loadGame();
@@ -41,7 +46,7 @@ export function Game() {
     const timerInterval = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
-    
+
     return () => {
       clearInterval(interval);
       clearInterval(timerInterval);
@@ -52,7 +57,7 @@ export function Game() {
     try {
       const result = await mockApi.getGame();
       setGame(result);
-      
+
       if (result.status === 'Closed') {
         const winnersData = await mockApi.getWinners();
         setWinners(winnersData);
@@ -85,15 +90,10 @@ export function Game() {
     }
   };
 
-  const handleConnect = () => {
-    setIsConnected(true);
-    toast.success('Wallet connected');
-  };
-
   const handleShare = async () => {
     const text = 'RIP BOZO 🤡';
     const shareText = `${text}\n${window.location.href}`;
-    
+
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareText);
@@ -124,7 +124,7 @@ export function Game() {
     const now = Date.now();
     const diff = now - date.getTime();
     const minutes = Math.floor(diff / 60000);
-    
+
     if (minutes < 1) return 'JUST NOW';
     if (minutes === 1) return '1 MIN AGO';
     if (minutes < 60) return `${minutes} MINS AGO`;
@@ -178,25 +178,25 @@ export function Game() {
                   <span className="text-foreground tracking-wider">BOZO</span>
                 </div>
                 <nav className="flex items-center gap-6">
-                  <button 
+                  <button
                     onClick={() => navigate('/')}
                     className="text-sm text-foreground hover:text-[#F6C445] transition-colors"
                   >
                     GAME
                   </button>
-                  <button 
+                  <button
                     onClick={() => navigate('/stats')}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     LEADERBOARD
                   </button>
-                  <button 
+                  <button
                     onClick={() => navigate('/faq')}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     FAQ
                   </button>
-                  <button 
+                  <button
                     onClick={() => setHowItWorksOpen(true)}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                   >
@@ -209,8 +209,8 @@ export function Game() {
           </div>
         </header>
 
-        <EndGameScreen 
-          winners={winners} 
+        <EndGameScreen
+          winners={winners}
           nextGameStartsAt={game.nextGameStartsAt ? new Date(game.nextGameStartsAt) : new Date(Date.now() + 300000)}
           homeToken={game.homeToken}
         />
@@ -226,7 +226,7 @@ export function Game() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Decorative Clown Nose - Top Left */}
       <div className="absolute top-8 left-8 w-32 h-32 rounded-full bg-[#FF4B4B] opacity-20 blur-3xl"></div>
-      
+
       {/* Decorative Clown Nose - Top Right */}
       <div className="absolute top-8 right-8 w-32 h-32 rounded-full bg-[#F6C445] opacity-20 blur-3xl"></div>
 
@@ -242,25 +242,25 @@ export function Game() {
                 <span className="text-foreground tracking-wider">BOZO</span>
               </div>
               <nav className="flex items-center gap-6">
-                <button 
+                <button
                   onClick={() => navigate('/')}
                   className="text-sm text-foreground hover:text-[#F6C445] transition-colors"
                 >
                   GAME
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/stats')}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   LEADERBOARD
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/faq')}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   FAQ
                 </button>
-                <button 
+                <button
                   onClick={() => setHowItWorksOpen(true)}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
@@ -269,21 +269,8 @@ export function Game() {
                 </button>
               </nav>
             </div>
-            
-            {isConnected ? (
-              <div className="text-sm text-foreground px-4 py-2 rounded-lg bg-[#252840]">
-                {formatAddress('0x7a1234567890123456789012345678901234ee35')}
-              </div>
-            ) : (
-              <Button
-                onClick={handleConnect}
-                variant="outline"
-                size="sm"
-                className="border-border hover:bg-[#FF4B4B]/10"
-              >
-                CONNECT
-              </Button>
-            )}
+
+            <ConnectButton />
           </div>
         </div>
       </header>
@@ -348,19 +335,19 @@ export function Game() {
               <div className="flex items-center justify-between">
                 <h3 className="text-foreground tracking-wider">BOZOS</h3>
                 <TabsList className="bg-transparent h-auto p-0 gap-6">
-                  <TabsTrigger 
-                    value="latest" 
+                  <TabsTrigger
+                    value="latest"
                     className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-[#2ED4B7] data-[state=active]:shadow-none text-muted-foreground px-0"
                   >
                     LATEST
                   </TabsTrigger>
-                  <TabsTrigger 
+                  <TabsTrigger
                     value="winners"
                     className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-[#2ED4B7] data-[state=active]:shadow-none text-muted-foreground px-0"
                   >
                     WINNERS
                   </TabsTrigger>
-                  <TabsTrigger 
+                  <TabsTrigger
                     value="yours"
                     className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-[#2ED4B7] data-[state=active]:shadow-none text-muted-foreground px-0"
                   >
@@ -440,7 +427,7 @@ export function Game() {
                             <div className={`text-xs tracking-wider ${
                               winner.type === 'winner' ? 'text-[#F6C445]' : 'text-[#FF4B4B]'
                             }`}>
-                              {winner.type === 'winner' 
+                              {winner.type === 'winner'
                                 ? `WINNER ROUND ${toRoman(winner.roundNumber)}`
                                 : 'LOTTERY WINNER'
                               }
@@ -487,7 +474,6 @@ export function Game() {
           onOpenChange={setBozoModalOpen}
           game={game}
           isConnected={isConnected}
-          onConnect={handleConnect}
         />
       )}
 
