@@ -9,11 +9,17 @@ import {IArbFoundry} from "./IArbFoundry.sol";
 
 contract Swag {
     string public hello;
+    uint256 public no;
 
     function setHello(string memory x) external returns (string memory) {
         string memory p = hello;
         hello = x;
         return p;
+    }
+
+    function setNumber(uint256 x) external returns (uint256) {
+        no = x;
+        return no;
     }
 }
 
@@ -35,5 +41,9 @@ contract Eip1967 is Test {
     function testFuzz_hello(string memory s) public {
         swag.setHello(s);
         assertEq(s, swag.hello());
+    }
+
+    function testFuzz_number(uint256 x) public {
+        assertEq(x, swag.setNumber(x));
     }
 }
