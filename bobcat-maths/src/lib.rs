@@ -14,6 +14,9 @@ use num_traits::{One, Zero};
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
 
+#[cfg(feature = "proptest-enabled")]
+pub mod strategies;
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
