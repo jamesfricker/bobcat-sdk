@@ -45,5 +45,8 @@ proptest-enabled = ["bobcat-maths/proptest-enabled"]
 proptest = ["proptest-enabled", "bobcat-storage/proptest"]
 panic = ["bobcat-panic"]
 panic-revert = ["bobcat-panic", "bobcat-panic/panic-revert"]
-dont-define-symbols = ["bobcat-entry/dont-define-symbols"]
+dont-define-symbols = [
+	"bobcat-entry/dont-define-symbols",
+	"bobcat-call/dont-define-symbols"
+]
 ruint-enabled = ["bobcat-maths/ruint-enabled"]

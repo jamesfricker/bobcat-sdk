@@ -406,6 +406,7 @@ dependencies = [
 name = "bobcat-call"
 version = "0.6.2"
 dependencies = [
+ "bobcat-entry",
  "bobcat-maths",
  "paste",
 ]

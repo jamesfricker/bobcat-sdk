@@ -8,6 +8,8 @@ use alloc::vec::Vec;
 
 use bobcat_maths::U;
 
+use bobcat_entry::code_hash;
+
 pub type Address = [u8; 20];
 
 #[cfg(target_arch = "wasm32")]
@@ -40,8 +42,6 @@ mod impls {
         ) -> u8;
 
         pub(crate) fn read_return_data(dest: *mut u8, offset: usize, size: usize) -> usize;
-
-        pub(crate) fn account_code_size(address: *const u8) -> usize;
     }
 }
 
@@ -81,10 +81,6 @@ mod impls {
     pub(crate) unsafe fn read_return_data(_: *mut u8, _: usize, _: usize) -> usize {
         0
     }
-
-    pub(crate) unsafe fn account_code_size(_: *const u8) -> usize {
-        0
-    }
 }
 
 use impls::{
@@ -92,8 +88,10 @@ use impls::{
     static_call_contract as static_call,
 };
 
-pub fn code_size(addr: Address) -> usize {
-    unsafe { impls::account_code_size(addr.as_ptr()) }
+fn addr_hash_code(addr: Address) -> bool {
+    // It costs to use the length instead of the codehash, so we do it this
+    // way for free:
+    code_hash(addr) != [0u8; 32]
 }
 
 macro_rules! generate_call_variants {
@@ -249,7 +247,7 @@ macro_rules! generate_call_variants {
                 gas: u64,
                 offset: usize,
             ) -> Option<(bool, usize, [u8; DATA_CAP])> {
-                if code_size(contract) > 0 {
+                if addr_hash_code(contract) {
                     Some([<$base_fn _slice>]::<DATA_CAP>(
                         contract, calldata, $($value_param,)? gas, offset,
                     ))
@@ -296,7 +294,7 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
             ) -> bool {
-                if code_size(contract) > 0 {
+                if addr_hash_code(contract) {
                     [<$base_fn _bool>](contract, calldata, $($value_param,)? gas)
                 } else {
                     false
@@ -471,7 +469,7 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64
             ) -> (bool, Option<Vec<u8>>) {
-                if code_size(contract) > 0 {
+                if addr_hash_code(contract) {
                     [<$base_fn _unit_err_vec>](contract, calldata, $($value_param,)? gas)
                 } else {
                     (false, None)
@@ -508,7 +506,7 @@ macro_rules! generate_call_variants {
                 gas: u64,
                 offset: usize,
             ) -> Option<(bool, Vec<u8>)> {
-                if code_size(contract) > 0 {
+                if addr_hash_code(contract) {
                     Some([<$base_fn _vec>](contract, calldata, $($value_param,)? gas, offset))
                 } else {
                     None

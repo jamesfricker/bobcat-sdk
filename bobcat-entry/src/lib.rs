@@ -24,7 +24,7 @@ mod impls {
         pub(crate) fn contract_address(addr: *mut u8);
         pub(crate) fn msg_value(value: *mut u8);
         pub fn chain_id() -> u64;
-        pub(crate) fn account_code_size(address: *const u8) -> usize;
+        pub(crate) fn account_codehash(address: *const u8, dest: *mut u8);
         pub(crate) fn block_timestamp() -> u64;
     }
 }
@@ -60,8 +60,7 @@ mod impls {
         0
     }
 
-    pub(crate) unsafe fn account_code_size(_: *const u8) -> usize {
-        0
+    pub(crate) unsafe fn account_codehash(_: *const u8, _: *mut u8) {
     }
 
     pub(crate) unsafe fn block_timestamp() -> u64 {
@@ -87,8 +86,7 @@ mod impls {
         0
     }
 
-    pub(crate) unsafe fn account_code_size(_: *const u8) -> usize {
-        0
+    pub(crate) unsafe fn account_codehash(_: *const u8, _: *mut u8) {
     }
 
     pub(crate) unsafe fn block_timestamp() -> u64 {
@@ -251,8 +249,10 @@ pub fn msg_value() -> U {
     U(b)
 }
 
-pub fn code_size(addr: Address) -> usize {
-    unsafe { impls::account_code_size(addr.as_ptr()) }
+pub fn code_hash(addr: Address) -> [u8; 32] {
+    let mut b = [0u8; 32];
+    unsafe { impls::account_codehash(addr.as_ptr(), b.as_mut_ptr()) };
+    b
 }
 
 pub fn chain_id() -> u64 {

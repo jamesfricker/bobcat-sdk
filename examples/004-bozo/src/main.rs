@@ -2,7 +2,7 @@
 #![no_main]
 
 use bobcat_sdk::{
-    call::{call_bool, call_word_err_vec},
+    call::{safe_call_bool, call_bool, call_word_err_vec},
     cd::{address, const_keccak_sel, read_words},
     entry::{
         contract_address, msg_sender, read_args_safe, revert_if_bad_call_slice_vec,
@@ -67,9 +67,7 @@ fn state_play(
     if asset != ADDR_ASSET {
         // Transfer the asset to us:
         assert!(
-            // FIXME: there's a bug in arbos-foundry with codesize checking right
-            // now. Use safe_call_bool instead.
-            call_bool(
+            safe_call_bool(
                 asset,
                 &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
                 &U::ZERO,

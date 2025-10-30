@@ -12,7 +12,9 @@ name = "bobcat_call"
 
 [features]
 alloc = []
+dont-define-symbols = ["bobcat-entry/dont-define-symbols"]
 
 [dependencies]
+bobcat-entry = { version = "0.6.2", path = "../bobcat-entry" }
 bobcat-maths = { version = "0.6.2", path = "../bobcat-maths" }
 paste.workspace = true
