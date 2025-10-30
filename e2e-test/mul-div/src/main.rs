@@ -4,7 +4,6 @@
 use bobcat_sdk::{
     cd::{const_keccak_sel, read_words},
     entry::*,
-    maths::U,
 };
 
 #[global_allocator]
@@ -35,7 +34,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let args = &read_args_safe!(args_len, { (32 * 3) + 4 });
     let (x, y, z) = read_words!(&args[4..], 3);
     write_result_slice(&match args[..4].try_into().unwrap() {
-        SEL_ONLINE => x.mul_div(&y, &z).unwrap_or_default().0 .0,
+        SEL_ONLINE => x.mul_div(&y, *z).unwrap_or_default().0 .0,
         SEL_OFFLINE => r_mul_div(
             U256::from_be_bytes(x.0),
             U256::from_be_bytes(y.0),

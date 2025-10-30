@@ -1,7 +1,7 @@
 
 RELEASE := target/wasm32-unknown-unknown/release
 
-BUILT := ${RELEASE}/chainlink-vrf-test.wasm
+BUILT := ${RELEASE}/beacon.d
 
 PROJECTS := \
 	chainlink-vrf-test \
@@ -10,7 +10,8 @@ PROJECTS := \
 	counter \
 	mul-div \
 	beacon \
-	panic-revert
+	panic-revert \
+	eip1967-proxy
 
 all: wasm
 
@@ -26,7 +27,8 @@ wasm: \
 	counter.wasm \
 	mul-div.wasm \
 	beacon.wasm \
-	panic-revert.wasm
+	panic-revert.wasm \
+	eip1967-proxy.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -56,6 +58,10 @@ panic-revert.wasm: ${BUILT}
 	@rm -f panic-revert.wasm
 	@./wasm-post.sh ${RELEASE}/panic-revert.wasm panic-revert.wasm
 
+eip1967-proxy.wasm: ${BUILT}
+	@rm -f eip1967-proxy.wasm
+	@./wasm-post.sh ${RELEASE}/eip1967-proxy.wasm eip1967-proxy.wasm
+
 clean:
 	@rm -rf \
 		target \
@@ -65,4 +71,6 @@ clean:
 		counter.wasm \
 		mul-div.wasm \
 		beacon.wasm \
-		panic-revert.wasm
+		panic-revert.wasm \
+		eip1967-proxy.wasm
+

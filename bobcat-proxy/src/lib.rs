@@ -32,14 +32,14 @@ macro_rules! unpack_arr {
 }
 
 /// Make a EIP1967 proxy that reads from the standard storage slot.
-pub const fn make_eip1967_proxy(logic: Address) -> [u8; 1 + 20 + 102] {
+pub const fn make_eip1967_proxy(logic: Address) -> [u8; 1 + 20 + 76] {
     // Created from eip1967.huff .
     concat_arrays!(
       [0x73],
       logic,
       unpack_arr!(
-          b"7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc55603a8060403d393df3365f5f375f5f365f7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545af45f3d5f5f3e3d9161003857fd5bf3",
-          101
+          b"602060305f395f5155603a8060273d393df3365f5f375f5f365f7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545af45f3d5f5f3e3d9161003857fd5bf3",
+          76
       )
     )
 }

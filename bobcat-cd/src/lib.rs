@@ -23,329 +23,329 @@ macro_rules! read_words {
     ($slice:expr, 1) => {{
         let s = $slice;
         assert!(s.len() >= 32);
-        &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) })
+        &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) })
     }};
     ($slice:expr, 2) => {{
         let s = $slice;
         assert!(s.len() >= 64);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 3) => {{
         let s = $slice;
         assert!(s.len() >= 96);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 4) => {{
         let s = $slice;
         assert!(s.len() >= 128);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 5) => {{
         let s = $slice;
         assert!(s.len() >= 160);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 6) => {{
         let s = $slice;
         assert!(s.len() >= 192);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 7) => {{
         let s = $slice;
         assert!(s.len() >= 224);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 8) => {{
         let s = $slice;
         assert!(s.len() >= 256);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 9) => {{
         let s = $slice;
         assert!(s.len() >= 288);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 10) => {{
         let s = $slice;
         assert!(s.len() >= 320);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 11) => {{
         let s = $slice;
         assert!(s.len() >= 352);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 12) => {{
         let s = $slice;
         assert!(s.len() >= 384);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 13) => {{
         let s = $slice;
         assert!(s.len() >= 416);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 14) => {{
         let s = $slice;
         assert!(s.len() >= 448);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 15) => {{
         let s = $slice;
         assert!(s.len() >= 480);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 16) => {{
         let s = $slice;
         assert!(s.len() >= 512);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 17) => {{
         let s = $slice;
         assert!(s.len() >= 544);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 18) => {{
         let s = $slice;
         assert!(s.len() >= 576);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 19) => {{
         let s = $slice;
         assert!(s.len() >= 608);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[576..608].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[576..608].as_ptr() as *const [u8; 32]) }),
         )
     }};
     ($slice:expr, 20) => {{
         let s = $slice;
         assert!(s.len() >= 640);
         (
-            &U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[576..608].as_ptr() as *const [u8; 32]) }),
-            &U::from(unsafe { *(s[608..640].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[..32].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..64].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[64..96].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[96..128].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[128..160].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[16..192].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[192..224].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[224..256].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[256..288].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[288..320].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[32..352].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[352..384].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[384..416].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[416..448].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[448..480].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[48..512].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[512..544].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[544..576].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[576..608].as_ptr() as *const [u8; 32]) }),
+            &$crate::U::from(unsafe { *(s[608..640].as_ptr() as *const [u8; 32]) }),
         )
     }};
 }

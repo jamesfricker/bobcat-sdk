@@ -1,0 +1,8 @@
+[package]
+name = "eip1967-proxy"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bobcat-sdk = { workspace = true, features = ["alloc", "panic-revert"] }
+mini-alloc.workspace = true
