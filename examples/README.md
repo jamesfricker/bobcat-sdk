@@ -1,13 +1,13 @@
 
 # Examples
 
-Tiny collection of examples of bobcat-sdk, including some testing to spot codesize
-increase between releases. Examples that are equivalent to the reference examples must be
-functionally identical. These are here for a comparison of the code profile of these
-examples, as they don't need the allocator to be used, like the tests.
+This is a tiny collection of bobcat-sdk examples, including some tests to spot codesize
+regressions between releases. Examples that mirror the reference versions must remain
+functionally identical. They provide a comparison of each example's code profile because
+they do not require the allocator, unlike the tests.
 
-It's better to check e2e-tests for a better example of everything available with this sdk.
-Compilation of these examples must be done from the directories of each project.
+For a more complete illustration of what the SDK offers, check the end-to-end tests. Build
+each example from its own project directory.
 
 ## Codesize comparison (in bytes)
 

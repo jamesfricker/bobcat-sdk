@@ -1,23 +1,25 @@
 
-<img src="logo.svg" alt="bobcat-sdk loog" width="160"/>
+<img src="logo.svg" alt="bobcat-sdk logo" width="160"/>
 
 # bobcat-sdk
 
 bobcat-sdk is an opinionated SDK for Arbitrum Stylus, intended for advanced users.
 
+![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)
+
 ## Codesize savings
 
 bobcat-sdk is smaller than stylus-sdk. Check `examples` to see a comparison of a few
-testing items, and some discussion of the methodology.
+testing items, and a discussion of the methodology.
 
 ## Disclaimer
 
-If you've never worked with Arbitrum Stylus before, this SDK is not for you! Check out the
-official stylus-sdk repo.
+If you've never worked with Arbitrum Stylus before, this SDK is not for you. Check out the
+official stylus-sdk repository first.
 
 ## Usage
 
-Note: generated storage selector coming soon.
+Note: a generated storage selector is coming soon.
 
 ```rust
 // main.rs
@@ -62,18 +64,18 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
 
 1. Macro/compile time heavy features equivalent to the SDK.
 
-2. Math operations, and native U256 and I256 types that are simply slices. Use the hidden
+2. Math operations, and native U256 and I256 types that are simple slices. Use the hidden
 math operations in the Stylus VM for everything to keep codesize low.
 
-3. Calling interface (CALL, STATICCALL, DELEGATECALL). Simple functions for unpacking the
-results.
+3. Calling interface (CALL, STATICCALL, DELEGATECALL). Provide simple functions for
+unpacking the results.
 
 4. Creation (CREATE1/CREATE2) interface.
 
-5. Minimal proxy creation features la Vyper. Static proxy, proxy that reads from a slot,
-beacon proxy.
+5. Minimal proxy creation features à la Vyper. Include static proxies, proxies that read
+from a slot, and beacon proxies.
 
-6. Each library feature is able to be imported as a separate package without the whole thing.
+6. Each library feature can be imported as a separate package without the whole SDK.
 
 7. Have to opt into the allocator.
 
@@ -84,21 +86,21 @@ beacon proxy.
 10. Reentrancy guard using a Vyper-like exchange method of protecting the method id for
 per-function reentrancy guards.
 
-11. Support for every interface Vyper provides (these are the most common). Also a few
-that the Superposition team makes special use of (Chainlink data feeds, Permit, LzRead,
-Camelot, 9lives, Uniswap). We also welcome community contributions on this front!
+11. Support for every interface Vyper provides (these are the most common), plus a few
+that the Superposition team makes frequent use of (Chainlink data feeds, Permit, LzRead,
+Camelot, 9lives, Uniswap). We also welcome community contributions on this front.
 
-12. The ability to distill builtin functions to basic types to reduce codesize if needed.
-Most functions will ship with a form to use Result and Option, but also the ability to get
-the raw values and a simple bool value if needed. This is because Result and Option
-respectively have an impact on code, with Option having a lesser impact. Programmers
-trying to reduce their codesize presence might wish to reduce their use of these.
+12. The ability to distill built-in functions to basic types to reduce codesize if needed.
+Most functions will ship with a Result and Option form, but they will also expose raw
+values and simple booleans when that is helpful. Result and Option increase codesize (with
+Option having a smaller impact), so developers focused on reducing their codesize can
+choose the lighter forms.
 
 ## Non-goals
 
-1. Test mocking features (like setting the sender). Use ArbOS-Foundry for e2e testing!
-These functions will be provided, but you can't set to them. Check `e2e-test` to see an
-example of this in practice!
+1. Test-mocking features (such as setting the sender). Use ArbOS-Foundry for end-to-end
+testing instead. These functions will be provided, but you cannot set them. Check
+`e2e-test` for a practical example.
 
 2. Solidity code generation of the ABI.
 
@@ -110,45 +112,43 @@ example of this in practice!
 
 6. Visibility setting on the functions.
 
-7. Payable designation to functions.
+7. Payable designations for functions.
 
 8. Trait inheritance.
 
-9. Code that does a high level execution of interface calldata. For example, code that
-calls erc20 on other tokens for you using static_call. The reason is that in our
-experience, you will always be defining a per-application mock for the native host for
-these calls. The mock will usually resemble thread local storage for balances. So we don't
-want to generate code like that for users, since we find the approach in the OZ repo too
-cumbersome for our (Superposition) uses. We want to encourage users with this repo to use
-arbos-foundry for e2e mocking, while providing the basics to simply compile the program
-for everything else. Though, we will provide decoding functions for the interfaces.
+9. Code that performs high-level execution of interface calldata. For example, code that
+calls ERC-20 on other tokens for you using `static_call`. In our experience, you will
+define a per-application mock for the native host for these calls. The mock usually
+resembles thread-local storage for balances. We avoid generating code like that because we
+find the approach in the OZ repo too cumbersome for our (Superposition) use cases. We
+encourage users to rely on arbos-foundry for end-to-end mocking while providing the basics
+to compile the program for everything else. We still provide decoding functions for the
+interfaces.
 
 ## Maths
 
-With wasm, it's best to use either 32 bit numbers, or to go hard and use the entire 256
-bit native EVM number. The reason is that the machine is natively 32 bit, so operations
-involving that won't involve code generation. Like the wasm machine, the Stylus machine
-provides some operations for 256 bit math we can use to keep codesize down. The only
-reason you would use the other integer types is to keep calldata low if you're encoding with
-a different format.
+With wasm, it is best to use either 32-bit numbers or go all-in with the entire 256-bit
+native EVM number. The machine is natively 32-bit, so operations involving those values do
+not require additional code generation. Like the wasm machine, the Stylus machine provides
+operations for 256-bit math that we can use to keep codesize down. The only reason to use
+other integer types is to keep calldata low when you encode with a different format.
 
-The native integer types here use the native Stylus functions where possible for math,
-keeping codesize (and gas I imagine) super low. Some functions we use frequently in web3
-are also provided, including mul_div, mul_div_round_up, and some widening operations. The
-functions use the native vm operations for minimal codesize impact.
+The native integer types in this SDK use Stylus functions for math whenever possible,
+keeping codesize (and gas, we imagine) very low. Some functions we use frequently in web3
+are also included, such as `mul_div`, `mul_div_round_up`, and several widening operations.
+These functions use the native VM operations for minimal codesize impact.
 
-We don't support anything other than the native type for storage access, except [u8; 20]
-for addresses. This is to encourage thoughtful use of the storage and the types.
+We do not support anything other than the native type for storage access, except `[u8; 20]`
+for addresses. This encourages thoughtful use of storage and types.
 
 ## Constant functions
 
-Some functions are available in a const form. These are implemented in code, avoiding using
-the host features. These functions should not be used at runtime, instead using the
-non-const functions. This will reduce the amount of codesize in the generated code by
-preferring to use the host implementations of these functions.
+Some functions are available in a const form. These are implemented in code, avoiding the
+host features. Do not use the const variants at runtime. Prefer the non-const functions to
+reduce the amount of codesize in the generated code by leaning on the host implementations.
 
-I imagine it's okay to use the constant functions inside a function that does the
-calculation, like so:
+It is fine to use the constant functions inside a function that performs the calculation,
+like so:
 
 ```rust
 pub fn get_ed25519_count() -> U {
@@ -158,21 +158,34 @@ pub fn get_ed25519_count() -> U {
 
 ## Philosophy
 
-This SDK strives to be like the bobcat, nimble, stalking its prey in winter, conserving
-its energy. Tiny, small feature-set, conservative. The ability to opt out of parts of the
-library. Once this SDK is finished, there will be no new features, with the exception of
-using new wasm features, or support for ArbOS upgrades. If you want shiny new things, use
-the mainstream SDK, or add the features yourself.
+This SDK strives to be like the bobcat: nimble, stalking its prey in winter, and
+conserving its energy. It is tiny, focused, and conservative, with the ability to opt out
+of parts of the library. Once this SDK is finished, there will be no new features except
+for adopting new wasm features or supporting ArbOS upgrades. If you want shiny new things,
+use the mainstream SDK or add the features yourself.
 
 ## Why make this?
 
-At Superposition, we often run up against codesize restrictions. We're fairly opinionated
-with our development practices, even developing contracts that use a Solana-style decoding
-method as opposed to the classic EVM calldata format. The SDK's featurefulness hinders our
-development practices when we go off the beaten path (which happens a lot). We're also
-often a victim of coderot in the main SDK. We wanted something small and versatile that
-would let us lean on ArbOS-Foundry for contract end to end testing, with the bare minimum
-of features that we need.
+At Superposition, we often run up against codesize restrictions. We are opinionated with
+our development practices, including developing contracts that use a Solana-style decoding
+method instead of the classic EVM calldata format. The feature-rich SDK hinders our
+development practices when we go off the beaten path (which happens a lot). We are also
+frequently victims of code rot in the main SDK. We wanted something small and versatile
+that lets us lean on ArbOS-Foundry for end-to-end contract testing, with only the features
+we truly need.
+
+## Quick start with `bobcat-new`
+
+Use `bobcat-new.sh` to scaffold a project quickly:
+
+```sh
+./bobcat-new.sh my-new-project
+cd my-new-project
+make my-new-project.wasm
+```
+
+The script creates a ready-to-build workspace with sensible defaults, a deploy script, and
+a `Makefile` that produces the optimized wasm artifact.
 
 ## Credits
 

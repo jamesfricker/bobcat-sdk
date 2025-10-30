@@ -1,14 +1,14 @@
 
 # Camelot swapping
 
-This example simply swaps a Camelot token with some arguments given, without regard for
-the deadline.
+This example swaps a Camelot token with the provided arguments, ignoring the deadline for
+simplicity.
 
-The default SDK, with the standard library disabled, and a panic handler set to unwind,
-the code is 44kb. This is with me trying to write the code in the most idiomatic way
-possible (though, I had a crash with my editor that somehow rolled back the file I was
-editing -- it had better revert handling).
+Using the default SDK with the standard library disabled and a panic handler set to unwind,
+the code weighs in at 44 KB. That figure comes from writing the code as idiomatically as
+possible (although an editor crash rolled back a revision that had better revert
+handling).
 
-For this comparison, I tried to be conscious of what might be Solidity-like behaviour,
-preferring to revert with the revert data in the bobcat-sdk version of the code. The
-bobcat-sdk code comes in at 4000 bytes!
+For this comparison, we intentionally leaned into Solidity-like behaviour, preferring to
+revert with revert data in the bobcat-sdk version of the code. The bobcat-sdk code lands at
+4,000 bytes.
