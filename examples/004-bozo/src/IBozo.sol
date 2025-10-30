@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
 interface IBozo {
@@ -25,4 +25,8 @@ interface IBozo {
 
     function poolSize() external view returns (uint256);
     function poolAsset() external view returns (address);
+
+    function upgrade(address newImpl) external;
+
+    function changeAdmin(address newAdmin) external;
 }

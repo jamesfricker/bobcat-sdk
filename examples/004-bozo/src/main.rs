@@ -13,6 +13,7 @@ use bobcat_sdk::{
         eip20::{make_fn_approve, make_fn_transfer_from},
     },
     maths::U,
+    storage::{const_slot_off_curve, storage_load, storage_store},
     storage::{flush_guard, reentrancy_guard_sel},
 };
 
@@ -24,6 +25,14 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 pub mod storage;
 
 type Address = [u8; 20];
+
+/// Slot that contains the admin functionality, for an admin to come in
+/// and replace the implementation. May be set to zero to prevent this
+/// contract from being upgraded.
+const SLOT_ADMIN: U = const_slot_off_curve(b"eip1967.proxy.admin");
+
+/// Slot that contains the implementation address for the proxy to use.
+const SLOT_IMPL: U = const_slot_off_curve(b"eip1967.proxy.implementation");
 
 /// Asset that assets are converted to, to be used in the game.
 const ADDR_ASSET: [u8; 20] = address!(b"af88d065e77c8cC2239327C5EDb3A432268e5831");
@@ -43,6 +52,8 @@ const SEL_POOL_ASSET: [u8; 4] = const_keccak_sel(b"poolAsset()");
 //
 const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(address,uint256,uint256,uint256,address)");
 const SEL_DISTRIBUTE_REWARDS: [u8; 4] = const_keccak_sel(b"distributeRewards(address,uint256)");
+const SEL_UPGRADE: [u8; 4] = const_keccak_sel(b"upgrade(address)");
+const SEL_CHANGE_ADMIN: [u8; 4] = const_keccak_sel(b"changeAdmin(address)");
 
 fn view_pool_size() -> usize {
     write_result_word(&storage::pool_size::get(&storage::epoch::get()));
@@ -147,6 +158,18 @@ fn state_distribute_rewards(recipient: Address, rng: &U) -> usize {
     0
 }
 
+fn state_upgrade(new_impl: Address) -> usize {
+    assert_eq!(storage_load(&SLOT_ADMIN), msg_sender().into());
+    storage_store(&SLOT_IMPL, &U::from(new_impl));
+    0
+}
+
+fn state_change_admin(new_admin: Address) -> usize {
+    assert_eq!(storage_load(&SLOT_ADMIN), msg_sender().into());
+    storage_store(&SLOT_ADMIN, &U::from(new_admin));
+    0
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     // Allocate the full amount that we will see possibly:
@@ -173,6 +196,14 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
         SEL_DISTRIBUTE_REWARDS => flush_guard(|| {
             let (recipient, rng) = read_words!(&args[4..], 2);
             state_distribute_rewards(recipient.into(), rng)
+        }),
+        SEL_UPGRADE => flush_guard(|| {
+            let new_impl = read_words!(&args[4..], 1);
+            state_upgrade(new_impl.into())
+        }),
+        SEL_CHANGE_ADMIN => flush_guard(|| {
+            let new_admin = read_words!(&args[4..], 1);
+            state_change_admin(new_admin.into())
         }),
         _ => 1,
     }
