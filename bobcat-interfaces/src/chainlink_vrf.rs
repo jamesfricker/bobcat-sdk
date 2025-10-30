@@ -1,24 +1,28 @@
 use bobcat_cd::{leftpad_u16, leftpad_u32, leftpad_u8, leftpad_usize};
 
+use bobcat_maths::U;
+
 use array_concat::concat_arrays;
 
 use crate::selectors;
 
 selectors! {
-    SEL_CALCULATE_REQUEST_PRICE = b"calculateRequestPriceNative(uint32,uint32)",
+    SEL_ESTIMATE_REQUEST_PRICE_NATIVE = b"estimateRequestPriceNative(uint32,uint32,uint256)",
     SEL_REQUEST_RANDOM_WORDS_IN_NATIVE = b"requestRandomWordsInNative(uint32,uint16,uint32,bytes)",
     SEL_LINK = b"link()",
     SEL_LINK_NATIVE_FEED = b"linkNativeFeed()"
 }
 
-pub const fn make_fn_calculate_request_price(
+pub const fn make_fn_estimate_request_price_native(
     callback_gas_limit: u32,
     num_words: u32,
-) -> [u8; 32 * 2 + 4] {
+    request_gas_price_wei: U,
+) -> [u8; 32 * 3 + 4] {
     concat_arrays!(
-        SEL_CALCULATE_REQUEST_PRICE,
+        SEL_ESTIMATE_REQUEST_PRICE_NATIVE,
         leftpad_u32(callback_gas_limit),
-        leftpad_u32(num_words)
+        leftpad_u32(num_words),
+        request_gas_price_wei.0
     )
 }
 
@@ -79,7 +83,7 @@ pub fn make_fn_request_words_in_native_no_bytes(
         callback_gas_limit,
         request_confirmations,
         num_words,
-        []
+        [],
     )
 }
 

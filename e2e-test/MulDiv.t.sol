@@ -8,7 +8,8 @@ import {Test} from "forge-std/Test.sol";
 import {IArbFoundry} from "./IArbFoundry.sol";
 
 interface IMulDiv {
-    function muldiv(uint256,uint256) external pure returns (uint256);
+    function online(uint256,uint256,uint256) external pure returns (uint256);
+    function offline(uint256,uint256,uint256) external pure returns (uint256);
 }
 
 contract MulDiv is Test {
@@ -20,7 +21,7 @@ contract MulDiv is Test {
         ));
     }
 
-    function testMulDiv() public {
-        assertEq(14798, mulDiv.muldiv(123, 12031));
+    function testFuzz_online(uint256 x, uint256 y, uint256 z) public {
+        assertEq(mulDiv.offline(x, y, z), mulDiv.online(x, y, z));
     }
 }

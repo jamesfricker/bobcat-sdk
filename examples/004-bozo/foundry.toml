@@ -1,0 +1,5 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["../../forge-libs"]
+fs_permissions = [{ access = "read", path = "bozo.wasm"}]

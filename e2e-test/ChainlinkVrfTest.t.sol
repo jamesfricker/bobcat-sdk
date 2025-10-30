@@ -16,13 +16,13 @@ contract ChainlinkVrfTest is Test {
     IVrfCallback vrfCallback;
 
     function setUp() public {
-        vm.createSelectFork("https://sepolia-rollup.arbitrum.io/rpc", 205928753);
+        vm.createSelectFork("https://sepolia-rollup.arbitrum.io/rpc");
         vrfCallback = IVrfCallback(IArbFoundry(address(vm)).deployStylusCode(
             "e2e-test/chainlink-vrf-test.wasm"
         ));
     }
 
-    function testCallback() public {
+    function testCallback() public view {
         assert(!vrfCallback.wasCalled());
     }
 

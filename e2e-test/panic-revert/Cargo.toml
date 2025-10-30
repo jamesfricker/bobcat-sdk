@@ -1,0 +1,8 @@
+[package]
+name = "panic-revert"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mini-alloc.workspace = true
+bobcat-sdk.workspace = true

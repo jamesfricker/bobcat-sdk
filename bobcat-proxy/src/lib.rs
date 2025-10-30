@@ -104,12 +104,12 @@ pub const fn make_beacon_sel_proxy_sel(
 ) -> [u8; 24 + 4 + 12 + 20 + 30] {
     // Created from sel-beacon-proxy.huff .
     concat_arrays!(
-        unpack_arr!(b"60518060093d393df3602460046020368282355f5f368563", 24),
+        unpack_arr!(b"60518060093d393df3602460046020368282355f5f368663", 24),
         sel,
-        unpack_arr!(b"5f52855f8337878a80601c73", 12),
+        unpack_arr!(b"5f52855f8937808a80601c73", 12),
         beacon,
         unpack_arr!(
-            b"5afa1561004f57895136888a375af43d5f5f3e5f3d911561004f57f35bfd",
+            b"5afa1561004f578951368a8c375af43d5f5f3e5f3d911561004f57f35bfd",
             30
         )
     )

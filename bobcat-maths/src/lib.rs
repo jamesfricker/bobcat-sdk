@@ -2,7 +2,11 @@
 
 use core::{
     cmp::{Eq, Ordering},
-    ops::{Add, Deref, DerefMut, Div, Index, Mul, Rem, Sub},
+    fmt::{Debug, Error as FmtError, Formatter},
+    ops::{
+        Add, AddAssign, BitAnd, BitOr, BitOrAssign, BitXor, Deref, DerefMut, Div, Index, IndexMut,
+        Mul, MulAssign, Neg, Not, Rem, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
+    },
 };
 
 use num_traits::{One, Zero};
@@ -13,8 +17,8 @@ use borsh::{BorshDeserialize, BorshSerialize};
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "std")]
-use core::fmt::{Display, Formatter};
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec};
 
 pub type Address = [u8; 20];
 
@@ -26,6 +30,9 @@ unsafe extern "C" {
     fn math_add_mod(a: *mut u8, b: *const u8, c: *const u8);
     fn math_mul_mod(a: *mut u8, b: *const u8, c: *const u8);
 }
+
+#[cfg(feature = "ruint-enabled")]
+use alloy_primitives::{ruint, U256};
 
 #[cfg(feature = "alloy-enabled")]
 mod alloy {
@@ -83,14 +90,14 @@ mod alloy {
 #[cfg(feature = "alloy-enabled")]
 use alloy::*;
 
-#[derive(Copy, Clone, Debug, PartialEq, Hash)]
+#[derive(Copy, Clone, PartialEq, Hash)]
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
 #[repr(transparent)]
 pub struct U(pub [u8; 32]);
 
-#[derive(Copy, Clone, Debug, PartialEq, Hash)]
+#[derive(Copy, Clone, PartialEq, Hash, Debug)]
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
@@ -104,9 +111,9 @@ pub fn wrapping_div(x: &U, y: &U) -> U {
     b
 }
 
-fn wrapping_div_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
+fn wrapping_div_quo_rem_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> ([u8; C], [u8; C]) {
     if denom == &[0u8; C] {
-        return [0u8; C];
+        return ([0u8; C], [0u8; C]);
     }
     let mut q = [0u8; C];
     let mut r = [0u8; C];
@@ -127,35 +134,11 @@ fn wrapping_div_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
         }
         i += 1;
     }
-    q
-}
-
-fn wrapping_mod_b<const C: usize>(x: &[u8; C], denom: &[u8; C]) -> [u8; C] {
-    if denom == &[0u8; C] {
-        return [0u8; C];
-    }
-    let mut r = [0u8; C];
-    let mut one = [0u8; C];
-    one[C - 1] = 1;
-    let mut two = [0u8; C];
-    two[C - 1] = 2;
-    let mut i = 0;
-    while i < C * 8 {
-        let bit = (x[i / 8] >> (7 - (i % 8))) & 1;
-        r = wrapping_mul_b::<C>(&r, &two);
-        if bit == 1 {
-            r = wrapping_add_b::<C>(&r, &one);
-        }
-        if r >= *denom {
-            r = wrapping_sub_b::<C>(&r, denom);
-        }
-        i += 1;
-    }
-    r
+    (q, r)
 }
 
 pub fn const_wrapping_div(x: &U, y: &U) -> U {
-    U(wrapping_div_b::<32>(&x.0, &y.0))
+    U(wrapping_div_quo_rem_b::<32>(&x.0, &y.0).0)
 }
 
 #[cfg_attr(test, mutants::skip)]
@@ -171,6 +154,11 @@ pub fn modd(x: &U, y: &U) -> U {
     let mut b = *x;
     unsafe { math_mod(b.as_mut_ptr(), y.as_ptr()) }
     b
+}
+
+pub fn mul_mod(mut x: U, y: &U, z: &U) -> U {
+    unsafe { math_mul_mod(x.as_mut_ptr(), y.as_ptr(), z.as_ptr()) }
+    x
 }
 
 const fn wrapping_add_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
@@ -291,12 +279,262 @@ pub fn checked_mul(x: &U, y: &U) -> Option<U> {
         None
     } else {
         let z = x.mul_mod(y, &U::MAX);
-        if z.is_zero() { Some(U::MAX) } else { Some(z) }
+        if z.is_zero() {
+            Some(U::MAX)
+        } else {
+            Some(z)
+        }
     }
 }
 
 pub fn saturating_mul(x: &U, y: &U) -> U {
     checked_mul(x, y).unwrap_or(U::MAX)
+}
+
+fn gcd(mut x: U, mut y: U) -> U {
+    while y.is_some() {
+        (x, y) = (y, x % y);
+    }
+    x
+}
+
+pub fn gcd_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
+    if denom.is_zero() {
+        return None;
+    }
+    let g1 = gcd(*x, denom);
+    let x_reduced = x / &g1;
+    let denom_reduced = denom / g1;
+    let g2 = gcd(*y, denom_reduced);
+    let y_reduced = y / &g2;
+    let denom_final = denom_reduced / g2;
+    let product = x_reduced.checked_mul(&y_reduced)?;
+    let result = (x_reduced * y_reduced) / denom_final;
+    let remainder = product % denom_final;
+    Some((result, remainder.is_some()))
+}
+
+pub fn gcd_mul_div_round_up(x: &U, y: &U, denom: U) -> Option<U> {
+    let (x, y) = gcd_mul_div(x, y, denom)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
+pub fn widening_mul(x: &U, y: &U) -> [u8; 64] {
+    let shift_128 = &U([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0,
+    ]);
+    let x_hi = x / shift_128;
+    let x_lo = x % shift_128;
+    let y_hi = y / shift_128;
+    let y_lo = y % shift_128;
+    let t0 = x_lo.mul_mod(&y_lo, &U::MAX);
+    let t1 = x_hi.mul_mod(&y_lo, &U::MAX);
+    let t2 = x_lo.mul_mod(&y_hi, &U::MAX);
+    let t3 = x_hi.mul_mod(&y_hi, &U::MAX);
+    let t0_hi = &t0 / shift_128;
+    let t0_lo = &t0 % shift_128;
+    let t1_hi = &t1 / shift_128;
+    let t1_lo = &t1 % shift_128;
+    let t2_hi = &t2 / shift_128;
+    let t2_lo = &t2 % shift_128;
+    let mid = (t0_hi + t1_lo) + t2_lo;
+    let mid_hi = &mid / shift_128;
+    let mid_lo = &mid % shift_128;
+    let mid_lo_shifted = mid_lo.mul_mod(shift_128, &U::MAX);
+    let out_low = t0_lo + mid_lo_shifted;
+    let out_high = t3 + t1_hi + t2_hi + mid_hi;
+    let mut o = [0u8; 64];
+    o[..32].copy_from_slice(&out_high.0);
+    o[32..].copy_from_slice(&out_low.0);
+    o
+}
+
+/// Widening then truncate mul div that's cheaper in codesize that's safe for cold
+/// operations. The most expensive in gas costs.
+pub fn widening_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
+    if denom.is_zero() {
+        return None;
+    }
+    if x.is_zero() {
+        return Some((U::ZERO, false));
+    }
+    // We use a boring method if the overflow wouldn't happen:
+    if wrapping_div(&U::MAX, x) >= *y {
+        let l = wrapping_mul(x, y);
+        let carry = x.mul_mod(y, &denom).is_some();
+        return Some((wrapping_div(&l, &denom), carry));
+    }
+    let x = widening_mul(x, y);
+    let mut d = [0u8; 64];
+    d[32..].copy_from_slice(&denom.0);
+    let (q, rem) = wrapping_div_quo_rem_b::<64>(&x, &d);
+    if q[..32] != [0u8; 32] {
+        return None;
+    }
+    let l: [u8; 32] = q[32..].try_into().unwrap();
+    let l = U::from(l);
+    let has_carry = rem[32..] != [0u8; 32];
+    Some((l, has_carry))
+}
+
+pub fn widening_mul_div_round_up(x: &U, y: &U, denom: U) -> Option<U> {
+    let (x, y) = widening_mul_div(x, y, denom)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
+/// Muldiv that's used in practice by Uniswap and other on-chain dapps.
+/// Middling in gas costs.
+pub fn mul_div(x: &U, y: &U, mut denom: U) -> Option<(U, bool)> {
+    // Implemented from https://xn--2-umb.com/21/muldiv/
+    if denom.is_zero() {
+        return None;
+    }
+    if x.is_zero() {
+        return Some((U::ZERO, false));
+    }
+    let mut prod0 = wrapping_mul(x, y);
+    let mm = mul_mod(*x, y, &U::MAX);
+    let mut prod1 = wrapping_sub(
+        &wrapping_sub(&mm, &prod0),
+        &if prod0 > mm { U::ONE } else { U::ZERO },
+    );
+    if prod1.is_zero() {
+        let carry = mul_mod(*x, y, &denom).is_some();
+        return Some((wrapping_div(&prod0, &denom), carry));
+    }
+    if prod1 >= denom {
+        return None;
+    }
+    let remainder = mul_mod(*x, y, &denom);
+    let carry = remainder.is_some();
+    if remainder > prod0 {
+        prod1 -= U::ONE;
+    }
+    prod0 = wrapping_sub(&prod0, &remainder);
+    let mut twos = wrapping_sub(&U::ZERO, &denom) & denom;
+    denom = wrapping_div(&denom, &twos);
+    prod0 = wrapping_div(&prod0, &twos);
+    twos = wrapping_add(
+        &wrapping_div(&wrapping_sub(&U::ZERO, &twos), &twos),
+        &U::ONE,
+    );
+    prod0 = prod0 | wrapping_mul(&prod1, &twos);
+    let mut inv = wrapping_mul(&U::from(3u32), &denom) ^ U::from(2u32);
+    for _ in 0..6 {
+        inv = wrapping_mul(
+            &inv,
+            &wrapping_sub(&U::from(2u32), &wrapping_mul(&denom, &inv)),
+        );
+    }
+    Some((wrapping_mul(&prod0, &inv), carry))
+}
+
+pub fn mul_div_round_up(x: &U, y: &U, denom_and_rem: U) -> Option<U> {
+    let (x, y) = mul_div(x, y, denom_and_rem)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
+/// The cheapest muldiv operation, but the most expensive in codesize muldiv.
+#[cfg(feature = "ruint-enabled")]
+pub fn ruint_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
+    if denom.is_zero() {
+        return None;
+    }
+    let x = U256::from_be_slice(x.as_slice());
+    let y = U256::from_be_slice(y.as_slice());
+    let mut denom = U256::from_be_slice(denom.as_slice());
+    let mut mul_and_quo = x.widening_mul::<256, 4, 512, 8>(y);
+    unsafe {
+        ruint::algorithms::div(mul_and_quo.as_limbs_mut(), denom.as_limbs_mut());
+    }
+    let limbs = mul_and_quo.into_limbs();
+    if limbs[4..] != [0_u64; 4] {
+        return None;
+    }
+    let has_carry = !denom.is_zero();
+    let r = U(U256::from_limbs_slice(&limbs[0..4]).to_be_bytes::<32>());
+    Some((r, has_carry))
+}
+
+#[cfg(feature = "ruint-enabled")]
+pub fn ruint_mul_div_round_up(x: &U, y: &U, denom: U) -> Option<U> {
+    let (x, y) = ruint_mul_div(x, y, denom)?;
+    if x.is_max() && y {
+        return None;
+    }
+    Some(if y { x + U::ONE } else { x })
+}
+
+/// Rooti iterative method based on the 9lives implementation. Using this
+/// operation is the equivalent of pow(x, 1/n).
+pub fn checked_rooti(x: U, n: u32) -> Option<U> {
+    if n == 0 {
+        return None;
+    }
+    if x.is_zero() {
+        return Some(U::ZERO);
+    }
+    if n == 1 {
+        return Some(x);
+    }
+    // Due to the nature of this iterative method, we hardcode some
+    // values to have consistency with the 9lives reference.
+    if x == U::from(4u32) && n == 2 {
+        return Some(U::from(2u32));
+    }
+    let n_u256 = U::from(n);
+    let n_1 = n_u256 - U::ONE;
+    // Initial guess: 2^ceil(bits(x)/n)
+    let mut b = 0;
+    let mut t = x;
+    while t.is_some() {
+        b += 1;
+        t >>= 1;
+    }
+    let shift = (b + n as usize - 1) / n as usize;
+    let mut z = U::ONE << shift;
+    let mut y = x;
+    // Newton's method:
+    while z < y {
+        y = z;
+        let p = z.checked_pow(&n_1)?;
+        z = ((x / p) + (z * n_1)) / n_u256;
+    }
+    // Correct overshoot:
+    if y.checked_pow(&n_u256)? > x {
+        y -= U::ONE;
+    }
+    Some(y)
+}
+
+pub fn wrapping_pow(x: &U, exp: &U) -> U {
+    let mut r = U::ONE;
+    let mut i = U::ZERO;
+    while &i < exp {
+        r = wrapping_mul(&r, x);
+        i += U::ONE;
+    }
+    r
+}
+
+pub fn checked_pow(x: &U, exp: &U) -> Option<U> {
+    let mut r = U::ONE;
+    let mut i = U::ZERO;
+    while &i < exp {
+        r = checked_mul(&r, x)?;
+        i += U::ONE;
+    }
+    Some(r)
 }
 
 impl Add for U {
@@ -324,6 +562,12 @@ impl Add for &U {
                 wrapping_add(self, rhs)
             }
         }
+    }
+}
+
+impl AddAssign for U {
+    fn add_assign(&mut self, o: Self) {
+        *self = *self + o;
     }
 }
 
@@ -355,6 +599,12 @@ impl Sub for &U {
     }
 }
 
+impl SubAssign for U {
+    fn sub_assign(&mut self, o: Self) {
+        *self = *self - o;
+    }
+}
+
 impl Mul for U {
     type Output = U;
 
@@ -380,6 +630,12 @@ impl Mul for &U {
                 wrapping_mul(self, rhs)
             }
         }
+    }
+}
+
+impl MulAssign for U {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs
     }
 }
 
@@ -427,6 +683,115 @@ impl Rem for &U {
     }
 }
 
+impl Shl<usize> for U {
+    type Output = Self;
+
+    fn shl(self, shift: usize) -> Self::Output {
+        if shift >= 256 {
+            return U::ZERO;
+        }
+        let mut result = [0u8; 32];
+        let byte_shift = shift / 8;
+        let bit_shift = shift % 8;
+        if bit_shift == 0 {
+            for i in 0..(32 - byte_shift) {
+                result[i] = self.0[i + byte_shift];
+            }
+        } else {
+            let mut carry = 0u8;
+            for i in (byte_shift..32).rev() {
+                let src_idx = i;
+                let dst_idx = i - byte_shift;
+                let byte = self.0[src_idx];
+                result[dst_idx] = (byte << bit_shift) | carry;
+                carry = byte >> (8 - bit_shift);
+            }
+        }
+        U(result)
+    }
+}
+
+impl ShlAssign<usize> for U {
+    fn shl_assign(&mut self, rhs: usize) {
+        *self = *self << rhs
+    }
+}
+
+impl BitAnd for U {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        let mut r = U::ZERO;
+        for i in 0..32 {
+            r[i] = self[i] & rhs[i];
+        }
+        r
+    }
+}
+
+impl BitOr for U {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        let mut r = U::ZERO;
+        for i in 0..32 {
+            r[i] = self[i] | rhs[i];
+        }
+        r
+    }
+}
+
+impl BitXor for U {
+    type Output = Self;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        let mut r = U::ZERO;
+        for i in 0..32 {
+            r[i] = self[i] ^ rhs[i];
+        }
+        r
+    }
+}
+
+impl BitOrAssign for U {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs
+    }
+}
+
+impl Shr<usize> for U {
+    type Output = Self;
+
+    fn shr(self, shift: usize) -> Self::Output {
+        if shift >= 256 {
+            return U::ZERO;
+        }
+        let mut result = U::ZERO;
+        let byte_shift = shift / 8;
+        let bit_shift = shift % 8;
+        if bit_shift == 0 {
+            for i in byte_shift..32 {
+                result[i] = self.0[i - byte_shift];
+            }
+        } else {
+            let mut carry = 0u8;
+            for i in 0..(32 - byte_shift) {
+                let src_idx = i;
+                let dst_idx = i + byte_shift;
+                let byte = self.0[src_idx];
+                result[dst_idx] = (byte >> bit_shift) | carry;
+                carry = byte << (8 - bit_shift);
+            }
+        }
+        result
+    }
+}
+
+impl ShrAssign<usize> for U {
+    fn shr_assign(&mut self, rhs: usize) {
+        *self = *self >> rhs
+    }
+}
+
 impl Eq for U {}
 
 impl PartialOrd for U {
@@ -438,6 +803,43 @@ impl PartialOrd for U {
 impl Ord for U {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0)
+    }
+}
+
+impl Debug for U {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        let mut b = [0u8; 20 * 2];
+        let Ok(s) = const_hex::encode_to_str(self.0, &mut b) else {
+            return Err(FmtError);
+        };
+        write!(f, "{s}")
+    }
+}
+
+impl Not for U {
+    type Output = Self;
+
+    fn not(mut self) -> Self::Output {
+        for i in 0..32 {
+            self[i] = !self[i]
+        }
+        self
+    }
+}
+
+impl Neg for U {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        let mut r = U::ZERO;
+        let mut carry = 1u16;
+        for i in (0..32).rev() {
+            let inverted = !self.0[i] as u16;
+            let sum = inverted + carry;
+            r[i] = sum as u8;
+            carry = sum >> 8;
+        }
+        r
     }
 }
 
@@ -455,12 +857,43 @@ impl U {
         self.0[31] == 1
     }
 
-    pub fn is_zero(&self) -> bool {
-        *self == Self::ZERO
+    pub const fn is_zero(&self) -> bool {
+        let mut i = 0;
+        while i < 32 {
+            if self.0[i] != 0 {
+                return false;
+            }
+            i += 1;
+        }
+        true
+    }
+
+    pub const fn is_max(&self) -> bool {
+        let mut i = 0;
+        while i < 32 {
+            if self.0[i] != u8::MAX {
+                return false;
+            }
+            i += 1;
+        }
+        true
     }
 
     pub fn is_some(&self) -> bool {
         !self.is_zero()
+    }
+
+    pub fn trailing_zeros(&self) -> usize {
+        let mut count = 0;
+        for i in (0..32).rev() {
+            if self[i] == 0 {
+                count += 8;
+            } else {
+                count += self[i].trailing_zeros() as usize;
+                break;
+            }
+        }
+        count
     }
 
     pub fn as_slice(&self) -> &[u8; 32] {
@@ -481,6 +914,10 @@ impl U {
 
     pub fn checked_div(&self, y: &Self) -> Option<Self> {
         checked_div(self, y)
+    }
+
+    pub fn checked_pow(&self, exp: &U) -> Option<Self> {
+        checked_pow(self, exp)
     }
 
     pub fn wrapping_add(&self, y: &Self) -> U {
@@ -511,10 +948,52 @@ impl U {
         saturating_mul(self, y)
     }
 
+    pub fn wrapping_neg(self) -> Self {
+        let mut x = self;
+        let mut carry = 1u8;
+        for b in x.iter_mut().rev() {
+            *b = (!*b).wrapping_add(carry);
+            carry = b.is_zero() as u8;
+        }
+        x
+    }
+
+    pub fn mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
+        mul_div(self, y, z)
+    }
+
+    pub fn mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
+        mul_div_round_up(self, y, z)
+    }
+
+    pub fn widening_mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
+        widening_mul_div(self, y, z)
+    }
+
+    pub fn widening_mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
+        widening_mul_div_round_up(self, y, z)
+    }
+
+    #[cfg(feature = "ruint-enabled")]
+    pub fn ruint_mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
+        ruint_mul_div(self, y, z)
+    }
+
+    #[cfg(feature = "ruint-enabled")]
+    pub fn ruint_mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
+        ruint_mul_div_round_up(self, y, z)
+    }
+
+    pub fn gcd_mul_div(&self, y: &Self, z: Self) -> Option<(Self, bool)> {
+        gcd_mul_div(self, y, z)
+    }
+
+    pub fn gcd_mul_div_round_up(&self, y: &Self, z: Self) -> Option<Self> {
+        gcd_mul_div_round_up(self, y, z)
+    }
+
     pub fn mul_mod(&self, y: &Self, z: &Self) -> Self {
-        let mut b = self.0;
-        unsafe { math_mul_mod(b.as_mut_ptr(), y.as_ptr(), z.as_ptr()) }
-        Self(b)
+        mul_mod(*self, y, z)
     }
 
     pub fn add_mod(&self, y: &Self, z: &Self) -> Self {
@@ -523,65 +1002,14 @@ impl U {
         Self(b)
     }
 
-    pub fn widening_mul(&self, y: &U) -> [u8; 64] {
-        let shift_128 = &U([
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ]);
-        let x_hi = self / shift_128;
-        let x_lo = self % shift_128;
-        let y_hi = y / shift_128;
-        let y_lo = y % shift_128;
-        let t0 = x_lo.mul_mod(&y_lo, &U::MAX);
-        let t1 = x_hi.mul_mod(&y_lo, &U::MAX);
-        let t2 = x_lo.mul_mod(&y_hi, &U::MAX);
-        let t3 = x_hi.mul_mod(&y_hi, &U::MAX);
-        let t0_hi = &t0 / shift_128;
-        let t0_lo = &t0 % shift_128;
-        let t1_hi = &t1 / shift_128;
-        let t1_lo = &t1 % shift_128;
-        let t2_hi = &t2 / shift_128;
-        let t2_lo = &t2 % shift_128;
-        let mid = (t0_hi + t1_lo) + t2_lo;
-        let mid_hi = &mid / shift_128;
-        let mid_lo = &mid % shift_128;
-        let mid_lo_shifted = mid_lo.mul_mod(shift_128, &U::MAX);
-        let out_low = t0_lo + mid_lo_shifted;
-        let out_high = t3 + t1_hi + t2_hi + mid_hi;
-        let mut o = [0u8; 64];
-        o[..32].copy_from_slice(&out_high.0);
-        o[32..].copy_from_slice(&out_low.0);
-        o
-    }
-
-    pub fn mul_div(&self, y: &U, denom: &U) -> Option<(U, bool)> {
-        // TODO: this most certainly could be more efficient!
-        if denom.is_zero() {
-            return None;
-        }
-        let x = self.widening_mul(y);
-        let mut d = [0u8; 64];
-        d[32..].copy_from_slice(&denom.0);
-        let q = wrapping_div_b::<64>(&x, &d);
-        if q[..32] != [0u8; 32] {
-            return None;
-        }
-        let l: [u8; 32] = q[32..].try_into().unwrap();
-        let l = U::from(l);
-        let rem = wrapping_mod_b::<64>(&x, &d);
-        let has_carry = rem[32..] != [0u8; 32];
-        Some((l, has_carry))
-    }
-
-    pub fn mul_div_round_up(&self, y: &U, denom_and_rem: &U) -> Option<U> {
-        let (x, y) = self.mul_div(y, denom_and_rem)?;
-        Some(if y { x + U::ONE } else { x })
+    pub fn checked_rooti(self, x: u32) -> Option<Self> {
+        checked_rooti(self, x)
     }
 }
 
-#[cfg(feature = "std")]
-impl Display for U {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+#[cfg(feature = "alloc")]
+impl core::fmt::Display for U {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let mut result = vec![0u8];
         for &byte in &self.0 {
             let mut carry = byte as u32;
@@ -685,6 +1113,12 @@ impl Index<usize> for U {
     }
 }
 
+impl IndexMut<usize> for U {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
 impl I {
     fn is_neg(&self) -> bool {
         self.0[0] & 0x80 != 0
@@ -756,24 +1190,33 @@ impl From<&U> for Address {
 macro_rules! from_ints {
     ($($t:ty),+ $(,)?) => {
         $(
-            impl From<$t> for U {
-                fn from(x: $t) -> Self {
-                    let mut b = [0u8; 32];
-                    b[32 - core::mem::size_of::<$t>()..].copy_from_slice(&x.to_be_bytes());
-                    U(b)
+            paste::paste! {
+                impl U {
+                    pub const fn [<from_ $t>](x: $t) -> U {
+                        U(array_concat::concat_arrays!(
+                            [0u8; 32-core::mem::size_of::<$t>()],
+                            x.to_be_bytes())
+                        )
+                    }
                 }
-            }
 
-            impl From<U> for $t {
-                fn from(x: U) -> Self {
-                    Self::from_be_bytes(x.into())
+                impl From<$t> for U {
+                    fn from(x: $t) -> Self {
+                        U::[<from_ $t>](x)
+                    }
+                }
+
+                impl From<U> for $t {
+                    fn from(x: U) -> Self {
+                        Self::from_be_bytes(x.into())
+                    }
                 }
             }
         )+
     };
 }
 
-from_ints! { u8, u16, u32, u64, u128 }
+from_ints! { u8, u16, u32, u64, u128, usize }
 
 impl From<I> for [u8; 32] {
     fn from(x: I) -> Self {
@@ -811,7 +1254,11 @@ fn i_div(x: &I, y: &I) -> I {
 
 fn i_rem(x: &I, y: &I) -> I {
     let r = modd(&x.abs(), &y.abs());
-    if x.is_neg() { I(r.0).neg() } else { I(r.0) }
+    if x.is_neg() {
+        I(r.0).neg()
+    } else {
+        I(r.0)
+    }
 }
 
 impl Add for I {
@@ -954,15 +1401,11 @@ mod test {
 
     use super::*;
 
-    fn u_from_u64(value: u64) -> U {
-        U::from(value)
-    }
-
     proptest! {
         #[test]
         fn wrapping_div_b_zero_denominator_yields_zero(numerator in any::<[u8; 4]>()) {
             let zero = [0u8; 4];
-            prop_assert_eq!(wrapping_div_b::<4>(&numerator, &zero), zero);
+            prop_assert_eq!(wrapping_div_quo_rem_b::<4>(&numerator, &zero).0, zero);
         }
 
         #[test]
@@ -974,7 +1417,7 @@ mod test {
             let denominator_u32 = u32::from_be_bytes(denominator);
             let expected = numerator_u32 / denominator_u32;
             prop_assert_eq!(
-                wrapping_div_b::<4>(&numerator, &denominator),
+                wrapping_div_quo_rem_b::<4>(&numerator, &denominator).0,
                 expected.to_be_bytes()
             );
         }
@@ -988,7 +1431,7 @@ mod test {
             let denominator_u32 = u32::from_be_bytes(denominator);
             let expected = numerator_u32 % denominator_u32;
             prop_assert_eq!(
-                wrapping_mod_b::<4>(&numerator, &denominator),
+                wrapping_div_quo_rem_b::<4>(&numerator, &denominator).1,
                 expected.to_be_bytes()
             );
         }
@@ -1026,7 +1469,7 @@ mod test {
             let denominator_u = U::from(denominator);
             prop_assert_eq!(
                 const_wrapping_div(&numerator_u, &denominator_u).0,
-                wrapping_div_b::<32>(&numerator, &denominator)
+                wrapping_div_quo_rem_b::<32>(&numerator, &denominator).0
             );
         }
 
@@ -1037,50 +1480,6 @@ mod test {
             prop_assert_eq!(value.is_zero(), is_zero);
             prop_assert_eq!(value.is_some(), !is_zero);
             prop_assert_eq!(value.is_true(), bytes[31] == 1);
-        }
-
-        #[test]
-        fn mul_div_returns_expected_quotient_and_carry(
-            lhs in any::<u64>(),
-            rhs in any::<u64>(),
-            denom in any::<u64>().prop_filter("denominator must be non-zero", |d| *d != 0)
-        ) {
-            let lhs_u = u_from_u64(lhs);
-            let rhs_u = u_from_u64(rhs);
-            let denom_u = u_from_u64(denom);
-            let (q, carry) = lhs_u.mul_div(&rhs_u, &denom_u).expect("division should succeed");
-
-            let product = (lhs as u128) * (rhs as u128);
-            let denom_u128 = denom as u128;
-            let expected_q = product / denom_u128;
-            let expected_rem = product % denom_u128;
-
-            prop_assert_eq!(u128::from(q), expected_q);
-            prop_assert_eq!(carry, expected_rem != 0);
-        }
-
-        #[test]
-        fn mul_div_round_up_accounts_for_carry(
-            lhs in any::<u64>(),
-            rhs in any::<u64>(),
-            denom in any::<u64>().prop_filter("denominator must be non-zero", |d| *d != 0)
-        ) {
-            let lhs_u = u_from_u64(lhs);
-            let rhs_u = u_from_u64(rhs);
-            let denom_u = u_from_u64(denom);
-            let rounded = lhs_u
-                .mul_div_round_up(&rhs_u, &denom_u)
-                .expect("rounding should succeed");
-
-            let product = (lhs as u128) * (rhs as u128);
-            let denom_u128 = denom as u128;
-            let expected = if product % denom_u128 == 0 {
-                product / denom_u128
-            } else {
-                (product / denom_u128) + 1
-            };
-
-            prop_assert_eq!(u128::from(rounded), expected);
         }
 
         #[test]
@@ -1137,6 +1536,23 @@ mod test {
         #[cfg(feature = "alloc")]
         fn test_u_str(x in any::<U>()) {
             assert_eq!(U256::from_be_bytes(x.0).to_string(), x.to_string());
+        }
+
+        #[test]
+        fn test_u_shl(x in any::<U>(), i in any::<usize>()) {
+            let l = U((U256::from_be_bytes(x.0) << i).to_be_bytes::<32>());
+            assert_eq!(l, x << i);
+        }
+
+        #[test]
+        fn test_u_shr(x in any::<U>(), i in any::<usize>()) {
+            let l = U((U256::from_be_bytes(x.0) >> i).to_be_bytes::<32>());
+            assert_eq!(l, x >> i);
+        }
+
+        #[test]
+        fn test_trailing_zeros(x in any::<U>()) {
+            assert_eq!(U256::from_be_bytes(x.0).trailing_zeros(), x.trailing_zeros());
         }
 
         #[test]

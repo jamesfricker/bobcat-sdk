@@ -5,8 +5,8 @@
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 use bobcat_sdk::{
-    call::call_vec,
-    cd::{const_keccak_sel, read_word_slices},
+    call::{call_word_err_vec, safe_call_unit_err_vec},
+    cd::{const_keccak_sel, read_words},
     entry::*,
     interfaces::{
         camelotv3_swap_router::make_fn_exact_input_single,
@@ -32,27 +32,25 @@ const SEL: [u8; 4] = const_keccak_sel(b"makeSwap(address,address,uint256,uint256
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     assert!(!unsafe { msg_reentrant() });
     let args = read_args_safe!(args_len, { 32 * 4 + 4 });
-    let (token_in, token_out, amount_in, amount_out_min) = read_word_slices!(&args[4..], 4);
+    let (token_in, token_out, amount_in, amount_out_min) = read_words!(&args[4..], 4);
     if args[..4] != SEL {
         return 1;
     }
     let sender = msg_sender();
-    revert_if_bad_call_vec!(call_vec(
+    revert_if_bad_call_unit_vec!(safe_call_unit_err_vec(
         SWAP_ROUTER,
         &make_fn_transfer_from(msg_sender(), contract_address(), amount_in),
         &U::ZERO,
-        u64::MAX,
-        0
+        u64::MAX
     ));
-    revert_if_bad_call_vec!(call_vec(
+    revert_if_bad_call_unit_vec!(safe_call_unit_err_vec(
         SWAP_ROUTER,
         &make_fn_approve(SWAP_ROUTER, amount_in),
         &U::ZERO,
-        u64::MAX,
-        0
+        u64::MAX
     ));
     let deadline = block_timestamp() + 1;
-    let w: [u8; 32] = revert_if_bad_call_vec!(call_vec(
+    let w = revert_if_bad_call_slice_vec!(call_word_err_vec(
         SWAP_ROUTER,
         &make_fn_exact_input_single(
             token_in.into(),
@@ -65,9 +63,8 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
         ),
         &U::ZERO,
         u64::MAX,
-        0
-    ))[..32].try_into().unwrap();
+    ));
     // I tried to have this resemble the reference, even though this isn't necessary.
-    write_result_slice(&w);
+    write_result_word(&w);
     0
 }

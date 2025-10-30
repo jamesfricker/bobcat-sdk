@@ -21,20 +21,27 @@ if [ -d "$project_name" ]; then
 	exit 1
 fi
 
-mkdir -p \
-	"$project_name/contract/.cargo" \
-	"$project_name/contract/src" \
-	"$project_name/$project_name/src"
+lib_project_name="$(echo "$project_name" | sed 's/-/_/g')"
+upper_project_name="$(echo "$project_name" |  sed 's/./\U&/; s/-\(.*\)/\U\1/')"
+
+mkdir "$project_name"
 
 cd "$project_name"
 
-cat >Cargo.toml <<EOF
-[workspace]
-resolver = "3"
-members = ["contract", "$project_name"]
+mkdir src forge-lib test
 
-[workspace.dependencies]
-bobcat-sdk = "0.4.3"
+cat >Cargo.toml <<EOF
+[package]
+name = "$project_name"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "$lib_project_name"
+crate-type   = ["rlib", "cdylib"]
+
+[dependencies]
+bobcat-sdk = { version = "0.5.0", features = ["panic"] }
 
 [profile.release]
 codegen-units = 1
@@ -52,40 +59,9 @@ codegen-units = 16
 panic = "unwind"
 opt-level = "z"
 incremental = true
-EOF
-
-cat >"$project_name/Cargo.toml" <<EOF
-[package]
-name = "$project_name"
-version = "0.1.0"
-edition = "2024"
-
-[lib]
-name = "$project_name"
-crate-type   = ["rlib", "cdylib"]
-
-[dependencies]
-bobcat-sdk = { workspace = true, features = ["panic"] }
-EOF
-
-cat >contract/Cargo.toml <<EOF
-[package]
-name = "contract"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-bobcat-sdk = { workspace = true, features = ["panic"] }
 
 [features]
 std = ["bobcat-sdk/std"]
-EOF
-
-mkdir .cargo
-
-cat >contract/.cargo/config.toml <<EOF
-[build]
-target = "wasm32-unknown-unknown"
 EOF
 
 cat >wasm-post.sh <<EOF
@@ -125,7 +101,7 @@ if [ -z "\$PRIVATE_KEY" ]; then
 fi
 
 cargo stylus deploy \\
-	--wasm-file "$project_name.wasm" \\
+	--wasm-file "$lib_project_name.wasm" \\
 	--private-key "\$PRIVATE_KEY" \\
 	--endpoint "\$url" \\
 	--no-verify \\
@@ -136,12 +112,12 @@ chmod +x deploy.sh
 
 cat >Makefile <<EOF
 
-$project_name.wasm: \$(shell find Cargo.* contract $project_name -type f)
-	@rm -f $project_name.wasm
+$project_name.wasm: \$(shell find Cargo.* src -type f)
+	@rm -f $lib_project_name.wasm
 	@cargo build --release --target wasm32-unknown-unknown
 	@./wasm-post.sh \\
-		target/wasm32-unknown-unknown/release/contract.wasm \\
-		$project_name.wasm
+		target/wasm32-unknown-unknown/release/$project_name.wasm \\
+		$lib_project_name.wasm
 	@./check-codesize.sh $project_name.wasm
 EOF
 
@@ -160,19 +136,14 @@ EOF
 
 chmod +x check-codesize.sh
 
-cat >"$project_name/src/lib.rs" <<EOF
-#![no_std]
-
-pub use bobcat_sdk::panic::panic_handler;
-
-pub fn hello() -> usize { 0 }
-EOF
-
-cat >contract/src/main.rs <<EOF
-#![no_main]
+cat >"src/lib.rs" <<EOF
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use bobcat_sdk::{cd::const_keccak_sel, entry::read_args_safe};
+use bobcat_sdk::{
+    cd::const_keccak_sel,
+    entry::{read_args_safe, write_result_slice},
+    maths::U,
+};
 
 const SEL_HELLO: [u8; 4] = const_keccak_sel(b"hello()");
 
@@ -181,7 +152,10 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let args = &read_args_safe!(args_len, { 32 + 4 });
     let sel: [u8; 4] = args[..4].try_into().unwrap();
     match sel {
-        SEL_HELLO => 0,
+        SEL_HELLO => {
+            write_result_slice(&U::from(123u32).0);
+            0
+        }
         _ => 1,
     }
 }
@@ -192,15 +166,113 @@ $project_name.wasm
 *.wat
 *.wasm1
 target
+out
 EOF
 
-cat >contract/rust-toolchain.toml <<EOF
+cat >rust-toolchain.toml <<EOF
 [toolchain]
 channel = "stable"
 components = [ "rust-src" ]
 EOF
 
+cat >foundry.toml <<EOF
+[profile.default]
+src = "src"
+out = "out"
+libs = ["forge-lib"]
+fs_permissions = [{ access = "read", path = "$lib_project_name.wasm"}]
+EOF
+
+cat >"test/IArbFoundry.sol" <<EOF
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.20;
+
+interface IArbFoundry {
+    function deployStylusCode(string calldata artifactPath) external returns (address deployedAddress);
+    function deployStylusCode(string calldata artifactPath, bytes calldata constructorArgs) external returns (address deployedAddress);
+    function deployStylusCode(string calldata artifactPath, uint256 value) external returns (address deployedAddress);
+    function deployStylusCode(string calldata artifactPath, bytes calldata constructorArgs, uint256 value) external returns (address deployedAddress);
+    function deployStylusCode(string calldata artifactPath, bytes32 salt) external returns (address deployedAddress);
+    function deployStylusCode(string calldata artifactPath, bytes calldata constructorArgs, bytes32 salt) external returns (address deployedAddress);
+    function deployStylusCode(string calldata artifactPath, uint256 value, bytes32 salt) external returns (address deployedAddress);
+    function deployStylusCode(string calldata artifactPath, bytes calldata constructorArgs, uint256 value, bytes32 salt) external returns (address deployedAddress);
+}
+EOF
+
+cat >"src/I${upper_project_name}.sol" <<EOF
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.20;
+
+interface I${upper_project_name} {
+    function hello() external pure returns (uint256);
+}
+EOF
+
+cat >"test/$upper_project_name.t.sol" <<EOF
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.20;
+
+import {Test} from "forge-std/Test.sol";
+
+import {IArbFoundry} from "./IArbFoundry.sol";
+
+import {I$upper_project_name} from "../src/I${upper_project_name}.sol";
+
+contract $upper_project_name is Test {
+    I${upper_project_name} c;
+
+    function setUp() external {
+        c = I${upper_project_name}(IArbFoundry(address(vm)).deployStylusCode(
+            "$lib_project_name.wasm"
+        ));
+    }
+
+    function test_contractDeployed() public view {
+        assertEq(123, c.hello());
+    }
+}
+EOF
+
+cat >tests.sh <<EOF
+#!/bin/sh -e
+
+# This is left here for you to comment out if you have functions you
+# want to test in Rust on the native host:
+#cargo test --features std
+
+make
+
+arbos-forge test \$@
+EOF
+
+chmod +x tests.sh
+
+cat >README.md <<EOF
+
+# $project-name
+
+## Dependencies
+
+1. (https://github.com/OffchainLabs/cargo-stylus)[`cargo-stylus-sdk`] -- Cargo Stylus
+binary for deployment.
+
+2. (https://github.com/iosiro/arbos-foundry)[`arbos-foundry`] -- Needed for testing.
+
+3. Rust with wasm32-unknown-unknown.
+
+## Building
+
+	make
+
+## Testing
+
+	./tests.sh
+EOF
+
+git init
+
+git submodule add --quiet https://github.com/foundry-rs/forge-std forge-lib/forge-std
+
 if ! [ -z "$EDITOR" ]; then
-	$EDITOR contract/src/main.rs &
-	$EDITOR "$project_name/src/lib.rs" &
+	$EDITOR "src/lib.rs" &
 fi

@@ -22,7 +22,7 @@ for n in $files; do
 	size="$(du -b $f)"
 	case $n in
 		bobcat_sdk_examples_001.wasm) check_size $f 4884 ;;
-		bobcat-sdk-examples-002.wasm) check_size $f 4683 ;;
-		bobcat-sdk-examples-003.wasm) check_size $f 3718 ;;
+		bobcat-sdk-examples-002.wasm) check_size $f 4376 ;;
+		bobcat-sdk-examples-003.wasm) check_size $f 4165 ;;
 	esac
 done

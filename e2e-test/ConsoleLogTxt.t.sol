@@ -11,7 +11,7 @@ interface IConsoleLogTxt {
     function print(uint256,uint256) external pure returns (uint256);
 }
 
-contract ChainlinkVrfTest is Test {
+contract ConsoleLogTxt is Test {
     IConsoleLogTxt consoleLogTxt;
 
     function setUp() public {

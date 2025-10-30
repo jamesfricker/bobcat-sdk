@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-panic"
-version = "0.5.0"
+version = "0.6.2"
 edition = "2024"
 license = "MIT"
 description = "Bobcat utilities with a panic handler on Arbitrum Stylus."
@@ -11,5 +11,11 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 name = "bobcat_panic"
 
 [features]
-console = []
+alloc = []
+console = ["alloc"]
 std = []
+panic-revert = ["alloc"]
+
+[dependencies]
+bobcat-entry = { version = "0.6.2", path = "../bobcat-entry" }
+const-hex.workspace = true

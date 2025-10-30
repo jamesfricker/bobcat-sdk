@@ -1,9 +1,9 @@
 [package]
 name = "bobcat-maths"
-version = "0.5.0"
+version = "0.6.2"
 edition = "2024"
 license = "MIT"
-description = "Bobcat SDK utilities performing codesize efficient math on Arbitrum Stylus."
+description = "bobcat-sdk utilities performing codesize efficient math on Arbitrum Stylus."
 homepage = "https://bobcat.so"
 repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
@@ -15,10 +15,13 @@ num-traits = { version = "0.2.19", default-features = false }
 proptest = { workspace = true, optional = true }
 arbitrary = { version = "1.4.2", optional = true, features = ["derive"] }
 proptest-derive = { version = "0.6.0", optional = true }
-alloy-primitives = { version = "1.4.0", default-features = false, optional = true }
+alloy-primitives = { version = ">=1.0.0", default-features = false, optional = true }
 borsh = { version = "1.5.7", default-features = false, features = ["derive"], optional = true }
 mutants = "0.0.3"
 cfg-if = "1.0.3"
+const-hex.workspace = true
+paste.workspace = true
+array-concat.workspace = true
 
 [features]
 std = []
@@ -26,6 +29,7 @@ proptest-enabled = ["std", "proptest", "proptest-derive"]
 arbitrary-enabled = ["std", "arbitrary"]
 alloy-enabled = ["alloy-primitives"]
 alloc = []
+ruint-enabled = ["alloy-primitives"]
 
 [dev-dependencies]
 proptest = { workspace = true }

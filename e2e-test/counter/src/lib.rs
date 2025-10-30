@@ -4,7 +4,7 @@
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
-use bobcat_sdk::{cd::{const_keccak_sel, read_word_slices}, entry::*, maths::U, storage::*};
+use bobcat_sdk::{cd::{const_keccak_sel, read_words}, entry::*, maths::U, storage::*};
 
 pub fn get_number() -> U {
     storage_load(&U::ZERO)
@@ -38,7 +38,7 @@ pub const SEL_ADD_FROM_MSG_VALUE: [u8; 4] = const_keccak_sel(b"addFromMsgValue()
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     assert!(!unsafe { msg_reentrant() });
     let args = read_args_safe!(args_len, { 32 + 4 });
-    let w = read_word_slices!(&args[4..], 1);
+    let w = read_words!(&args[4..], 1);
     flush_guard(|| match args[..4].try_into().unwrap() {
         SEL_NUMBER => write_result_slice(get_number().as_slice()),
         SEL_SET_NUMBER => set_number(w),

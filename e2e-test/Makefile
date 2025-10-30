@@ -9,7 +9,8 @@ PROJECTS := \
 	console-log-txt \
 	counter \
 	mul-div \
-	beacon
+	beacon \
+	panic-revert
 
 all: wasm
 
@@ -24,7 +25,8 @@ wasm: \
 	console-log-txt.wasm \
 	counter.wasm \
 	mul-div.wasm \
-	beacon.wasm
+	beacon.wasm \
+	panic-revert.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -50,6 +52,10 @@ beacon.wasm: ${BUILT}
 	@rm -f beacon.wasm
 	@./wasm-post.sh ${RELEASE}/beacon.wasm beacon.wasm
 
+panic-revert.wasm: ${BUILT}
+	@rm -f panic-revert.wasm
+	@./wasm-post.sh ${RELEASE}/panic-revert.wasm panic-revert.wasm
+
 clean:
 	@rm -rf \
 		target \
@@ -58,4 +64,5 @@ clean:
 		console-log-txt.wasm \
 		counter.wasm \
 		mul-div.wasm \
-		beacon.wasm
+		beacon.wasm \
+		panic-revert.wasm

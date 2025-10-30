@@ -63,3 +63,10 @@ path = "fuzz_targets/mul_b.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rooti"
+path = "fuzz_targets/rooti.rs"
+test = false
+doc = false
+bench = false

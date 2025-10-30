@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 bobcat-sdk.workspace = true
+const-hex = { version = "1.17.0", default-features = false }
 mini-alloc.workspace = true
