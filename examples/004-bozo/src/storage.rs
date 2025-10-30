@@ -79,10 +79,16 @@ pub mod epoch {
     pub fn set(x: &U) {
         storage_store(&U::ZERO, x)
     }
+
+    pub fn incr() {
+        storage_checked_add(&U::ZERO, &U::ONE).unwrap()
+    }
 }
 
 storage! {
+    // Last amount invested's address.
     last_bettor_addr(epoch),
+    // Last amount invested by a user.
     last_bettor_amt(epoch),
     fee_paid(epoch),
     // The entire amount invested in this epoch.

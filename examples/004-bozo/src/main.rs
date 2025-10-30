@@ -1,6 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![no_main]
 
+use core::cmp::min;
+
 use bobcat_sdk::{
     call::{call_bool, call_word_err_vec, safe_call_bool},
     cd::{address, const_keccak_sel, read_words},
@@ -10,11 +12,13 @@ use bobcat_sdk::{
     },
     interfaces::{
         camelotv3_swap_router::make_fn_exact_input_single,
-        eip20::{make_fn_approve, make_fn_transfer_from},
+        eip20::{make_fn_approve, make_fn_transfer, make_fn_transfer_from},
     },
     maths::U,
-    storage::{const_slot_off_curve, storage_load, storage_store},
-    storage::{flush_guard, reentrancy_guard_sel},
+    storage::{
+        const_slot_off_curve, flush_guard, keccak256, reentrancy_guard_sel, storage_load,
+        storage_store,
+    },
 };
 
 use array_concat::concat_arrays;
@@ -34,6 +38,9 @@ const SLOT_ADMIN: U = const_slot_off_curve(b"eip1967.proxy.admin");
 /// Slot that contains the implementation address for the proxy to use.
 const SLOT_IMPL: U = const_slot_off_curve(b"eip1967.proxy.implementation");
 
+/// Operator that's able to trigger the reset cron.
+const ADDR_OPERATOR: [u8; 20] = address!(b"7FA9385bE102ac3EAc297483Dd6233D62b3e1496");
+
 /// Asset that assets are converted to, to be used in the game.
 const ADDR_ASSET: [u8; 20] = address!(b"af88d065e77c8cC2239327C5EDb3A432268e5831");
 
@@ -47,6 +54,8 @@ const FEE: U = U::from_u32(3);
 //
 const SEL_POOL_SIZE: [u8; 4] = const_keccak_sel(b"poolSize()");
 const SEL_POOL_ASSET: [u8; 4] = const_keccak_sel(b"poolAsset()");
+const SEL_PLAYER_COUNT: [u8; 4] = const_keccak_sel(b"playerCount()");
+const SEL_TICKET_COUNT: [u8; 4] = const_keccak_sel(b"ticketCount()");
 
 // ~~~~~ Stateful functions: ~~~~
 //
@@ -65,6 +74,16 @@ fn view_pool_asset() -> usize {
     0
 }
 
+fn view_player_count() -> usize {
+    write_result_word(&storage::user_lottery_ticket_len::get(&storage::epoch::get()));
+    0
+}
+
+fn view_ticket_count() -> usize {
+    write_result_word(&storage::global_tickets::get(&storage::epoch::get()));
+    0
+}
+
 const ONE_HUNDRED: U = U::from_u32(100);
 
 fn state_play(
@@ -75,17 +94,17 @@ fn state_play(
     recipient: Address,
 ) -> usize {
     assert!(amt.is_some(), "amount is zero");
+    // Transfer the asset to us:
+    assert!(
+        safe_call_bool(
+            asset,
+            &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
+            &U::ZERO,
+            u64::MAX,
+        ),
+        "transferFrom revert"
+    );
     if asset != ADDR_ASSET {
-        // Transfer the asset to us:
-        assert!(
-            safe_call_bool(
-                asset,
-                &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
-                &U::ZERO,
-                u64::MAX,
-            ),
-            "transferFrom revert"
-        );
         // Approve the swap router so that we can spend this using a call:
         assert!(
             call_bool(
@@ -152,7 +171,103 @@ fn state_play(
     0
 }
 
-fn state_distribute_rewards(recipient: Address, rng: &U) -> usize {
+fn state_distribute_rewards(rng: &U) -> usize {
+    assert_eq!(ADDR_OPERATOR, msg_sender(), "operator only");
+    let epoch = storage::epoch::get();
+    // Take 80% of the pool, and send to the winning depositor:
+    let last_bettor_addr: Address = storage::last_bettor_addr::get(&epoch).into();
+    let ticket_count = storage::global_tickets::get(&epoch)
+        - storage::user_lottery_tickets::get(&epoch, &last_bettor_addr.into());
+    if ticket_count.is_zero() {
+        // We only had one player! Let's transfer them the full amount, and stop.
+        if last_bettor_addr != [0u8; 20] {
+            assert!(
+                call_bool(
+                    ADDR_ASSET,
+                    &make_fn_transfer(last_bettor_addr, &storage::pool_size::get(&epoch)),
+                    &U::ZERO,
+                    u64::MAX
+                ),
+                "transfer revert"
+            );
+        }
+        let r: [u8; 32 * 3] = concat_arrays!([0u8; 32], U::from(64u32).0, [0u8; 32]);
+        write_result_slice(&r);
+        return 0;
+    }
+    // If we had more than one player, we give the top 80% to the last user:
+    assert!(
+        call_bool(
+            ADDR_ASSET,
+            &make_fn_transfer(
+                last_bettor_addr,
+                &storage::pool_size::get(&epoch)
+                    .mul_div(&U::from(8u32), U::from(10u32))
+                    .unwrap()
+                    .0
+            ),
+            &U::ZERO,
+            u64::MAX
+        ),
+        "transfer revert"
+    );
+    // Using the random word, we start to pick some random words using
+    // keccak. We're only ever going to see 10 winners at max, since we
+    // divide the winnings up to at most 10 people. We take the 20%:
+    let full_lottery_reward = storage::pool_size::get(&epoch)
+        .mul_div(&U::from(2u32), U::from(10u32))
+        .unwrap()
+        .0;
+    let ticket_len: usize = storage::user_lottery_ticket_len::get(&epoch).into();
+    let max_winners = min(ticket_len, 10usize);
+    let user_lottery_reward = full_lottery_reward / U::from(max_winners);
+    let mut winners = [[0u8; 20]; 10];
+    let mut i = 0usize;
+    while max_winners > i {
+        let rng_preimage: [u8; 32 + size_of::<usize>()] = concat_arrays!(rng.0, i.to_be_bytes());
+        let rng = keccak256(&rng_preimage);
+        // The amount outstanding that we can distribute here. We'll reduce this
+        // until it's zero, then do the reward:
+        let mut leftover_tickets = rng % ticket_count;
+        // We prefer to use the storage, though we could actually just load this
+        // in ourselves. We'll repeatedly use the storage cache instead to get
+        // the elements we want.
+        let player_count: usize = storage::user_lottery_ticket_len::get(&epoch).into();
+        // The size of the players won't exceed usize, which should be u32 in our wasm.
+        let mut p: usize = ((rng >> 64) % U::from(player_count)).into();
+        loop {
+            let p_u = U::from(p);
+            let user_amt = storage::user_lottery_tickets::get(&epoch, &p_u);
+            if user_amt >= leftover_tickets {
+                let w: Address = storage::user_lottery_addresses::get(&epoch, &p_u).into();
+                // Instead of swap/popping the storage, we do a search over the slice:
+                let has_user_won_already = winners.contains(&w);
+                if !has_user_won_already {
+                    winners[i] = w;
+                    // Transfer the winner their amount:
+                    assert!(
+                        call_bool(
+                            ADDR_ASSET,
+                            &make_fn_transfer(w, &user_lottery_reward),
+                            &U::ZERO,
+                            u64::MAX
+                        ),
+                        "transfer revert"
+                    );
+                    break;
+                }
+            }
+            // We do a saturating sub so that if we saw the winner before, we set to
+            // 0 safely:
+            leftover_tickets = leftover_tickets.saturating_sub(&user_amt);
+            p += 1;
+            if p >= player_count {
+                p = 0;
+            }
+        }
+        i += 1;
+    }
+    storage::epoch::incr();
     let r: [u8; 32 * 3] = concat_arrays!([0u8; 32], U::from(64u32).0, [0u8; 32]);
     write_result_slice(&r);
     0
@@ -179,6 +294,8 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
         // View functions:
         SEL_POOL_SIZE => view_pool_size(),
         SEL_POOL_ASSET => view_pool_asset(),
+        SEL_PLAYER_COUNT => view_player_count(),
+        SEL_TICKET_COUNT => view_ticket_count(),
         // Side effect generating functions:
         SEL_PLAY => flush_guard(|| {
             reentrancy_guard_sel(&SEL_PLAY, || {
@@ -194,8 +311,8 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             })
         }),
         SEL_DISTRIBUTE_REWARDS => flush_guard(|| {
-            let (recipient, rng) = read_words!(&args[4..], 2);
-            state_distribute_rewards(recipient.into(), rng)
+            let (_recipient, rng) = read_words!(&args[4..], 2);
+            state_distribute_rewards(rng)
         }),
         SEL_UPGRADE => flush_guard(|| {
             let new_impl = read_words!(&args[4..], 1);

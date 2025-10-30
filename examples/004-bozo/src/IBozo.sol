@@ -10,17 +10,13 @@ interface IBozo {
         address recipient
     ) external returns (uint256 epoch, uint256 deposited);
 
-    struct WinAmount {
-        address winner;
-        uint256 amountReceived;
-    }
-
     function distributeRewards(
         address rewardRecipient,
         uint256 rngWord
     ) external returns (
-        uint256 callerReward,
-        WinAmount[] memory winners
+        uint256 winnerReward,
+        uint256 losersDistributed,
+        address[] memory winners
     );
 
     function poolSize() external view returns (uint256);
