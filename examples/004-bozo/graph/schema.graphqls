@@ -1,11 +1,22 @@
 
+type GameInfo {
+    asset: String!
+}
+
 type Comment {
     wallet: String!
     content: String!
 }
 
+type Player {
+    wallet: String!
+    amountDeposited: String!
+}
+
 type Query {
+    gameInfo: GameInfo!
     comments: [Comment!]!
+    players: [Player!]!
 }
 
 type Mutation {

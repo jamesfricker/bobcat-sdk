@@ -16,9 +16,19 @@ func (r *mutationResolver) PostComment(ctx context.Context, content string, rr s
 	panic(fmt.Errorf("not implemented: PostComment - postComment"))
 }
 
+// GameInfo is the resolver for the gameInfo field.
+func (r *queryResolver) GameInfo(ctx context.Context) (*model.GameInfo, error) {
+	panic(fmt.Errorf("not implemented: GameInfo - gameInfo"))
+}
+
 // Comments is the resolver for the comments field.
 func (r *queryResolver) Comments(ctx context.Context) ([]*model.Comment, error) {
 	panic(fmt.Errorf("not implemented: Comments - comments"))
+}
+
+// Players is the resolver for the players field.
+func (r *queryResolver) Players(ctx context.Context) ([]*model.Player, error) {
+	panic(fmt.Errorf("not implemented: Players - players"))
 }
 
 // Mutation returns MutationResolver implementation.

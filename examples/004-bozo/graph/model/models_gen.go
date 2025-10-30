@@ -7,7 +7,16 @@ type Comment struct {
 	Content string `json:"content"`
 }
 
+type GameInfo struct {
+	Asset string `json:"asset"`
+}
+
 type Mutation struct {
+}
+
+type Player struct {
+	Wallet          string `json:"wallet"`
+	AmountDeposited string `json:"amountDeposited"`
 }
 
 type Query struct {

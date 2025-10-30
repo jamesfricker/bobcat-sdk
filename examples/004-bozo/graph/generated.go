@@ -52,12 +52,23 @@ type ComplexityRoot struct {
 		Wallet  func(childComplexity int) int
 	}
 
+	GameInfo struct {
+		Asset func(childComplexity int) int
+	}
+
 	Mutation struct {
 		PostComment func(childComplexity int, content string, rr string, ss string, v int32) int
 	}
 
+	Player struct {
+		AmountDeposited func(childComplexity int) int
+		Wallet          func(childComplexity int) int
+	}
+
 	Query struct {
 		Comments func(childComplexity int) int
+		GameInfo func(childComplexity int) int
+		Players  func(childComplexity int) int
 	}
 }
 
@@ -65,7 +76,9 @@ type MutationResolver interface {
 	PostComment(ctx context.Context, content string, rr string, ss string, v int32) (*bool, error)
 }
 type QueryResolver interface {
+	GameInfo(ctx context.Context) (*model.GameInfo, error)
 	Comments(ctx context.Context) ([]*model.Comment, error)
+	Players(ctx context.Context) ([]*model.Player, error)
 }
 
 type executableSchema struct {
@@ -100,6 +113,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Comment.Wallet(childComplexity), true
 
+	case "GameInfo.asset":
+		if e.complexity.GameInfo.Asset == nil {
+			break
+		}
+
+		return e.complexity.GameInfo.Asset(childComplexity), true
+
 	case "Mutation.postComment":
 		if e.complexity.Mutation.PostComment == nil {
 			break
@@ -112,12 +132,37 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.PostComment(childComplexity, args["content"].(string), args["rr"].(string), args["ss"].(string), args["v"].(int32)), true
 
+	case "Player.amountDeposited":
+		if e.complexity.Player.AmountDeposited == nil {
+			break
+		}
+
+		return e.complexity.Player.AmountDeposited(childComplexity), true
+	case "Player.wallet":
+		if e.complexity.Player.Wallet == nil {
+			break
+		}
+
+		return e.complexity.Player.Wallet(childComplexity), true
+
 	case "Query.comments":
 		if e.complexity.Query.Comments == nil {
 			break
 		}
 
 		return e.complexity.Query.Comments(childComplexity), true
+	case "Query.gameInfo":
+		if e.complexity.Query.GameInfo == nil {
+			break
+		}
+
+		return e.complexity.Query.GameInfo(childComplexity), true
+	case "Query.players":
+		if e.complexity.Query.Players == nil {
+			break
+		}
+
+		return e.complexity.Query.Players(childComplexity), true
 
 	}
 	return 0, false
@@ -389,6 +434,35 @@ func (ec *executionContext) fieldContext_Comment_content(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _GameInfo_asset(ctx context.Context, field graphql.CollectedField, obj *model.GameInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GameInfo_asset,
+		func(ctx context.Context) (any, error) {
+			return obj.Asset, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GameInfo_asset(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GameInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_postComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -430,6 +504,97 @@ func (ec *executionContext) fieldContext_Mutation_postComment(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Player_wallet(ctx context.Context, field graphql.CollectedField, obj *model.Player) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Player_wallet,
+		func(ctx context.Context) (any, error) {
+			return obj.Wallet, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Player_wallet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Player",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Player_amountDeposited(ctx context.Context, field graphql.CollectedField, obj *model.Player) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Player_amountDeposited,
+		func(ctx context.Context) (any, error) {
+			return obj.AmountDeposited, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Player_amountDeposited(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Player",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_gameInfo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_gameInfo,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().GameInfo(ctx)
+		},
+		nil,
+		ec.marshalNGameInfo2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐGameInfo,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_gameInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "asset":
+				return ec.fieldContext_GameInfo_asset(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GameInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -460,6 +625,41 @@ func (ec *executionContext) fieldContext_Query_comments(_ context.Context, field
 				return ec.fieldContext_Comment_content(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Comment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_players(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_players,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().Players(ctx)
+		},
+		nil,
+		ec.marshalNPlayer2ᚕᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayerᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_players(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "wallet":
+				return ec.fieldContext_Player_wallet(ctx, field)
+			case "amountDeposited":
+				return ec.fieldContext_Player_amountDeposited(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
 		},
 	}
 	return fc, nil
@@ -2071,6 +2271,45 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var gameInfoImplementors = []string{"GameInfo"}
+
+func (ec *executionContext) _GameInfo(ctx context.Context, sel ast.SelectionSet, obj *model.GameInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gameInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GameInfo")
+		case "asset":
+			out.Values[i] = ec._GameInfo_asset(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2117,6 +2356,50 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var playerImplementors = []string{"Player"}
+
+func (ec *executionContext) _Player(ctx context.Context, sel ast.SelectionSet, obj *model.Player) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, playerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Player")
+		case "wallet":
+			out.Values[i] = ec._Player_wallet(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "amountDeposited":
+			out.Values[i] = ec._Player_amountDeposited(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2136,6 +2419,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "gameInfo":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_gameInfo(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "comments":
 			field := field
 
@@ -2146,6 +2451,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_comments(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "players":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_players(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -2594,6 +2921,20 @@ func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋstylusᚑdeveloper
 	return ec._Comment(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNGameInfo2githubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐGameInfo(ctx context.Context, sel ast.SelectionSet, v model.GameInfo) graphql.Marshaler {
+	return ec._GameInfo(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGameInfo2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐGameInfo(ctx context.Context, sel ast.SelectionSet, v *model.GameInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GameInfo(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v any) (int32, error) {
 	res, err := graphql.UnmarshalInt32(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2608,6 +2949,60 @@ func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNPlayer2ᚕᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Player) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPlayer2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayer(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPlayer2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayer(ctx context.Context, sel ast.SelectionSet, v *model.Player) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Player(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
