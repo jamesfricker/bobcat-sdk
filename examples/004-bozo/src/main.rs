@@ -2,7 +2,7 @@
 #![no_main]
 
 use bobcat_sdk::{
-    call::{safe_call_bool, call_bool, call_word_err_vec},
+    call::{call_bool, call_word_err_vec, safe_call_bool},
     cd::{address, const_keccak_sel, read_words},
     entry::{
         contract_address, msg_sender, read_args_safe, revert_if_bad_call_slice_vec,

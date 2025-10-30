@@ -88,10 +88,14 @@ use impls::{
     static_call_contract as static_call,
 };
 
-fn addr_hash_code(addr: Address) -> bool {
+pub fn addr_has_code(addr: Address) -> bool {
     // It costs to use the length instead of the codehash, so we do it this
-    // way for free:
-    code_hash(addr) != [0u8; 32]
+    // way for free. We compare it against the zero code hash:
+    code_hash(addr)
+        != [
+            197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192, 229, 0, 182,
+            83, 202, 130, 39, 59, 123, 250, 216, 4, 93, 133, 164, 112,
+        ]
 }
 
 macro_rules! generate_call_variants {
@@ -247,7 +251,7 @@ macro_rules! generate_call_variants {
                 gas: u64,
                 offset: usize,
             ) -> Option<(bool, usize, [u8; DATA_CAP])> {
-                if addr_hash_code(contract) {
+                if addr_has_code(contract) {
                     Some([<$base_fn _slice>]::<DATA_CAP>(
                         contract, calldata, $($value_param,)? gas, offset,
                     ))
@@ -294,7 +298,7 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64,
             ) -> bool {
-                if addr_hash_code(contract) {
+                if addr_has_code(contract) {
                     [<$base_fn _bool>](contract, calldata, $($value_param,)? gas)
                 } else {
                     false
@@ -469,7 +473,7 @@ macro_rules! generate_call_variants {
                 $($value_param: $value_ty,)?
                 gas: u64
             ) -> (bool, Option<Vec<u8>>) {
-                if addr_hash_code(contract) {
+                if addr_has_code(contract) {
                     [<$base_fn _unit_err_vec>](contract, calldata, $($value_param,)? gas)
                 } else {
                     (false, None)
@@ -506,7 +510,7 @@ macro_rules! generate_call_variants {
                 gas: u64,
                 offset: usize,
             ) -> Option<(bool, Vec<u8>)> {
-                if addr_hash_code(contract) {
+                if addr_has_code(contract) {
                     Some([<$base_fn _vec>](contract, calldata, $($value_param,)? gas, offset))
                 } else {
                     None
