@@ -30,9 +30,10 @@ export function FAQ() {
                 >
                   GAME
                 </button>
-                <button 
-                  onClick={() => navigate('/stats')}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                <button
+                  type="button"
+                  disabled
+                  className="text-sm text-muted-foreground cursor-not-allowed"
                 >
                   LEADERBOARD
                 </button>

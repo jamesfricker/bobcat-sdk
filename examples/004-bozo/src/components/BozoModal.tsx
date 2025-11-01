@@ -16,7 +16,6 @@ import { formatUsd } from '../lib/utils';
 import { GameState } from '../types';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
-import { mockApi } from '../lib/mock-api';
 import {
   useAccount,
   usePublicClient,
@@ -358,14 +357,6 @@ export function BozoModal({
       }
 
       toast.success('Deposit confirmed. RIP BOZO! 🤡');
-
-      if (comment.trim()) {
-        try {
-          await mockApi.commitDeposit({ txHash, comment: comment.trim() });
-        } catch (error) {
-          console.error('Failed to record comment:', error);
-        }
-      }
 
       await refetchBalance().catch((error) => {
         console.error('Failed to refresh balance:', error);
