@@ -36,4 +36,14 @@ interface IBozo {
         uint256 indexed amount,
         uint256 indexed currentPool
     );
+
+    event LotteryWinnerChosen(
+        address indexed recipient,
+        uint256 indexed amount
+    );
+
+    event PrizepoolWinnerChosen(
+        address indexed recipient,
+        uint256 indexed amount
+    );
 }

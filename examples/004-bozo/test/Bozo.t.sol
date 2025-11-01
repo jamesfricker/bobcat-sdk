@@ -45,7 +45,11 @@ contract Bozo is Test {
         assertNotEq(address(0), address(c));
     }
 
-    function test_play() external {
+    function test_fuzzFlay() external {
+        // Test that a user can start the game, a number of other users can
+        // deposit liquidity, then the winner goes to redeem, and some of the
+        // losers receive their money. This code tests that the contract remains
+        // solvent.
         (uint256 epoch,) = c.play(
             address(weth),
             0,
