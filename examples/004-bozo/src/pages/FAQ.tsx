@@ -107,8 +107,8 @@ export function FAQ() {
               <AccordionItem value="item-4">
                 <AccordionTrigger>Can I deposit from any chain?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Yes! Bozo supports cross-chain deposits from any EVM chain. When you deposit from a different chain than the game&apos;s home chain (Base or Arbitrum), 
-                  the system automatically bridges your funds. A &quot;pending intent&quot; reserves your spot and temporarily extends the timer by 2 minutes while the bridge completes.
+                  Bozo now lives exclusively on Arbitrum. Deposits must be made directly on Arbitrum using the token held in the pot.
+                  Make sure your wallet is connected to Arbitrum and that you&apos;ve approved the Bozo contract before you send it.
                 </AccordionContent>
               </AccordionItem>
 
@@ -129,10 +129,10 @@ export function FAQ() {
               </AccordionItem>
 
               <AccordionItem value="item-7">
-                <AccordionTrigger>What happens if I&apos;m bridging and the timer runs out?</AccordionTrigger>
+                <AccordionTrigger>What happens if my transaction is pending when the timer runs out?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  When you initiate a cross-chain deposit, a &quot;pending intent&quot; is created that gives you a soft timer extension (+2 minutes, capped at +5 minutes total). 
-                  If your bridge completes within this window and meets the minimum deposit requirement, your deposit counts. If it arrives too late, you&apos;ll need to try again in the next game.
+                  Transactions are only counted once they confirm on Arbitrum. If your transaction is still pending when the timer expires,
+                  it won&apos;t make you the winner, so consider using a higher gas price when the clock is low.
                 </AccordionContent>
               </AccordionItem>
 
