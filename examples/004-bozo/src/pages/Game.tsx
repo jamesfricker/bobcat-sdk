@@ -89,7 +89,7 @@ const erc20Abi = [
 export function Game() {
   const navigate = useNavigate();
   const [deposits, setDeposits] = useState<Deposit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [bozoModalOpen, setBozoModalOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [winners] = useState<Winners | null>(null);
@@ -192,26 +192,6 @@ export function Game() {
       setAssetDecimals(assetDecimalsData);
     }
   }, [assetDecimalsData]);
-
-  useEffect(() => {
-    loadDeposits();
-    loadRoundWinners();
-
-    // Poll for updates every 5 seconds
-    const interval = setInterval(() => {
-      loadDeposits();
-    }, 5000);
-
-    // Update timer every second
-    const timerInterval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(timerInterval);
-    };
-  }, []);
 
   const poolSizeTokens = useMemo(() => {
     if (typeof poolSizeData === 'bigint') {
@@ -322,92 +302,99 @@ export function Game() {
     [deadlineIso, homeToken, minToResetUsd, poolSizeTokens, poolSizeUsd, gameStatus, lastBettorAddress]
   );
 
-  const loadDeposits = useCallback(async () => {
-    if (!publicClient) {
-      return;
-    }
+  const loadDeposits = useCallback(
+    async ({ isInitial = false }: { isInitial?: boolean } = {}) => {
+      if (!publicClient) {
+        return;
+      }
 
-    setLoading(true);
+      if (isInitial) {
+        setIsInitialLoading(true);
+      }
 
-    try {
-      await refreshComments().catch((err) => {
-        console.error('Failed to refresh comments:', err);
-      });
+      try {
+        await refreshComments().catch((err) => {
+          console.error('Failed to refresh comments:', err);
+        });
 
-      const latestBlock = await publicClient.getBlockNumber();
-      const fromBlock =
-        latestBlock > DEPOSIT_LOOKBACK_BLOCKS ? latestBlock - DEPOSIT_LOOKBACK_BLOCKS : 0n;
+        const latestBlock = await publicClient.getBlockNumber();
+        const fromBlock =
+          latestBlock > DEPOSIT_LOOKBACK_BLOCKS ? latestBlock - DEPOSIT_LOOKBACK_BLOCKS : 0n;
 
-      const events = await publicClient.getContractEvents({
-        address: config.contracts.bozo as `0x${string}`,
-        abi: depositEventAbi,
-        eventName: 'DepositMade',
-        fromBlock,
-        toBlock: latestBlock,
-      });
+        const events = await publicClient.getContractEvents({
+          address: config.contracts.bozo as `0x${string}`,
+          abi: depositEventAbi,
+          eventName: 'DepositMade',
+          fromBlock,
+          toBlock: latestBlock,
+        });
 
-      const recentEvents = events.slice(-100);
-      const blockNumbers = Array.from(
-        new Set(
-          recentEvents
-            .map((event) => event.blockNumber)
-            .filter((blockNumber): blockNumber is bigint => typeof blockNumber === 'bigint')
-        )
-      );
+        const recentEvents = events.slice(-100);
+        const blockNumbers = Array.from(
+          new Set(
+            recentEvents
+              .map((event) => event.blockNumber)
+              .filter((blockNumber): blockNumber is bigint => typeof blockNumber === 'bigint')
+          )
+        );
 
-      const blocks = await Promise.all(
-        blockNumbers.map((blockNumber) => publicClient.getBlock({ blockNumber }))
-      );
+        const blocks = await Promise.all(
+          blockNumbers.map((blockNumber) => publicClient.getBlock({ blockNumber }))
+        );
 
-      const blockTimestamps = new Map<bigint, string>();
-      blocks.forEach((block, index) => {
-        const timestamp = Number(block.timestamp) * 1000;
-        blockTimestamps.set(blockNumbers[index], new Date(timestamp).toISOString());
-      });
+        const blockTimestamps = new Map<bigint, string>();
+        blocks.forEach((block, index) => {
+          const timestamp = Number(block.timestamp) * 1000;
+          blockTimestamps.set(blockNumbers[index], new Date(timestamp).toISOString());
+        });
 
-      const depositsFromEvents = [...recentEvents]
-        .reverse()
-        .map((event) => {
-          if (!event.transactionHash || !event.blockNumber) {
-            return null;
-          }
+        const depositsFromEvents = [...recentEvents]
+          .reverse()
+          .map((event) => {
+            if (!event.transactionHash || !event.blockNumber) {
+              return null;
+            }
 
-          const recipient = event.args?.recipient as string | undefined;
-          const amountRaw = event.args?.amount;
-          const poolRaw = event.args?.currentPool;
-          if (!recipient) {
-            return null;
-          }
+            const recipient = event.args?.recipient as string | undefined;
+            const amountRaw = event.args?.amount;
+            const poolRaw = event.args?.currentPool;
+            if (!recipient) {
+              return null;
+            }
 
-          const timestampIso = blockTimestamps.get(event.blockNumber);
-          if (!timestampIso) {
-            return null;
-          }
+            const timestampIso = blockTimestamps.get(event.blockNumber);
+            if (!timestampIso) {
+              return null;
+            }
 
-          const amount = typeof amountRaw === 'bigint' ? amountRaw : 0n;
-          const pool = typeof poolRaw === 'bigint' ? poolRaw : 0n;
+            const amount = typeof amountRaw === 'bigint' ? amountRaw : 0n;
+            const pool = typeof poolRaw === 'bigint' ? poolRaw : 0n;
 
-          const amountToken = formatEther(amount);
-          const potAfterToken = formatEther(pool);
+            const amountToken = formatEther(amount);
+            const potAfterToken = formatEther(pool);
 
-          return {
-            ts: timestampIso,
-            address: recipient,
-            amountToken,
-            amountUsd: parseFloat(amountToken),
-            potAfterUsd: parseFloat(potAfterToken),
-            txHash: event.transactionHash,
-          } satisfies Deposit;
-        })
-        .filter((deposit): deposit is Deposit => deposit !== null);
+            return {
+              ts: timestampIso,
+              address: recipient,
+              amountToken,
+              amountUsd: parseFloat(amountToken),
+              potAfterUsd: parseFloat(potAfterToken),
+              txHash: event.transactionHash,
+            } satisfies Deposit;
+          })
+          .filter((deposit): deposit is Deposit => deposit !== null);
 
-      setDeposits(depositsFromEvents);
-    } catch (error) {
-      console.error('Failed to load deposits:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [publicClient, refreshComments]);
+        setDeposits(depositsFromEvents);
+      } catch (error) {
+        console.error('Failed to load deposits:', error);
+      } finally {
+        if (isInitial) {
+          setIsInitialLoading(false);
+        }
+      }
+    },
+    [publicClient, refreshComments]
+  );
 
   const loadRoundWinners = useCallback(async () => {
     try {
@@ -441,7 +428,7 @@ export function Game() {
       return;
     }
 
-    loadDeposits();
+    loadDeposits({ isInitial: true });
 
     const interval = setInterval(() => {
       loadDeposits();
@@ -512,7 +499,7 @@ export function Game() {
     return result;
   };
 
-  if (loading) {
+  if (isInitialLoading && deposits.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#FF4B4B]" />
