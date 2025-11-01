@@ -24,6 +24,8 @@ interface IBozo {
     function lastBettorAmount() external view returns (uint256);
     function lastBettorAddress() external view returns (uint256);
     function deadline() external view returns (uint256);
+    function playerCount() external view returns (uint256);
+    function ticketCount() external view returns (uint256);
 
     function upgrade(address newImpl) external;
 
