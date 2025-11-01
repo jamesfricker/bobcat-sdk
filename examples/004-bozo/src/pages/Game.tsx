@@ -726,8 +726,22 @@ export function Game() {
         </div>
 
         {/* Info Footer */}
-        <div className="mt-8 text-center text-xs text-muted-foreground">
-          Min deposit: {formatUsd(minToResetUsd)} • Pool asset: {homeToken} ({poolAssetDisplay}) • 80% to winner • 20% to 10 random bozos
+        <div className="mt-8 text-center text-xs text-muted-foreground space-y-1">
+          <div>
+            Min deposit: {formatUsd(minToResetUsd)} • Pool asset: {homeToken} ({poolAssetDisplay}) • 80% to winner • 20% to 10 random bozos
+          </div>
+          <div>
+            <a
+              href="https://github.com/stylus-developers-guild/bobcat-sdk/tree/trunk/examples/004-bozo"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-[#2ED4B7] hover:text-[#2ED4B7]/80 underline"
+            >
+              View the project on GitHub
+            </a>
+            <span className="mx-2 text-muted-foreground/80">•</span>
+            <span className="text-[#FF4B4B]">This project is not audited.</span>
+          </div>
         </div>
       </div>
 
