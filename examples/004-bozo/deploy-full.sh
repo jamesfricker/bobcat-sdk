@@ -1,14 +1,14 @@
 #!/bin/sh -e
 
-url=${ENDPOINT:-https://rpc.superposition.so}
+url=${BOZO_ENDPOINT:-https://rpc.superposition.so}
 
-if [ -z "$ADMIN_ADDR" ]; then
-	>&2 echo "ADMIN_ADDR unset"
+if [ -z "$BOZO_ADMIN_ADDR" ]; then
+	>&2 echo "BOZO_ADMIN_ADDR unset"
 	exit 2
 fi
 
-if [ -z "$PRIVATE_KEY" ]; then
-	>&2 echo "PRIVATE_KEY unset"
+if [ -z "$BOZO_PRIVATE_KEY" ]; then
+	>&2 echo "BOZO_PRIVATE_KEY unset"
 	exit 2
 fi
 
@@ -23,11 +23,11 @@ proxy_bytecode="$(\
 	huffc -b src/eip1967-constructor-args.huff \
 		| sed "s/1000000000000000000000000000000000000001/$BOZO_IMPL/g")"
 
-create_code="$(echo $proxy_bytecode$(cast calldata 'initialise(address)' "$ADMIN_ADDR" | sed -s 's/^0x//g'))"
+create_code="$(echo $proxy_bytecode$(cast calldata 'initialise(address)' "$BOZO_ADMIN_ADDR" | sed -s 's/^0x//g'))"
 
 cast send \
 	--rpc-url "$url" \
-	--private-key "$PRIVATE_KEY" \
+	--private-key "$BOZO_PRIVATE_KEY" \
 	--create "$create_code" \
 	--json \
 		| jq -r .contractAddress

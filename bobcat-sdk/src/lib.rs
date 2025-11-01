@@ -8,6 +8,7 @@ pub use bobcat_interfaces as interfaces;
 pub use bobcat_maths as maths;
 pub use bobcat_proxy as proxy;
 pub use bobcat_storage as storage;
+pub use bobcat_events as events;
 
 #[cfg(any(feature = "panic", feature = "panic-revert"))]
 pub use bobcat_panic as panic;

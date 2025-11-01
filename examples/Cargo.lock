@@ -77,6 +77,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bobcat-events"
+version = "0.6.3"
+dependencies = [
+ "array-concat",
+ "bobcat-maths",
+]
+
+[[package]]
 name = "bobcat-examples-002"
 version = "0.6.0"
 dependencies = [
@@ -144,6 +152,7 @@ dependencies = [
  "bobcat-console",
  "bobcat-create",
  "bobcat-entry",
+ "bobcat-events",
  "bobcat-interfaces",
  "bobcat-maths",
  "bobcat-panic",

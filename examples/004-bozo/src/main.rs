@@ -14,14 +14,15 @@ use bobcat_sdk::{
         block_timestamp, contract_address, msg_sender, read_args_safe,
         revert_if_bad_call_slice_vec, write_result_slice, write_result_word,
     },
+    events::emit,
     interfaces::{
         camelotv3_swap_router::make_fn_exact_input_single,
         eip20::{make_fn_approve, make_fn_transfer, make_fn_transfer_from},
     },
     maths::U,
     storage::{
-        const_slot_off_curve, flush_guard, keccak256, reentrancy_guard_sel, storage_load,
-        storage_store,
+        const_keccak256, const_slot_off_curve, flush_guard, keccak256, reentrancy_guard_sel,
+        storage_load, storage_store,
     },
 };
 
@@ -50,6 +51,9 @@ const ADDR_ASSET: [u8; 20] = address!(b"af88d065e77c8cC2239327C5EDb3A432268e5831
 
 /// Swap router that we use with Camelot to get the asset into the one we support here.
 const ADDR_CAMELOT_SWAP_ROUTER: Address = address!(b"1f721e2e82f6676fce4ea07a5958cf098d339e18");
+
+/// Event emitted when a deposit is made.
+const EVENT_DEPOSIT_MADE: U = const_keccak256(b"DepositMade(address,uint256,uint256)");
 
 /// Fee taken from the users. 3% fee at a dividend
 const FEE: U = U::from_u32(3);
@@ -209,6 +213,14 @@ fn state_play(
         &epoch,
         &recipient,
         &existing_tickets.checked_add(&lottery_tickets).unwrap(),
+    );
+    emit!(
+        &EVENT_DEPOSIT_MADE,
+        &recipient.into(),
+        &amt,
+        &storage::pool_size::get(&epoch),
+        0,
+        []
     );
     storage::ts_deadline::add(&epoch, &(timestamp + EXTRA_TIME));
     let r: [u8; 32 * 2] = concat_arrays!(epoch.0, amt.0);
