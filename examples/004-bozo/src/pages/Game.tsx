@@ -314,29 +314,128 @@ export function Game() {
     [deadlineIso, homeToken, minToResetUsd, poolSizeTokens, poolSizeUsd, gameStatus, lastBettorAddress]
   );
 
-  const loadDeposits = async () => {
     try {
       await refreshComments().catch((err) => {
         console.error('Failed to refresh comments:', err);
       });
 
-      const result = await mockApi.getDeposits();
-      setDeposits(result);
+      const latestBlock = await publicClient.getBlockNumber();
+      const fromBlock =
+        latestBlock > DEPOSIT_LOOKBACK_BLOCKS ? latestBlock - DEPOSIT_LOOKBACK_BLOCKS : 0n;
+
+      const events = await publicClient.getContractEvents({
+        address: config.contracts.bozo as `0x${string}`,
+        abi: depositEventAbi,
+        eventName: 'DepositMade',
+        fromBlock,
+        toBlock: latestBlock,
+      });
+
+      const recentEvents = events.slice(-100);
+      const blockNumbers = Array.from(
+        new Set(
+          recentEvents
+            .map((event) => event.blockNumber)
+            .filter((blockNumber): blockNumber is bigint => typeof blockNumber === 'bigint')
+        )
+      );
+
+      const blocks = await Promise.all(
+        blockNumbers.map((blockNumber) => publicClient.getBlock({ blockNumber }))
+      );
+
+      const blockTimestamps = new Map<bigint, string>();
+      blocks.forEach((block, index) => {
+        const timestamp = Number(block.timestamp) * 1000;
+        blockTimestamps.set(blockNumbers[index], new Date(timestamp).toISOString());
+      });
+
+      const depositsFromEvents = [...recentEvents]
+        .reverse()
+        .map((event) => {
+          if (!event.transactionHash || !event.blockNumber) {
+            return null;
+          }
+
+          const recipient = event.args?.recipient as string | undefined;
+          const amountRaw = event.args?.amount;
+          const poolRaw = event.args?.currentPool;
+          if (!recipient) {
+            return null;
+          }
+
+          const timestampIso = blockTimestamps.get(event.blockNumber);
+          if (!timestampIso) {
+            return null;
+          }
+
+          const amount = typeof amountRaw === 'bigint' ? amountRaw : 0n;
+          const pool = typeof poolRaw === 'bigint' ? poolRaw : 0n;
+
+          const amountToken = formatEther(amount);
+          const potAfterToken = formatEther(pool);
+
+          return {
+            ts: timestampIso,
+            address: recipient,
+            amountToken,
+            amountUsd: parseFloat(amountToken),
+            potAfterUsd: parseFloat(potAfterToken),
+            txHash: event.transactionHash,
+          } satisfies Deposit;
+        })
+        .filter((deposit): deposit is Deposit => deposit !== null);
+
+      setDeposits(depositsFromEvents);
     } catch (error) {
       console.error('Failed to load deposits:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [publicClient, refreshComments]);
 
-  const loadRoundWinners = async () => {
+  const loadRoundWinners = useCallback(async () => {
     try {
       const result = await mockApi.getRoundWinners();
       setRoundWinners(result);
     } catch (error) {
       console.error('Failed to load round winners:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadGame();
+    loadRoundWinners();
+
+    const gameInterval = setInterval(() => {
+      loadGame();
+    }, 5000);
+
+    const timerInterval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => {
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+    };
+  }, [loadGame, loadRoundWinners]);
+
+  useEffect(() => {
+    if (!publicClient) {
+      return;
+    }
+
+    loadDeposits();
+
+    const interval = setInterval(() => {
+      loadDeposits();
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [publicClient, loadDeposits]);
 
   const handleShare = async () => {
     const text = 'RIP BOZO 🤡';
@@ -602,10 +701,10 @@ export function Game() {
             <TabsContent value="latest" className="mt-0">
               <div className="divide-y divide-border/30">
                 {deposits.slice(0, 10).map((deposit, index) => {
-                  const commentText = deposit.comment ?? getCommentForWallet(deposit.address);
+                  const commentText = getCommentForTxHash(deposit.txHash);
                   return (
                   <div
-                    key={`${deposit.address}-${deposit.ts}-${index}`}
+                    key={deposit.txHash}
                     className="px-6 py-4 hover:bg-[#252840]/50 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
