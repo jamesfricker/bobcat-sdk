@@ -212,6 +212,14 @@ export function Game() {
     return 0;
   }, [poolSizeTokens]);
 
+  const tokenPriceUsd = useMemo(() => {
+    const tokens = parseFloat(poolSizeTokens);
+    if (Number.isFinite(tokens) && tokens > 0 && poolSizeUsd > 0) {
+      return poolSizeUsd / tokens;
+    }
+    return HARD_CODED_TOKEN_PRICE_USD;
+  }, [poolSizeTokens, poolSizeUsd]);
+
   const lastBettorAmountTokens = useMemo(() => {
     if (typeof lastBettorAmountData === 'bigint') {
       try {
@@ -819,6 +827,9 @@ export function Game() {
         onOpenChange={setBozoModalOpen}
         game={game}
         isConnected={isConnected}
+        poolAssetAddress={poolAssetAddress}
+        assetDecimals={assetDecimals}
+        tokenPriceUsd={tokenPriceUsd}
       />
 
       <HowItWorksDialog open={howItWorksOpen} onOpenChange={setHowItWorksOpen} />

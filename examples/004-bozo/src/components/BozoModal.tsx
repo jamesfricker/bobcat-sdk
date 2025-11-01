@@ -1,10 +1,15 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { useMemo, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
 import { formatUsd } from '../lib/utils';
@@ -12,101 +17,314 @@ import { GameState } from '../types';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { mockApi } from '../lib/mock-api';
+import {
+  useAccount,
+  usePublicClient,
+  useReadContract,
+  useSwitchChain,
+  useWriteContract,
+} from 'wagmi';
+import { arbitrum } from 'wagmi/chains';
+import { parseUnits } from 'viem';
+import { config as appConfig } from '../lib/config';
 
 interface BozoModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   game: GameState;
   isConnected: boolean;
+  poolAssetAddress: `0x${string}` | null;
+  assetDecimals: number;
+  tokenPriceUsd: number;
 }
 
-const CHAINS = [
-  { value: 'base', label: 'Base' },
-  { value: 'arbitrum', label: 'Arbitrum' },
-  { value: 'polygon', label: 'Polygon' },
-  { value: 'ethereum', label: 'Ethereum' }
-];
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
+const MAX_UINT256 =
+  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
 
-const ASSETS = [
-  { value: 'ETH', label: 'ETH' },
-  { value: 'USDC', label: 'USDC' },
-  { value: 'USDT', label: 'USDT' }
-];
+const bozoAbi = [
+  {
+    type: 'function',
+    name: 'play',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'asset', type: 'address' },
+      { name: 'camelotMinAssetOut', type: 'uint256' },
+      { name: 'camelotDeadline', type: 'uint256' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'recipient', type: 'address' },
+    ],
+    outputs: [
+      { name: 'epoch', type: 'uint256' },
+      { name: 'deposited', type: 'uint256' },
+    ],
+  },
+] as const;
 
-export function BozoModal({ open, onOpenChange, game, isConnected }: BozoModalProps) {
-  const [sourceChain, setSourceChain] = useState('base');
-  const [sourceAsset, setSourceAsset] = useState('ETH');
-  const [amountUsd, setAmountUsd] = useState('');
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'allowance',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const;
+
+export function BozoModal({
+  open,
+  onOpenChange,
+  game,
+  isConnected,
+  poolAssetAddress,
+  assetDecimals,
+  tokenPriceUsd,
+}: BozoModalProps) {
+  const { address, chainId } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContractAsync, isPending: isWriting } = useWriteContract();
+  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
+
+  const [amountToken, setAmountToken] = useState('');
   const [comment, setComment] = useState('');
   const [agreed, setAgreed] = useState(false);
-  const [isQuoting, setIsQuoting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
-  const [quote, setQuote] = useState<any>(null);
 
-  const guaranteedMinutes = 5;
+  const derivedTokenPriceUsd = useMemo(() => {
+    if (Number.isFinite(tokenPriceUsd) && tokenPriceUsd > 0) {
+      return tokenPriceUsd;
+    }
+    return 0;
+  }, [tokenPriceUsd]);
 
-  const handleAmountChange = (value: string) => {
-    setAmountUsd(value);
-    setQuote(null);
+  const amountWei = useMemo(() => {
+    if (!amountToken) {
+      return null;
+    }
+    try {
+      return parseUnits(amountToken, assetDecimals);
+    } catch (error) {
+      return null;
+    }
+  }, [amountToken, assetDecimals]);
+
+  const amountTokenNumber = useMemo(() => {
+    const value = parseFloat(amountToken);
+    return Number.isFinite(value) ? value : 0;
+  }, [amountToken]);
+
+  const approxUsd = useMemo(() => {
+    if (derivedTokenPriceUsd > 0 && amountTokenNumber > 0) {
+      return amountTokenNumber * derivedTokenPriceUsd;
+    }
+    return 0;
+  }, [amountTokenNumber, derivedTokenPriceUsd]);
+
+  const minDepositTokens = useMemo(() => {
+    if (derivedTokenPriceUsd > 0 && game.minToResetUsd > 0) {
+      return game.minToResetUsd / derivedTokenPriceUsd;
+    }
+    return 0;
+  }, [derivedTokenPriceUsd, game.minToResetUsd]);
+
+  const meetsMinimum = useMemo(() => {
+    if (minDepositTokens === 0) {
+      return amountTokenNumber > 0;
+    }
+    return amountTokenNumber >= minDepositTokens;
+  }, [amountTokenNumber, minDepositTokens]);
+
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: poolAssetAddress ?? ZERO_ADDRESS,
+    abi: erc20Abi,
+    functionName: 'allowance',
+    args:
+      address && poolAssetAddress
+        ? [address, appConfig.contracts.bozo as `0x${string}`]
+        : undefined,
+    chainId: arbitrum.id,
+    query: {
+      enabled: Boolean(open && address && poolAssetAddress),
+    },
+  });
+
+  const allowanceValue = typeof allowance === 'bigint' ? allowance : 0n;
+  const needsApproval = Boolean(
+    poolAssetAddress && amountWei && allowanceValue < amountWei,
+  );
+  const isWrongChain =
+    typeof chainId === 'number' && chainId !== arbitrum.id && isConnected;
+
+  const isActionDisabled =
+    !amountWei ||
+    amountWei === 0n ||
+    !agreed ||
+    !poolAssetAddress ||
+    isApproving ||
+    isDepositing ||
+    isWriting ||
+    isSwitchingChain;
+
+  const resetForm = () => {
+    setAmountToken('');
+    setComment('');
     setAgreed(false);
   };
 
-  const handleGetQuote = async () => {
-    if (!amountUsd || parseFloat(amountUsd) <= 0) {
-      toast.error('Please enter a valid amount');
+  const ensureCorrectChain = async () => {
+    if (!isWrongChain) {
+      return true;
+    }
+
+    try {
+      if (switchChainAsync) {
+        await switchChainAsync({ chainId: arbitrum.id });
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to switch chain:', error);
+      toast.error('Please switch to Arbitrum in your wallet.');
+      return false;
+    }
+
+    toast.error('Please switch to Arbitrum in your wallet.');
+    return false;
+  };
+
+  const handleApprove = async () => {
+    if (!address || !poolAssetAddress) {
+      toast.error('Pool asset information not available.');
       return;
     }
 
-    setIsQuoting(true);
-    try {
-      const result = await mockApi.getRouteQuote({
-        sourceChain,
-        sourceAsset,
-        amountSource: amountUsd,
-        slippageBps: 50
-      });
-      setQuote(result);
+    if (!(await ensureCorrectChain())) {
+      return;
+    }
 
-      if (!result.meetsMinPct) {
-        toast.error('Amount too low', {
-          description: `Minimum required: ${formatUsd(game.minToResetUsd)}`
-        });
+    if (!amountWei || amountWei === 0n) {
+      toast.error('Enter an amount to approve.');
+      return;
+    }
+
+    try {
+      setIsApproving(true);
+      const txHash = await writeContractAsync({
+        address: poolAssetAddress,
+        abi: erc20Abi,
+        functionName: 'approve',
+        args: [appConfig.contracts.bozo as `0x${string}`, MAX_UINT256],
+        chainId: arbitrum.id,
+      });
+
+      toast.success('Approval transaction submitted.');
+
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash: txHash });
+        toast.success('Token approval confirmed.');
       }
+
+      await refetchAllowance();
     } catch (error) {
-      toast.error('Failed to get quote');
+      console.error('Approval failed:', error);
+      const description =
+        error instanceof Error ? error.message : 'Approval failed';
+      toast.error('Approval failed', { description });
     } finally {
-      setIsQuoting(false);
+      setIsApproving(false);
     }
   };
 
   const handleBozo = async () => {
-    if (!quote) {
-      await handleGetQuote();
+    if (!isConnected) {
+      toast.error('Connect your wallet to BOZO.');
       return;
     }
 
-    if (!agreed) {
-      toast.error('Please confirm your deposit');
+    if (!address) {
+      toast.error('Wallet address unavailable.');
       return;
     }
 
-    setIsDepositing(true);
+    if (!poolAssetAddress) {
+      toast.error('Pool asset not detected. Try again shortly.');
+      return;
+    }
+
+    if (!(await ensureCorrectChain())) {
+      return;
+    }
+
+    if (!amountWei || amountWei === 0n) {
+      toast.error('Enter an amount to deposit.');
+      return;
+    }
+
+    if (!meetsMinimum) {
+      toast.error('Deposit does not meet the current minimum.');
+      return;
+    }
+
+    if (needsApproval) {
+      toast.error('Approve the token before depositing.');
+      return;
+    }
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      setIsDepositing(true);
+      const nowSec = Math.floor(Date.now() / 1000);
+      const deadline = BigInt(nowSec + 3600);
 
-      if (sourceChain !== game.chain) {
-        toast.success('Pending intent created — you\'re on the clock.');
-      } else {
-        toast.success('Deposit confirmed. Timer reset to 60:00. RIP BOZO! 🤡');
+      const txHash = await writeContractAsync({
+        address: appConfig.contracts.bozo as `0x${string}`,
+        abi: bozoAbi,
+        functionName: 'play',
+        args: [
+          poolAssetAddress,
+          0n,
+          deadline,
+          amountWei,
+          address,
+        ],
+        chainId: arbitrum.id,
+      });
+
+      toast.success('Deposit submitted. Waiting for confirmation...');
+
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash: txHash });
+      }
+
+      toast.success('Deposit confirmed. RIP BOZO! 🤡');
+
+      if (comment.trim()) {
+        try {
+          await mockApi.commitDeposit({ txHash, comment: comment.trim() });
+        } catch (error) {
+          console.error('Failed to record comment:', error);
+        }
       }
 
       onOpenChange(false);
-      setAmountUsd('');
-      setComment('');
-      setQuote(null);
-      setAgreed(false);
+      resetForm();
     } catch (error) {
-      toast.error('Deposit failed');
+      console.error('Deposit failed:', error);
+      const description =
+        error instanceof Error ? error.message : 'Deposit failed';
+      toast.error('Deposit failed', { description });
     } finally {
       setIsDepositing(false);
     }
@@ -145,10 +363,6 @@ export function BozoModal({ open, onOpenChange, game, isConnected }: BozoModalPr
     );
   }
 
-  const tokenEquiv = amountUsd && game.potUsd > 0 && parseFloat(game.potTokenAmount) > 0
-    ? (parseFloat(amountUsd) / (game.potUsd / parseFloat(game.potTokenAmount))).toFixed(4)
-    : '0.0000';
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#1a1d32] border-border max-w-md">
@@ -162,76 +376,106 @@ export function BozoModal({ open, onOpenChange, game, isConnected }: BozoModalPr
             </div>
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Deposit into the Bozo pot using any chain or asset
+            Deposit into the Bozo pot on Arbitrum
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Chain & Asset Selection */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Chain</Label>
-              <Select value={sourceChain} onValueChange={(val) => { setSourceChain(val); setQuote(null); setAgreed(false); }}>
-                <SelectTrigger className="bg-[#252840] border-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CHAINS.map(chain => (
-                    <SelectItem key={chain.value} value={chain.value}>
-                      {chain.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="rounded-lg border border-border/40 bg-[#252840]/60 p-3 text-xs text-muted-foreground">
+            <div className="flex justify-between">
+              <span>Network</span>
+              <span className="text-foreground">Arbitrum</span>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Asset</Label>
-              <Select value={sourceAsset} onValueChange={(val) => { setSourceAsset(val); setQuote(null); setAgreed(false); }}>
-                <SelectTrigger className="bg-[#252840] border-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ASSETS.map(asset => (
-                    <SelectItem key={asset.value} value={asset.value}>
-                      {asset.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex justify-between">
+              <span>Token</span>
+              <span className="text-foreground">{game.homeToken}</span>
             </div>
           </div>
 
-          {/* Amount Input */}
+          {isWrongChain && (
+            <Alert className="bg-[#FF4B4B]/10 border-[#FF4B4B]">
+              <AlertCircle className="h-4 w-4 text-[#FF4B4B]" />
+              <AlertDescription className="text-sm">
+                You are connected to the wrong network. Switch to Arbitrum to BOZO.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">YOU BOZO</Label>
+            <Label className="text-sm text-muted-foreground">
+              Amount ({game.homeToken})
+            </Label>
             <Input
               type="number"
               placeholder="0.00"
-              value={amountUsd}
-              onChange={(e) => handleAmountChange(e.target.value)}
+              value={amountToken}
+              onChange={(e) => {
+                setAmountToken(e.target.value);
+                setAgreed(false);
+              }}
               className="bg-[#252840] border-0 text-lg font-mono"
+              min="0"
             />
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">~{tokenEquiv} {sourceAsset}</span>
-              <span className="text-[#2ED4B7]">{amountUsd ? formatUsd(parseFloat(amountUsd)) : '$0.00'}</span>
+              <span className="text-muted-foreground">
+                ≈ {formatUsd(approxUsd)} USD
+              </span>
+              <span className="text-[#2ED4B7]">
+                Min reset ≈{' '}
+                {minDepositTokens > 0
+                  ? `${minDepositTokens.toFixed(4)} ${game.homeToken}`
+                  : 'N/A'}
+              </span>
             </div>
           </div>
 
-          {/* Info Display */}
+          {amountToken && (
+            <Alert
+              className={
+                meetsMinimum
+                  ? 'bg-[#2ED4B7]/10 border-[#2ED4B7]'
+                  : 'bg-[#FF4B4B]/10 border-[#FF4B4B]'
+              }
+            >
+              {meetsMinimum ? (
+                <CheckCircle className="h-4 w-4 text-[#2ED4B7]" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-[#FF4B4B]" />
+              )}
+              <AlertDescription className="text-sm">
+                {meetsMinimum
+                  ? 'Ready to BOZO. This meets the current minimum deposit.'
+                  : 'Deposit is below the minimum required to reset the timer.'}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {needsApproval && (
+            <Alert className="bg-[#F6C445]/10 border-[#F6C445]">
+              <AlertCircle className="h-4 w-4 text-[#F6C445]" />
+              <AlertDescription className="text-sm text-foreground">
+                Approve {game.homeToken} to the Bozo contract before depositing.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="bg-[#252840] rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">GUARANTEED MINIMUM</span>
-              <span className="text-[#F6C445]">{formatUsd(game.minToResetUsd)}</span>
+              <span className="text-muted-foreground">MINIMUM TO RESET</span>
+              <span className="text-[#F6C445]">
+                {formatUsd(game.minToResetUsd)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">GUARANTEED TIME AS LEADER</span>
-              <span className="text-foreground">{guaranteedMinutes} MINUTES</span>
+              <span className="text-muted-foreground">YOU&apos;LL STAY LEADER FOR</span>
+              <span className="text-foreground">5 MINUTES</span>
             </div>
           </div>
 
-          {/* Comment */}
           <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Comment (optional)</Label>
+            <Label className="text-sm text-muted-foreground">
+              Comment (optional)
+            </Label>
             <Textarea
               placeholder="RIP BOZO 🤡"
               value={comment}
@@ -244,74 +488,83 @@ export function BozoModal({ open, onOpenChange, game, isConnected }: BozoModalPr
             </div>
           </div>
 
-          {/* Quote Info */}
-          {quote && (
-            <Alert className={quote.meetsMinPct ? "bg-[#2ED4B7]/10 border-[#2ED4B7]" : "bg-[#FF4B4B]/10 border-[#FF4B4B]"}>
-              {quote.meetsMinPct ? (
-                <CheckCircle className="h-4 w-4 text-[#2ED4B7]" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-[#FF4B4B]" />
-              )}
-              <AlertDescription className="text-sm">
-                <div className="space-y-1">
-                  {quote.meetsMinPct ? (
-                    <div className="text-foreground">Ready to BOZO</div>
-                  ) : (
-                    <div className="text-[#FF4B4B]">Below minimum amount</div>
-                  )}
-                  <div className="text-muted-foreground">ETA: ~{quote.estArrivalSec}s</div>
-                  {sourceChain !== game.chain && (
-                    <div className="text-[#F6C445]">Cross-chain bridging required</div>
-                  )}
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Confirmation Checkbox */}
-          {quote && quote.meetsMinPct && (
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="agree"
-                checked={agreed}
-                onCheckedChange={(checked) => setAgreed(checked as boolean)}
-                className="border-border data-[state=checked]:bg-[#FF4B4B] data-[state=checked]:border-[#FF4B4B]"
-              />
-              <label
-                htmlFor="agree"
-                className="text-sm text-foreground cursor-pointer select-none"
-              >
-                BOZO
-              </label>
-              {agreed && (
-                <span className="text-xs text-[#2ED4B7] ml-auto">READY</span>
-              )}
-            </div>
-          )}
-
-          {/* Bozo Button */}
-          <Button
-            onClick={handleBozo}
-            disabled={isQuoting || isDepositing || !amountUsd || (quote && !agreed)}
-            className="w-full bg-[#F6C445] hover:bg-[#F6C445]/90 text-[#0E1020]"
-            size="lg"
-          >
-            {isQuoting ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Getting Quote...
-              </>
-            ) : isDepositing ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Depositing...
-              </>
-            ) : quote ? (
-              'BOZO'
-            ) : (
-              'GET QUOTE'
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="agree"
+              checked={agreed}
+              onCheckedChange={(checked) => setAgreed(Boolean(checked))}
+              className="border-border data-[state=checked]:bg-[#FF4B4B] data-[state=checked]:border-[#FF4B4B]"
+            />
+            <label
+              htmlFor="agree"
+              className="text-sm text-foreground cursor-pointer select-none"
+            >
+              I&apos;m ready to BOZO
+            </label>
+            {agreed && (
+              <span className="text-xs text-[#2ED4B7] ml-auto">READY</span>
             )}
-          </Button>
+          </div>
+
+          <div className="space-y-2">
+            {needsApproval && (
+              <Button
+                onClick={handleApprove}
+                disabled={
+                  !amountWei ||
+                  amountWei === 0n ||
+                  isApproving ||
+                  isSwitchingChain ||
+                  isWrongChain
+                }
+                className="w-full bg-[#FF4B4B] hover:bg-[#FF4B4B]/90 text-[#FFF2E1]"
+                size="lg"
+              >
+                {isApproving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  `Approve ${game.homeToken}`
+                )}
+              </Button>
+            )}
+
+            {isWrongChain && (
+              <Button
+                onClick={ensureCorrectChain}
+                disabled={isSwitchingChain}
+                className="w-full bg-[#1a1d32] border border-[#F6C445] text-[#F6C445] hover:bg-[#1a1d32]/80"
+                size="lg"
+              >
+                {isSwitchingChain ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Switching...
+                  </>
+                ) : (
+                  'Switch to Arbitrum'
+                )}
+              </Button>
+            )}
+
+            <Button
+              onClick={handleBozo}
+              disabled={isActionDisabled || needsApproval || isWrongChain}
+              className="w-full bg-[#F6C445] hover:bg-[#F6C445]/90 text-[#0E1020]"
+              size="lg"
+            >
+              {isDepositing || isWriting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Depositing...
+                </>
+              ) : (
+                'BOZO'
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

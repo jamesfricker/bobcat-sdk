@@ -47,9 +47,9 @@ export function HowItWorksDialog({ open, onOpenChange }: HowItWorksDialogProps) 
             <div>
               <h3 className="text-[#FF4B4B] mb-2">Make Your Move</h3>
               <p className="text-sm text-[#FFF2E1]/80 leading-relaxed">
-                To BOZO, you must deposit at least 1% of the current pot value. You can deposit from any 
-                EVM chain or asset - our backend handles cross-chain bridging automatically. Add a comment 
-                to trash talk the competition!
+                To BOZO, you must deposit at least 1% of the current pot value directly on Arbitrum using
+                the pot&apos;s token. Approve the contract once, then fire away and add a comment to trash
+                talk the competition!
               </p>
             </div>
           </div>
