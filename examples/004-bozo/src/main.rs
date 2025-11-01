@@ -78,6 +78,7 @@ const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(address,uint256,uint256,uint25
 const SEL_DISTRIBUTE_REWARDS: [u8; 4] = const_keccak_sel(b"distributeRewards(address,uint256)");
 const SEL_UPGRADE: [u8; 4] = const_keccak_sel(b"upgrade(address)");
 const SEL_CHANGE_ADMIN: [u8; 4] = const_keccak_sel(b"changeAdmin(address)");
+const SEL_COLLECT_FEES: [u8; 4] = const_keccak_sel(b"collectFees()");
 
 fn view_deadline() -> usize {
     write_result_word(&storage::ts_deadline::get(&storage::epoch::get()));
@@ -181,9 +182,10 @@ fn state_play(
         ));
     }
     let fee_paid = amt.mul_div_round_up(&FEE, ONE_HUNDRED).unwrap();
-    // Get the last deposit made by a user to know how much to beat:
+    let amt = amt - fee_paid;
+    // Get the last deposit made by a user to know how much to beat. Take 105%:
     let extra_amt = storage::last_bettor_amt::get(&epoch)
-        .mul_div_round_up(&U::from(5u32), U::from(100u32))
+        .mul_div_round_up(&U::from(105u32), U::from(100u32))
         .unwrap();
     assert!(amt > extra_amt, "amount not enough: {extra_amt} needed");
     // Figure out how many "lottery tickets" to give the user -- aka, the
@@ -197,7 +199,7 @@ fn state_play(
     };
     storage::last_bettor_addr::set(&epoch, &U::from(msg_sender()));
     storage::last_bettor_amt::set(&epoch, &amt);
-    storage::fee_paid::add(&epoch, &fee_paid);
+    storage::fees_collected::add(&fee_paid);
     storage::pool_size::add(&epoch, &amt);
     storage::early_participants::add(&epoch, &U::ONE);
     storage::global_tickets::add(&epoch, &lottery_tickets);
@@ -346,6 +348,22 @@ fn state_change_admin(new_admin: Address) -> usize {
     0
 }
 
+fn state_collect_fees() -> usize {
+    let f = storage::fees_collected::get();
+    assert!(
+        safe_call_bool(
+            ADDR_ASSET,
+            &make_fn_transfer(ADDR_OPERATOR, &f),
+            &U::ZERO,
+            u64::MAX
+        ),
+        "transfer revert"
+    );
+    storage::fees_collected::clear();
+    write_result_word(&f);
+    0
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     // Allocate the full amount that we will see possibly:
@@ -390,6 +408,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             let new_admin = read_words!(&args[4..], 1);
             state_change_admin(new_admin.into())
         }),
+        SEL_COLLECT_FEES => flush_guard(|| state_collect_fees()),
         _ => 1,
     }
 }

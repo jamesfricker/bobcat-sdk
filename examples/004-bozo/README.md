@@ -5,7 +5,8 @@ Bozo is an end to end application example of bobcat-sdk. It's deployed on Farcas
 Arbitrum One. Users deposit amounts until a timeout has been reached, and the last
 depositor receives the entire pool. It's similar to Yeet on Berachain. Bozo was made using
 `bobcat-new`. Alex (Bayge) wrote the contracts, and Ivan (IvanSN_) made the frontend
-using Figma and it's code generator.
+using Figma and it's code generator. The frontend was almost entirely modified by Codex,
+after using Rainbow and Wagmi as the wallet-interacting package.
 
 It was scaffolded using `bobcat-new` at commit `2cd66f9a519f375fbfb31e52625399abcd160497`, at
 1761199872.
@@ -22,3 +23,9 @@ Chainlink VRF call, then the contract will simply reimburse every user.
 ## Pseudocode
 
 You can read a reference implementation at `src/reference.py`.
+
+## Deployment
+
+The deployment implementation is hosted at `0x33580e34bd6801660692fb67a6c5c8606164ed6a`.
+The proxy is hosted at `0x3421264e413489b1e69ae84ace8c33c6cb7809ff`. Both of these contracts
+are on Arbitrum One.

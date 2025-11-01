@@ -1,6 +1,9 @@
 #!/bin/sh -e
 
-url=${BOZO_ENDPOINT:-https://rpc.superposition.so}
+if [ -z "$BOZO_ENDPOINT" ]; then
+	>&2 echo "BOZO_ENDPOINT unset"
+	exit 2
+fi
 
 if [ -z "$BOZO_ADMIN_ADDR" ]; then
 	>&2 echo "BOZO_ADMIN_ADDR unset"
@@ -26,7 +29,7 @@ proxy_bytecode="$(\
 create_code="$(echo $proxy_bytecode$(cast calldata 'initialise(address)' "$BOZO_ADMIN_ADDR" | sed -s 's/^0x//g'))"
 
 cast send \
-	--rpc-url "$url" \
+	--rpc-url "$BOZO_ENDPOINT" \
 	--private-key "$BOZO_PRIVATE_KEY" \
 	--create "$create_code" \
 	--json \

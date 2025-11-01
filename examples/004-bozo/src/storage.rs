@@ -2,7 +2,7 @@ macro_rules! storage {
     ($($name:ident($($param:ident),*)),* $(,)?) => {
         storage! {
             @internal
-            counter: 2u8,
+            counter: 3u8,
             items: [$($name($($param),*)),*]
         }
     };
@@ -97,6 +97,22 @@ pub mod epoch {
     }
 }
 
+pub mod fees_collected {
+    use bobcat_sdk::{maths::U, storage::*};
+
+    pub fn get() -> U {
+        storage_load(&U::from_u32(2))
+    }
+
+    pub fn add(x: &U) {
+        storage_checked_add(&U::from_u32(2), x).unwrap()
+    }
+
+    pub fn clear() {
+        storage_store(&U::from_u32(2), &U::ZERO)
+    }
+}
+
 storage! {
     // The point where this contract is considered as having hit its
     // deadline, and won't run:
@@ -105,7 +121,6 @@ storage! {
     last_bettor_addr(epoch),
     // Last amount invested by a user.
     last_bettor_amt(epoch),
-    fee_paid(epoch),
     // The entire amount invested in this epoch.
     pool_size(epoch),
     // The count of early purchases in this game.

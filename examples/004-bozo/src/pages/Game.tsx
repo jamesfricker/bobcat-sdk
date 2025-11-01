@@ -23,7 +23,7 @@ import { useComments } from '../providers/CommentsProvider';
 import { formatUnits, formatEther } from 'viem';
 import { DEPOSIT_LOOKBACK_BLOCKS, depositEventAbi } from '../lib/depositEvents';
 
-const BOZO_CONTRACT_ADDRESS = '0x6221a9c005f6e47eb398fd867784cacfdcfff4e7' as const;
+const BOZO_CONTRACT_ADDRESS = '0x3421264e413489b1e69ae84ace8c33c6cb7809ff' as const;
 const GAME_START_DELAY_MINUTES = 45;
 const HARD_CODED_TOKEN_PRICE_USD = 3200;
 const HARD_CODED_MIN_RESET_USD = 100;
