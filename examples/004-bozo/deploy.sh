@@ -1,6 +1,6 @@
 #!/bin/sh
 
-url=${ENDPOINT:-https://testnet-rpc.superposition.so}
+url=${ENDPOINT:-https://rpc.superposition.so}
 
 if [ -z "$PRIVATE_KEY" ]; then
 	>&2 echo "PRIVATE_KEY unset"

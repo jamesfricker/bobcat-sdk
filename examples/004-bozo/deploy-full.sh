@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-url=${ENDPOINT:-https://testnet-rpc.superposition.so}
+url=${ENDPOINT:-https://rpc.superposition.so}
 
 if [ -z "$ADMIN_ADDR" ]; then
 	>&2 echo "ADMIN_ADDR unset"

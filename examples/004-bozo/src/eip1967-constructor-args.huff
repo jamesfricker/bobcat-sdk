@@ -4,12 +4,11 @@
 // call the underlying implementation normally, but it's helpful to use
 // here our deployment code.
 
-// FIXME: this sucks! This could be optimised to swap around the starting
-// stack helpers, the generated constructor needs to swap things around,
-// etc. We should shift to a new macro preprocessor for EVM code! Huff2?
-// Why should I do runtime addition of sizes?
+// FIXME: How do you get the codesize of everything in Huff?
 
 #define constant SLOT_IMPL = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
+
+#define constant CODESIZE = 0x99
 
 #define macro MAIN() = takes(0) returns(0) {
     calldatasize 0x0 0x0 calldatacopy
@@ -22,8 +21,7 @@
 #define macro CONSTRUCTOR() = takes(0) returns(0) {
     0x1000000000000000000000000000000000000001 0x0 0x0
     dup3 [SLOT_IMPL] sstore
-    0x09 __codesize(MAIN) __codesize(CONSTRUCTOR) add
-    codesize sub sub
+    [CODESIZE] codesize sub
     dup1 dup1 codesize sub
     0x0 codecopy
     0x0 dup5 gas delegatecall iszero REVERT jumpi CONTINUE jump

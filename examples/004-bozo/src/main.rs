@@ -50,8 +50,8 @@ const ADDR_CAMELOT_SWAP_ROUTER: Address = address!(b"1f721e2e82f6676fce4ea07a595
 /// Fee taken from the users. 3% fee at a dividend
 const FEE: U = U::from_u32(3);
 
-/// Two days extra time.
-const EXTRA_TIME: U = U::from_u32(172800);
+/// An hour extra time.
+const EXTRA_TIME: U = U::from_u32(3600);
 
 // ~~~~~ View functions: ~~~~
 //
