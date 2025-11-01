@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { usePublicClient } from 'wagmi';
 import { config } from '../lib/config';
+import { DEPOSIT_LOOKBACK_BLOCKS, depositEventAbi } from '../lib/depositEvents';
 import type { BozoComment } from '../types';
 
 type CommentsContextValue = {
@@ -8,6 +10,7 @@ type CommentsContextValue = {
   error: Error | null;
   refresh: () => Promise<BozoComment[]>;
   getCommentForTxHash: (txHash?: string | null) => string | undefined;
+  getCommentForWallet: (wallet?: string | null) => string | undefined;
 };
 
 const CommentsContext = createContext<CommentsContextValue | undefined>(undefined);
@@ -63,14 +66,60 @@ async function performFetch(signal?: AbortSignal): Promise<BozoComment[]> {
 }
 
 export function CommentsProvider({ children }: { children: ReactNode }) {
+  const publicClient = usePublicClient();
   const [comments, setComments] = useState<BozoComment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const loadComments = useCallback(
+    async (signal?: AbortSignal) => {
+      const [graphComments, txHashes] = await Promise.all([
+        performFetch(signal),
+        (async () => {
+          if (!publicClient) {
+            return new Set<string>();
+          }
+
+          try {
+            const latestBlock = await publicClient.getBlockNumber();
+            const fromBlock =
+              latestBlock > DEPOSIT_LOOKBACK_BLOCKS ? latestBlock - DEPOSIT_LOOKBACK_BLOCKS : 0n;
+
+            const events = await publicClient.getContractEvents({
+              address: config.contracts.bozo as `0x${string}`,
+              abi: depositEventAbi,
+              eventName: 'DepositMade',
+              fromBlock,
+              toBlock: latestBlock,
+            });
+
+            const hashes = new Set<string>();
+            for (const event of events) {
+              if (event.transactionHash) {
+                hashes.add(event.transactionHash.toLowerCase());
+              }
+            }
+            return hashes;
+          } catch (err) {
+            console.error('Failed to load deposit events for comments reconciliation:', err);
+            return new Set<string>();
+          }
+        })(),
+      ]);
+
+      if (txHashes.size === 0) {
+        return graphComments;
+      }
+
+      return graphComments.filter((comment) => txHashes.has(comment.txHash.toLowerCase()));
+    },
+    [publicClient]
+  );
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await performFetch();
+      const data = await loadComments();
       setComments(data);
       setError(null);
       return data;
@@ -81,7 +130,7 @@ export function CommentsProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadComments]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -89,7 +138,7 @@ export function CommentsProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await performFetch(controller.signal);
+        const data = await loadComments(controller.signal);
         setComments(data);
         setError(null);
       } catch (err) {
@@ -107,12 +156,20 @@ export function CommentsProvider({ children }: { children: ReactNode }) {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [loadComments]);
 
   const commentsByTxHash = useMemo(() => {
     const map = new Map<string, string>();
     for (const comment of comments) {
       map.set(comment.txHash.toLowerCase(), comment.content);
+    }
+    return map;
+  }, [comments]);
+
+  const commentsByWallet = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const comment of comments) {
+      map.set(comment.wallet.toLowerCase(), comment.content);
     }
     return map;
   }, [comments]);
@@ -127,9 +184,19 @@ export function CommentsProvider({ children }: { children: ReactNode }) {
     [commentsByTxHash]
   );
 
+  const getCommentForWallet = useCallback(
+    (wallet?: string | null) => {
+      if (!wallet) {
+        return undefined;
+      }
+      return commentsByWallet.get(wallet.toLowerCase());
+    },
+    [commentsByWallet]
+  );
+
   const value = useMemo<CommentsContextValue>(
-    () => ({ comments, loading, error, refresh, getCommentForTxHash }),
-    [comments, loading, error, refresh, getCommentForTxHash]
+    () => ({ comments, loading, error, refresh, getCommentForTxHash, getCommentForWallet }),
+    [comments, loading, error, refresh, getCommentForTxHash, getCommentForWallet]
   );
 
   return <CommentsContext.Provider value={value}>{children}</CommentsContext.Provider>;
