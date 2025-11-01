@@ -10,7 +10,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
 import { formatUsd } from '../lib/utils';
 import { GameState } from '../types';
@@ -39,8 +38,6 @@ interface BozoModalProps {
 }
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
-const MAX_UINT256 =
-  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
 
 const bozoAbi = [
   {
@@ -100,7 +97,6 @@ export function BozoModal({
 
   const [amountToken, setAmountToken] = useState('');
   const [comment, setComment] = useState('');
-  const [agreed, setAgreed] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [hasPromptedChain, setHasPromptedChain] = useState(false);
@@ -211,7 +207,6 @@ export function BozoModal({
   const isActionDisabled =
     !amountWei ||
     amountWei === 0n ||
-    !agreed ||
     !poolAssetAddress ||
     isApproving ||
     isDepositing ||
@@ -221,7 +216,6 @@ export function BozoModal({
   const resetForm = () => {
     setAmountToken('');
     setComment('');
-    setAgreed(false);
   };
 
   const ensureCorrectChain = useCallback(async () => {
@@ -250,7 +244,6 @@ export function BozoModal({
     }
 
     setAmountToken(maxAmount);
-    setAgreed(false);
   }, [hasBalance, maxAmount]);
 
   const handleApprove = async () => {
@@ -274,7 +267,7 @@ export function BozoModal({
         address: poolAssetAddress,
         abi: erc20Abi,
         functionName: 'approve',
-        args: [appConfig.contracts.bozo as `0x${string}`, MAX_UINT256],
+        args: [appConfig.contracts.bozo as `0x${string}`, amountWei],
         chainId: arbitrum.id,
       });
 
@@ -495,7 +488,6 @@ export function BozoModal({
               value={amountToken}
               onChange={(e) => {
                 setAmountToken(e.target.value);
-                setAgreed(false);
               }}
               className="bg-[#252840] border-0 text-lg font-mono"
               min="0"
@@ -571,24 +563,6 @@ export function BozoModal({
             <div className="text-xs text-right text-muted-foreground">
               {comment.length}/140
             </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="agree"
-              checked={agreed}
-              onCheckedChange={(checked) => setAgreed(Boolean(checked))}
-              className="border-border data-[state=checked]:bg-[#FF4B4B] data-[state=checked]:border-[#FF4B4B]"
-            />
-            <label
-              htmlFor="agree"
-              className="text-sm text-foreground cursor-pointer select-none"
-            >
-              I&apos;m ready to BOZO
-            </label>
-            {agreed && (
-              <span className="text-xs text-[#2ED4B7] ml-auto">READY</span>
-            )}
           </div>
 
           <div className="space-y-2">
