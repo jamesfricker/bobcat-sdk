@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
 import { formatAddress, formatTokenAmount, formatUsd } from '../lib/utils';
 import { Deposit } from '../types';
-import { Clock } from 'lucide-react';
+import { useComments } from '../providers/CommentsProvider';
 
 interface DepositsFeedProps {
   deposits: Deposit[];
@@ -11,6 +11,8 @@ interface DepositsFeedProps {
 }
 
 export function DepositsFeed({ deposits, homeToken }: DepositsFeedProps) {
+  const { getCommentForWallet } = useComments();
+
   const formatTime = (ts: string) => {
     const date = new Date(ts);
     const now = Date.now();
@@ -34,48 +36,51 @@ export function DepositsFeed({ deposits, homeToken }: DepositsFeedProps) {
       <CardContent>
         <ScrollArea className="h-[600px] pr-4">
           <div className="space-y-3">
-            {deposits.map((deposit, index) => (
-              <div
-                key={`${deposit.address}-${deposit.ts}-${index}`}
-                className="flex items-start gap-3 p-4 rounded-lg bg-[#252840] hover:bg-[#252840]/80 transition-colors"
-              >
-                <Avatar className="w-10 h-10 mt-1">
-                  <AvatarFallback className="bg-[#FF4B4B] text-[#FFF2E1] text-xs">
-                    {deposit.handle?.[0]?.toUpperCase() || deposit.address.slice(2, 4).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-foreground">
-                      {deposit.handle || formatAddress(deposit.address)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(deposit.ts)}
-                    </span>
-                  </div>
-                  
-                  <div className="text-sm text-muted-foreground mb-2">
-                    BOZO&apos;D {formatTokenAmount(deposit.amountToken, 4)} {homeToken}
-                  </div>
-                  
-                  {deposit.comment && (
-                    <div className="text-sm text-foreground bg-[#1a1d32] rounded px-3 py-2 mb-2">
-                      {deposit.comment}
+            {deposits.map((deposit, index) => {
+              const commentText = deposit.comment ?? getCommentForWallet(deposit.address);
+              return (
+                <div
+                  key={`${deposit.address}-${deposit.ts}-${index}`}
+                  className="flex items-start gap-3 p-4 rounded-lg bg-[#252840] hover:bg-[#252840]/80 transition-colors"
+                >
+                  <Avatar className="w-10 h-10 mt-1">
+                    <AvatarFallback className="bg-[#FF4B4B] text-[#FFF2E1] text-xs">
+                      {deposit.handle?.[0]?.toUpperCase() || deposit.address.slice(2, 4).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-foreground">
+                        {deposit.handle || formatAddress(deposit.address)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatTime(deposit.ts)}
+                      </span>
                     </div>
-                  )}
-                  
-                  <div className="flex items-center gap-3 text-xs">
-                    <div className="text-[#2ED4B7]">
-                      +{formatUsd(deposit.amountUsd).replace('$', '')}
+
+                    <div className="text-sm text-muted-foreground mb-2">
+                      BOZO&apos;D {formatTokenAmount(deposit.amountToken, 4)} {homeToken}
                     </div>
-                    <div className="text-muted-foreground">
-                      Pot after: {formatUsd(deposit.potAfterUsd)}
+
+                    {commentText && (
+                      <div className="text-sm text-foreground bg-[#1a1d32] rounded px-3 py-2 mb-2">
+                        {commentText}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="text-[#2ED4B7]">
+                        +{formatUsd(deposit.amountUsd).replace('$', '')}
+                      </div>
+                      <div className="text-muted-foreground">
+                        Pot after: {formatUsd(deposit.potAfterUsd)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </CardContent>

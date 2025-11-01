@@ -17,6 +17,7 @@ import { toast } from 'sonner@2.0.3';
 import { useAccount } from 'wagmi';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useComments } from '../providers/CommentsProvider';
 
 export function Game() {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export function Game() {
   const [currentTime, setCurrentTime] = useState(Date.now());
 
   const { address, isConnected } = useAccount();
+  const { getCommentForWallet, refresh: refreshComments } = useComments();
 
   useEffect(() => {
     loadGame();
@@ -74,6 +76,10 @@ export function Game() {
 
   const loadDeposits = async () => {
     try {
+      await refreshComments().catch((err) => {
+        console.error('Failed to refresh comments:', err);
+      });
+
       const result = await mockApi.getDeposits();
       setDeposits(result);
     } catch (error) {
@@ -359,7 +365,9 @@ export function Game() {
 
             <TabsContent value="latest" className="mt-0">
               <div className="divide-y divide-border/30">
-                {deposits.slice(0, 10).map((deposit, index) => (
+                {deposits.slice(0, 10).map((deposit, index) => {
+                  const commentText = deposit.comment ?? getCommentForWallet(deposit.address);
+                  return (
                   <div
                     key={`${deposit.address}-${deposit.ts}-${index}`}
                     className="px-6 py-4 hover:bg-[#252840]/50 transition-colors"
@@ -386,9 +394,9 @@ export function Game() {
                               </div>
                             )}
                           </div>
-                          {deposit.comment && (
+                          {commentText && (
                             <div className="text-sm text-foreground/90 bg-[#252840]/80 rounded px-3 py-2 mb-2 mt-2">
-                              &quot;{deposit.comment}&quot;
+                              &quot;{commentText}&quot;
                             </div>
                           )}
                         </div>
@@ -403,7 +411,8 @@ export function Game() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </TabsContent>
 
