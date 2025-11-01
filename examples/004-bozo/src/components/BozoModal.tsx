@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,11 +21,12 @@ import {
   useAccount,
   usePublicClient,
   useReadContract,
+  useBalance,
   useSwitchChain,
   useWriteContract,
 } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
-import { parseUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 import { config as appConfig } from '../lib/config';
 
 interface BozoModalProps {
@@ -103,6 +104,17 @@ export function BozoModal({
   const [agreed, setAgreed] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
+  const [hasPromptedChain, setHasPromptedChain] = useState(false);
+
+  const { data: balanceData, refetch: refetchBalance } = useBalance({
+    address,
+    chainId: arbitrum.id,
+    token: poolAssetAddress ?? undefined,
+    query: {
+      enabled: Boolean(open && address && poolAssetAddress),
+    },
+    watch: Boolean(address && poolAssetAddress),
+  });
 
   const derivedTokenPriceUsd = useMemo(() => {
     if (Number.isFinite(tokenPriceUsd) && tokenPriceUsd > 0) {
@@ -169,6 +181,34 @@ export function BozoModal({
   const isWrongChain =
     typeof chainId === 'number' && chainId !== arbitrum.id && isConnected;
 
+  const maxAmount = useMemo(() => {
+    if (!balanceData?.value) {
+      return '';
+    }
+
+    try {
+      return formatUnits(balanceData.value, balanceData.decimals);
+    } catch (error) {
+      console.error('Failed to format balance:', error);
+      return '';
+    }
+  }, [balanceData]);
+
+  const balanceDisplay = useMemo(() => {
+    if (!balanceData?.formatted) {
+      return '0';
+    }
+
+    const [whole, fraction = ''] = balanceData.formatted.split('.');
+    const trimmedFraction = fraction.slice(0, 4).replace(/0+$/, '');
+    return trimmedFraction ? `${whole}.${trimmedFraction}` : whole;
+  }, [balanceData?.formatted]);
+
+  const hasBalance = useMemo(() => {
+    const numeric = parseFloat(maxAmount);
+    return Number.isFinite(numeric) && numeric > 0;
+  }, [maxAmount]);
+
   const isActionDisabled =
     !amountWei ||
     amountWei === 0n ||
@@ -185,7 +225,7 @@ export function BozoModal({
     setAgreed(false);
   };
 
-  const ensureCorrectChain = async () => {
+  const ensureCorrectChain = useCallback(async () => {
     if (!isWrongChain) {
       return true;
     }
@@ -203,7 +243,16 @@ export function BozoModal({
 
     toast.error('Please switch to Arbitrum in your wallet.');
     return false;
-  };
+  }, [isWrongChain, switchChainAsync]);
+
+  const handleSetMax = useCallback(() => {
+    if (!hasBalance || !maxAmount) {
+      return;
+    }
+
+    setAmountToken(maxAmount);
+    setAgreed(false);
+  }, [hasBalance, maxAmount]);
 
   const handleApprove = async () => {
     if (!address || !poolAssetAddress) {
@@ -318,6 +367,10 @@ export function BozoModal({
         }
       }
 
+      await refetchBalance().catch((error) => {
+        console.error('Failed to refresh balance:', error);
+      });
+
       onOpenChange(false);
       resetForm();
     } catch (error) {
@@ -329,6 +382,28 @@ export function BozoModal({
       setIsDepositing(false);
     }
   };
+
+  useEffect(() => {
+    if (!open || !poolAssetAddress || !address) {
+      return;
+    }
+
+    void refetchBalance().catch((error) => {
+      console.error('Failed to refresh balance:', error);
+    });
+  }, [open, poolAssetAddress, address, refetchBalance]);
+
+  useEffect(() => {
+    if (!open || !isWrongChain) {
+      setHasPromptedChain(false);
+      return;
+    }
+
+    if (isConnected && !hasPromptedChain) {
+      setHasPromptedChain(true);
+      void ensureCorrectChain();
+    }
+  }, [open, isConnected, isWrongChain, ensureCorrectChain, hasPromptedChain]);
 
   if (!isConnected) {
     return (
@@ -402,9 +477,27 @@ export function BozoModal({
           )}
 
           <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">
-              Amount ({game.homeToken})
-            </Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm text-muted-foreground">
+                Amount ({game.homeToken})
+              </Label>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">
+                  Balance: {balanceDisplay}{' '}
+                  {balanceData?.symbol ?? game.homeToken}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-3 border-border/60 text-foreground hover:bg-[#2ED4B7]/10 hover:border-[#2ED4B7]/50"
+                  onClick={handleSetMax}
+                  disabled={!hasBalance}
+                >
+                  MAX
+                </Button>
+              </div>
+            </div>
             <Input
               type="number"
               placeholder="0.00"
@@ -415,6 +508,7 @@ export function BozoModal({
               }}
               className="bg-[#252840] border-0 text-lg font-mono"
               min="0"
+              step="0.000001"
             />
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
