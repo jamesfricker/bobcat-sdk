@@ -8,8 +8,7 @@ import { EndGameScreen } from '../components/EndGameScreen';
 import { HowItWorksDialog } from '../components/HowItWorksDialog';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { GameState, Deposit, Winners, RoundWinner } from '../types';
-import { mockApi } from '../lib/mock-api';
+import { GameState, Deposit, Winners } from '../types';
 import { config } from '../lib/config';
 import { formatAddress, formatTokenAmount, formatUsd, getTimeRemaining } from '../lib/utils';
 import { Loader2, AlertTriangle, Settings, HelpCircle } from 'lucide-react';
@@ -92,8 +91,7 @@ export function Game() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [bozoModalOpen, setBozoModalOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
-  const [winners] = useState<Winners | null>(null);
-  const [roundWinners, setRoundWinners] = useState<RoundWinner[]>([]);
+  const winners: Winners | null = null;
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [poolAssetAddress, setPoolAssetAddress] = useState<`0x${string}` | null>(null);
   const [assetDecimals, setAssetDecimals] = useState<number>(18);
@@ -404,32 +402,17 @@ export function Game() {
     [publicClient, refreshComments]
   );
 
-  const loadRoundWinners = useCallback(async () => {
-    try {
-      const result = await mockApi.getRoundWinners();
-      setRoundWinners(result);
-    } catch (error) {
-      console.error('Failed to load round winners:', error);
-    }
-  }, []);
-
   useEffect(() => {
     loadGame();
-    loadRoundWinners();
-
-    const gameInterval = setInterval(() => {
-      loadGame();
-    }, 5000);
 
     const timerInterval = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
 
     return () => {
-      clearInterval(gameInterval);
       clearInterval(timerInterval);
     };
-  }, [loadGame, loadRoundWinners]);
+  }, [loadGame]);
 
   useEffect(() => {
     if (!publicClient) {
@@ -467,15 +450,6 @@ export function Game() {
     }
   };
 
-  const handleClaim = async () => {
-    try {
-      const claimTx = await mockApi.prepareClaim();
-      toast.success('Claim transaction prepared');
-    } catch (error) {
-      toast.error('Failed to prepare claim');
-    }
-  };
-
   const formatTime = (ts: string) => {
     const date = new Date(ts);
     const now = Date.now();
@@ -491,20 +465,6 @@ export function Game() {
     const days = Math.floor(hours / 24);
     if (days === 1) return '1 DAY AGO';
     return `${days} DAYS AGO`;
-  };
-
-  const toRoman = (num: number): string => {
-    const romanNumerals: [number, string][] = [
-      [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
-    ];
-    let result = '';
-    for (const [value, numeral] of romanNumerals) {
-      while (num >= value) {
-        result += numeral;
-        num -= value;
-      }
-    }
-    return result;
   };
 
   if (isInitialLoading && deposits.length === 0) {
@@ -542,8 +502,9 @@ export function Game() {
                     GAME
                   </button>
                   <button
-                    onClick={() => navigate('/stats')}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    type="button"
+                    disabled
+                    className="text-sm text-muted-foreground cursor-not-allowed"
                   >
                     LEADERBOARD
                   </button>
@@ -604,8 +565,9 @@ export function Game() {
                   GAME
                 </button>
                 <button
-                  onClick={() => navigate('/stats')}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  type="button"
+                  disabled
+                  className="text-sm text-muted-foreground cursor-not-allowed"
                 >
                   LEADERBOARD
                 </button>
@@ -693,12 +655,6 @@ export function Game() {
                     LATEST
                   </TabsTrigger>
                   <TabsTrigger
-                    value="winners"
-                    className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-[#2ED4B7] data-[state=active]:shadow-none text-muted-foreground px-0"
-                  >
-                    WINNERS
-                  </TabsTrigger>
-                  <TabsTrigger
                     value="yours"
                     className="bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-[#2ED4B7] data-[state=active]:shadow-none text-muted-foreground px-0"
                   >
@@ -759,52 +715,6 @@ export function Game() {
                   );
                 })}
               </div>
-            </TabsContent>
-
-            <TabsContent value="winners" className="mt-0">
-              {roundWinners.length > 0 ? (
-                <div className="divide-y divide-border/30">
-                  {roundWinners.map((winner, index) => (
-                    <div
-                      key={`${winner.address}-${winner.roundNumber}-${index}`}
-                      className="px-6 py-3 hover:bg-[#252840]/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="text-xl">
-                            {winner.type === 'winner' ? '👑' : '🎫'}
-                          </div>
-                          <div>
-                            <div className="text-sm text-foreground font-mono">
-                              {winner.handle || winner.address}
-                            </div>
-                            <div className={`text-xs tracking-wider ${
-                              winner.type === 'winner' ? 'text-[#F6C445]' : 'text-[#FF4B4B]'
-                            }`}>
-                              {winner.type === 'winner'
-                                ? `WINNER ROUND ${toRoman(winner.roundNumber)}`
-                                : 'LOTTERY WINNER'
-                              }
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono text-foreground">
-                            {formatTokenAmount(winner.amountToken, 1)} ${homeToken}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatTime(winner.ts)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="px-6 py-12 text-center text-muted-foreground">
-                  No winners yet
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="yours" className="mt-0">
