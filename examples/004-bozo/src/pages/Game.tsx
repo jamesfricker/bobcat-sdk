@@ -19,12 +19,12 @@ import { arbitrum } from 'wagmi/chains';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useComments } from '../providers/CommentsProvider';
-import { formatUnits, formatEther } from 'viem';
+import { formatUnits } from 'viem';
 import { DEPOSIT_LOOKBACK_BLOCKS, depositEventAbi } from '../lib/depositEvents';
 
 const BOZO_CONTRACT_ADDRESS = '0x3421264e413489b1e69ae84ace8c33c6cb7809ff' as const;
 const GAME_START_DELAY_MINUTES = 45;
-const HARD_CODED_TOKEN_PRICE_USD = 3200;
+const DEFAULT_TOKEN_PRICE_USD = 1;
 const HARD_CODED_MIN_RESET_USD = 100;
 const DEFAULT_HOME_TOKEN = 'ETH';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
@@ -202,21 +202,22 @@ export function Game() {
     return '0';
   }, [assetDecimals, poolSizeData]);
 
+  const tokenPriceUsd = useMemo(() => {
+    const normalizedToken = homeToken.toUpperCase();
+    if (normalizedToken.includes('USDC')) {
+      return 1;
+    }
+
+    return DEFAULT_TOKEN_PRICE_USD;
+  }, [homeToken]);
+
   const poolSizeUsd = useMemo(() => {
     const numericAmount = parseFloat(poolSizeTokens);
     if (Number.isFinite(numericAmount)) {
-      return numericAmount * HARD_CODED_TOKEN_PRICE_USD;
+      return numericAmount * tokenPriceUsd;
     }
     return 0;
-  }, [poolSizeTokens]);
-
-  const tokenPriceUsd = useMemo(() => {
-    const tokens = parseFloat(poolSizeTokens);
-    if (Number.isFinite(tokens) && tokens > 0 && poolSizeUsd > 0) {
-      return poolSizeUsd / tokens;
-    }
-    return HARD_CODED_TOKEN_PRICE_USD;
-  }, [poolSizeTokens, poolSizeUsd]);
+  }, [poolSizeTokens, tokenPriceUsd]);
 
   const lastBettorAmountTokens = useMemo(() => {
     if (typeof lastBettorAmountData === 'bigint') {
@@ -232,10 +233,10 @@ export function Game() {
   const lastBettorAmountUsd = useMemo(() => {
     const numericAmount = parseFloat(lastBettorAmountTokens);
     if (Number.isFinite(numericAmount)) {
-      return numericAmount * HARD_CODED_TOKEN_PRICE_USD;
+      return numericAmount * tokenPriceUsd;
     }
     return 0;
-  }, [lastBettorAmountTokens]);
+  }, [lastBettorAmountTokens, tokenPriceUsd]);
 
   const minToResetUsd = useMemo(() => {
     if (lastBettorAmountUsd > 0) {
@@ -268,15 +269,17 @@ export function Game() {
   }, [deadlineData, fallbackDeadline]);
 
   const displayPot = useMemo(() => {
-    if (poolSizeUsd > 0) {
-      return `${(poolSizeUsd / 1000).toFixed(1)}K ${homeToken}`;
-    }
     const numericAmount = parseFloat(poolSizeTokens);
     if (Number.isFinite(numericAmount)) {
-      return `${numericAmount.toFixed(2)} ${homeToken}`;
+      const formatOptions: Intl.NumberFormatOptions =
+        numericAmount < 1
+          ? { minimumFractionDigits: 2, maximumFractionDigits: 6 }
+          : { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+
+      return `${numericAmount.toLocaleString('en-US', formatOptions)} ${homeToken}`;
     }
     return `0 ${homeToken}`;
-  }, [homeToken, poolSizeTokens, poolSizeUsd]);
+  }, [homeToken, poolSizeTokens]);
 
   const timeRemaining = useMemo(() => getTimeRemaining(deadlineIso), [deadlineIso, currentTime]);
   const gameStatus: GameState['status'] = 'Active';
@@ -376,8 +379,8 @@ export function Game() {
             const amount = typeof amountRaw === 'bigint' ? amountRaw : 0n;
             const pool = typeof poolRaw === 'bigint' ? poolRaw : 0n;
 
-            const amountToken = formatEther(amount);
-            const potAfterToken = formatEther(pool);
+            const amountToken = formatUnits(amount, assetDecimals);
+            const potAfterToken = formatUnits(pool, assetDecimals);
 
             return {
               ts: timestampIso,
@@ -399,7 +402,7 @@ export function Game() {
         }
       }
     },
-    [publicClient, refreshComments]
+    [assetDecimals, publicClient, refreshComments]
   );
 
   useEffect(() => {
