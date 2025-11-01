@@ -32,6 +32,25 @@ export interface Deposit {
   txHash: string;
 }
 
+export interface WinnerEvent {
+  ts: string;
+  address: string;
+  amountToken: string;
+  amountUsd: number;
+  isLottery: boolean;
+  txHash: string;
+}
+
+export type PlayerActivityType = 'deposit' | 'winner' | 'lottery';
+
+export interface PlayerActivityItem {
+  ts: string;
+  type: PlayerActivityType;
+  amountToken: string;
+  amountUsd: number;
+  txHash: string;
+}
+
 export interface BozoComment {
   wallet: string;
   content: string;
