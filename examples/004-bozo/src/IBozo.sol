@@ -32,4 +32,10 @@ interface IBozo {
     function upgrade(address newImpl) external;
 
     function changeAdmin(address newAdmin) external;
+
+    event DepositMade(
+        address indexed recipient,
+        uint256 indexed amount,
+        uint256 indexed currentPool
+    );
 }
