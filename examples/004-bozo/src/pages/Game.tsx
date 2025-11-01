@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -10,16 +10,18 @@ import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { GameState, Deposit, Winners, RoundWinner } from '../types';
 import { mockApi } from '../lib/mock-api';
+import { config } from '../lib/config';
 import { formatAddress, formatTokenAmount, formatUsd, getTimeRemaining } from '../lib/utils';
 import { Loader2, AlertTriangle, Settings, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useReadContract, usePublicClient } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useComments } from '../providers/CommentsProvider';
-import { formatUnits } from 'viem';
+import { formatUnits, formatEther } from 'viem';
+import { DEPOSIT_LOOKBACK_BLOCKS, depositEventAbi } from '../lib/depositEvents';
 
 const BOZO_CONTRACT_ADDRESS = '0x6221a9c005f6e47eb398fd867784cacfdcfff4e7' as const;
 const GAME_START_DELAY_MINUTES = 45;
@@ -98,7 +100,8 @@ export function Game() {
   const [homeToken, setHomeToken] = useState<string>(DEFAULT_HOME_TOKEN);
 
   const { isConnected } = useAccount();
-  const { getCommentForWallet, refresh: refreshComments } = useComments();
+  const { getCommentForTxHash, refresh: refreshComments } = useComments();
+  const publicClient = usePublicClient();
 
   const fallbackDeadline = useMemo(
     () => new Date(Date.now() + GAME_START_DELAY_MINUTES * 60 * 1000).toISOString(),
@@ -296,6 +299,11 @@ export function Game() {
   const isGamePaused = false;
   const poolAssetDisplay = poolAssetAddress ? formatAddress(poolAssetAddress) : 'Unknown';
 
+  const loadGame = useCallback(() => {
+    // Game state is derived directly from contract reads, so this is a no-op placeholder.
+    return undefined;
+  }, []);
+
   const game: GameState = useMemo(
     () => ({
       potTokenAmount: poolSizeTokens,
@@ -313,6 +321,13 @@ export function Game() {
     }),
     [deadlineIso, homeToken, minToResetUsd, poolSizeTokens, poolSizeUsd, gameStatus, lastBettorAddress]
   );
+
+  const loadDeposits = useCallback(async () => {
+    if (!publicClient) {
+      return;
+    }
+
+    setLoading(true);
 
     try {
       await refreshComments().catch((err) => {
