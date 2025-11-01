@@ -5,12 +5,15 @@ const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.
 export const config = {
   // Home chain (base or arbitrum)
   homeChain: (env.VITE_HOME_CHAIN as 'base' | 'arbitrum') || 'base',
-  
+
   // Router service (lifi, socket, or across)
   router: env.VITE_ROUTER || 'lifi',
-  
+
   // API URL
   apiUrl: env.VITE_API_URL || 'http://localhost:3001/api',
+
+  // GraphQL endpoint for Bozo data
+  graphqlUrl: env.VITE_GRAPHQL_URL || 'http://localhost:8080/query',
   
   // Farcaster Hub
   fcHub: env.VITE_FC_HUB || '',

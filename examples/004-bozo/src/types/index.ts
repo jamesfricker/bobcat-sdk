@@ -32,6 +32,11 @@ export interface Deposit {
   comment?: string;
 }
 
+export interface BozoComment {
+  wallet: string;
+  content: string;
+}
+
 export interface RouteQuote {
   ok: boolean;
   depositUsd: number;
