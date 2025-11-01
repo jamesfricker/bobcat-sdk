@@ -29,9 +29,9 @@ export const config = {
   },
 
   contracts: {
-    bozo: (env.VITE_BOZO_CONTRACT as `0x${string}`) || '0x6221a9c005f6e47eb398fd867784cacfdcfff4e7',
+    bozo: (env.VITE_BOZO_CONTRACT as `0x${string}`) || '0x3421264e413489b1e69ae84ace8c33c6cb7809ff',
   },
-  
+
   // Testing flags
   testEndGameScreen: false // Set to true to preview the end game screen
 };
