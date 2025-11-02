@@ -11,8 +11,8 @@ use bobcat_sdk::{
     call::{call_bool, safe_call_bool},
     cd::{address, const_keccak_sel, read_words},
     entry::{
-        block_timestamp, contract_address, msg_sender, read_args_safe,
-        write_result_slice, write_result_word,
+        block_timestamp, contract_address, msg_sender, read_args_safe, write_result_slice,
+        write_result_word,
     },
     events::emit,
     interfaces::eip20::{make_fn_transfer, make_fn_transfer_from},
@@ -47,7 +47,13 @@ const ADDR_OPERATOR: [u8; 20] = address!(b"6221a9c005f6e47eb398fd867784cacfdcfff
 const ADDR_ASSET: [u8; 20] = address!(b"af88d065e77c8cC2239327C5EDb3A432268e5831");
 
 /// Event emitted when a deposit is made.
-const EVENT_DEPOSIT_MADE: U = const_keccak256(b"DepositMade(address,uint256,uint256)");
+const TOPIC_DEPOSIT_MADE: U = const_keccak256(b"DepositMade(address,uint256,uint256)");
+
+/// A winner was chosen for a game!
+const TOPIC_WINNER_CHOSEN: U = const_keccak256(b"WinnerChosen(address,uint256,bool)");
+
+/// Event emitted when the epoch is bumped.
+const TOPIC_NEW_EPOCH: U = const_keccak256(b"NewEpoch(uint256)");
 
 /// Fee taken from the users. 3% fee at a dividend
 const FEE: U = U::from_u32(3);
@@ -151,6 +157,7 @@ fn state_play(amt: U, recipient: Address) -> usize {
     if needs_epoch_setting {
         // If we've exceeded the timestamp, we need to set a new epoch.
         storage::epoch::set(&epoch);
+        emit!(TOPIC_NEW_EPOCH, epoch);
     }
     // Transfer the asset to us:
     assert!(
@@ -198,12 +205,10 @@ fn state_play(amt: U, recipient: Address) -> usize {
         &existing_tickets.checked_add(&lottery_tickets).unwrap(),
     );
     emit!(
-        &EVENT_DEPOSIT_MADE,
-        &recipient.into(),
-        &amt,
-        &storage::pool_size::get(&epoch),
-        0,
-        []
+        TOPIC_DEPOSIT_MADE,
+        recipient,
+        amt,
+        storage::pool_size::get(&epoch)
     );
     storage::ts_deadline::add(&epoch, &(timestamp + EXTRA_TIME));
     let r: [u8; 32 * 2] = concat_arrays!(epoch.0, amt.0);
@@ -224,36 +229,37 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
     if ticket_count.is_zero() {
         // We only had one player! Let's transfer them the full amount, and stop.
         if last_bettor_addr != [0u8; 20] {
+            let winner_amt = storage::pool_size::get(&epoch);
             assert!(
                 call_bool(
                     ADDR_ASSET,
-                    &make_fn_transfer(last_bettor_addr, &storage::pool_size::get(&epoch)),
+                    &make_fn_transfer(last_bettor_addr, &winner_amt),
                     &U::ZERO,
                     u64::MAX
                 ),
                 "transfer revert"
             );
+            emit!(TOPIC_WINNER_CHOSEN, last_bettor_addr, winner_amt, false);
         }
         let r: [u8; 32 * 3] = concat_arrays!([0u8; 32], U::from(64u32).0, [0u8; 32]);
         write_result_slice(&r);
         return 0;
     }
     // If we had more than one player, we give the top 80% to the last user:
+    let winner_reward = storage::pool_size::get(&epoch)
+        .mul_div(&U::from(8u32), U::from(10u32))
+        .unwrap()
+        .0;
     assert!(
         call_bool(
             ADDR_ASSET,
-            &make_fn_transfer(
-                last_bettor_addr,
-                &storage::pool_size::get(&epoch)
-                    .mul_div(&U::from(8u32), U::from(10u32))
-                    .unwrap()
-                    .0
-            ),
+            &make_fn_transfer(last_bettor_addr, &winner_reward),
             &U::ZERO,
             u64::MAX
         ),
         "transfer revert"
     );
+    emit!(TOPIC_WINNER_CHOSEN, last_bettor_addr, winner_reward, false);
     // Using the random word, we start to pick some random words using
     // keccak. We're only ever going to see 10 winners at max, since we
     // divide the winnings up to at most 10 people. We take the 20%:
@@ -297,6 +303,7 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
                         ),
                         "transfer revert"
                     );
+                    emit!(TOPIC_WINNER_CHOSEN, w, user_lottery_reward, true);
                     break;
                 }
             }

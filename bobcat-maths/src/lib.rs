@@ -1048,6 +1048,12 @@ impl From<U> for [u8; 32] {
     }
 }
 
+impl From<&U> for U {
+    fn from(x: &U) -> Self {
+        *x
+    }
+}
+
 impl From<U> for bool {
     fn from(x: U) -> Self {
         x.0[31] == 1
