@@ -8,3 +8,5 @@ src/.hypothesis
 node_modules
 build
 bozo.out
+bootstrap
+bootstrap.zip

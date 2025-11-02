@@ -13,3 +13,9 @@ bozo.wasm: $(shell find Cargo.* src -type f)
 
 bozo.out: $(shell find -name 'go.*' -or -name '*.go' -type f)
 	@go build -o bozo.out
+
+bootstrap: bozo.out
+	@cp bozo.out bootstrap
+
+bootstrap.zip: bootstrap
+	@zip bootstrap.zip bootstrap
