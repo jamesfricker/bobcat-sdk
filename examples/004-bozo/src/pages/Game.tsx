@@ -992,6 +992,9 @@ export function Game() {
             <span className="mx-2 text-muted-foreground/80">•</span>
             <span className="text-[#FF4B4B]">This project is not audited.</span>
           </div>
+          <div className="text-muted-foreground/80">
+            This example was created for fun—please be careful and use your best judgment when interacting with it.
+          </div>
         </div>
       </div>
 
