@@ -134,6 +134,19 @@ export function BozoModal({
     return Number.isFinite(value) ? value : 0;
   }, [amountToken]);
 
+  const insufficientBalance = useMemo(() => {
+    if (!amountWei || amountWei === 0n) {
+      return false;
+    }
+
+    const balanceValue = balanceData?.value;
+    if (balanceValue === undefined) {
+      return false;
+    }
+
+    return amountWei > balanceValue;
+  }, [amountWei, balanceData?.value]);
+
   const approxUsd = useMemo(() => {
     if (derivedTokenPriceUsd > 0 && amountTokenNumber > 0) {
       return amountTokenNumber * derivedTokenPriceUsd;
@@ -208,6 +221,7 @@ export function BozoModal({
     !amountWei ||
     amountWei === 0n ||
     !poolAssetAddress ||
+    insufficientBalance ||
     isApproving ||
     isDepositing ||
     isWriting ||
@@ -311,6 +325,11 @@ export function BozoModal({
 
     if (!amountWei || amountWei === 0n) {
       toast.error('Enter an amount to deposit.');
+      return;
+    }
+
+    if (insufficientBalance) {
+      toast.error('Insufficient balance for this deposit.');
       return;
     }
 
@@ -532,6 +551,15 @@ export function BozoModal({
               <AlertCircle className="h-4 w-4 text-[#F6C445]" />
               <AlertDescription className="text-sm text-foreground">
                 Approve {game.homeToken} to the Bozo contract before depositing.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {insufficientBalance && (
+            <Alert className="bg-[#FF4B4B]/10 border-[#FF4B4B]">
+              <AlertCircle className="h-4 w-4 text-[#FF4B4B]" />
+              <AlertDescription className="text-sm text-foreground">
+                Insufficient balance for this deposit amount.
               </AlertDescription>
             </Alert>
           )}
