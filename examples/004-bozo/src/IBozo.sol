@@ -4,7 +4,8 @@ pragma solidity 0.8.20;
 interface IBozo {
     function play(
         uint256 amount,
-        address recipient
+        address recipient,
+        bytes32 comment
     ) external returns (uint256 epoch, uint256 deposited);
 
     function distributeRewards(
@@ -24,7 +25,7 @@ interface IBozo {
     function deadline() external view returns (uint256);
     function playerCount() external view returns (uint256);
     function ticketCount() external view returns (uint256);
-    funtion currentEpoch() external view returns (uint256);
+    function currentEpoch() external view returns (uint256);
     function wasEpochCollected(uint256 epoch) external view returns (bool);
 
     function upgrade(address newImpl) external;

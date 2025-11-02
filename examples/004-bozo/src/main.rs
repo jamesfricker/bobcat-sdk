@@ -79,7 +79,7 @@ const SEL_WAS_EPOCH_COLLECTED: [u8; 4] = const_keccak_sel(b"wasEpochCollected(ui
 // ~~~~~ Stateful functions: ~~~~
 //
 const SEL_INIT: [u8; 4] = const_keccak_sel(b"initialise(address)");
-const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(uint256,address,)");
+const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(uint256,address,bytes32)");
 const SEL_DISTRIBUTE_REWARDS: [u8; 4] =
     const_keccak_sel(b"distributeRewards(uint256,address,uint256)");
 const SEL_UPGRADE: [u8; 4] = const_keccak_sel(b"upgrade(address)");
@@ -152,7 +152,7 @@ fn pick_epoch() -> (U, bool) {
     }
 }
 
-fn state_play(amt: U, recipient: Address) -> usize {
+fn state_play(amt: U, recipient: Address, _comment: U) -> usize {
     assert!(amt.is_some(), "amount is zero");
     assert!(recipient != [0u8; 20], "recipient is zero");
     let timestamp = U::from(block_timestamp());
@@ -376,8 +376,8 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
                 state_init(admin.into())
             }
             SEL_PLAY => reentrancy_guard_sel(&SEL_PLAY, || {
-                let (amt, recipient) = read_words!(&args[4..], 2);
-                state_play(*amt, recipient.into())
+                let (amt, recipient, comment) = read_words!(&args[4..], 3);
+                state_play(*amt, recipient.into(), *comment)
             }),
             SEL_DISTRIBUTE_REWARDS => {
                 let (epoch, _recipient, rng) = read_words!(&args[4..], 3);
