@@ -4,7 +4,8 @@ pragma solidity 0.8.20;
 interface IBozo {
     function play(
         uint256 amount,
-        address recipient
+        address recipient,
+        bytes32 comment
     ) external returns (uint256 epoch, uint256 deposited);
 
     function distributeRewards(
