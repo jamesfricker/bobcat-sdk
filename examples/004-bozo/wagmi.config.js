@@ -6,7 +6,7 @@ import IBozo from './out/IBozo.sol/IBozo.json';
 export default {
   out: 'src/generated.js',
   contracts: [{
-    address: '0x944e82782bb29394939483f3380c69b3b89e6426',
+    address: '0xb22100180b2062b5fb3dfe741788b2a8b4d8cd97',
     abi: IBozo.abi,
     name: 'Bozo'
   }],

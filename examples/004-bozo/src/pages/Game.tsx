@@ -28,7 +28,7 @@ import {
   winnerEventAbi,
 } from '../lib/depositEvents';
 
-const BOZO_CONTRACT_ADDRESS = '0x944e82782bb29394939483f3380c69b3b89e6426' as const;
+const BOZO_CONTRACT_ADDRESS = '0xb22100180b2062b5fb3dfe741788b2a8b4d8cd97' as const;
 const GAME_START_DELAY_MINUTES = 60;
 const HARD_CODED_MIN_RESET_TOKENS = 1;
 const DEFAULT_HOME_TOKEN = 'ARB';
