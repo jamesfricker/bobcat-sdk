@@ -46,8 +46,8 @@ const SLOT_IMPL: U = const_slot_off_curve(b"eip1967.proxy.implementation");
 /// Operator that's able to trigger the reset cron.
 const ADDR_OPERATOR: [u8; 20] = address!(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7");
 
-/// Asset that assets are converted to, to be used in the game. This is WETH.
-const ADDR_ASSET: [u8; 20] = address!(b"82af49447d8a07e3bd95bd0d56f35241523fbab1");
+/// Asset that assets are converted to, to be used in the game. This is ARB.
+const ADDR_ASSET: [u8; 20] = address!(b"912CE59144191C1204E64559FE8253a0e49E6548");
 
 /// Event emitted when a deposit is made.
 const TOPIC_DEPOSIT_MADE: U = const_keccak256(b"DepositMade(address,uint256,uint256)");
