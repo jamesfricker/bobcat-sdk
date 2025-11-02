@@ -29,3 +29,8 @@ You can read a reference implementation at `src/reference.py`.
 The deployment implementation is hosted at `0x33580e34bd6801660692fb67a6c5c8606164ed6a`.
 The proxy is hosted at `0x3421264e413489b1e69ae84ace8c33c6cb7809ff`. Both of these contracts
 are on Arbitrum One.
+
+## DISCLAIMER
+
+This was made for fun and to show off bobcat-sdk! Do not participate if you can afford to
+lose.

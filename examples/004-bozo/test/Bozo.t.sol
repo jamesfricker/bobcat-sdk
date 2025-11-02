@@ -58,6 +58,6 @@ contract Bozo is Test {
             address(this)
         );
         assertEq(0, epoch);
-        c.distributeRewards(address(this), 123);
+        c.distributeRewards(0, address(this), 123);
     }
 }

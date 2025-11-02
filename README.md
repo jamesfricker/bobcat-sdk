@@ -5,8 +5,6 @@
 
 bobcat-sdk is an opinionated SDK for Arbitrum Stylus, intended for advanced users.
 
-![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen.svg)
-
 ## Codesize savings
 
 bobcat-sdk is smaller than stylus-sdk. Check `examples` to see a comparison of a few
@@ -81,20 +79,20 @@ from a slot, and beacon proxies.
 
 8. Solidity storage equivalence.
 
-9. Support for every precompile.
-
-10. Reentrancy guard using a Vyper-like exchange method of protecting the method id for
+9. Reentrancy guard using a Vyper-like exchange method of protecting the method id for
 per-function reentrancy guards.
 
-11. Support for every interface Vyper provides (these are the most common), plus a few
+10. Support for every interface Vyper provides (these are the most common), plus a few
 that the Superposition team makes frequent use of (Chainlink data feeds, Permit, LzRead,
 Camelot, 9lives, Uniswap). We also welcome community contributions on this front.
 
-12. The ability to distill built-in functions to basic types to reduce codesize if needed.
+11. The ability to distill built-in functions to basic types to reduce codesize if needed.
 Most functions will ship with a Result and Option form, but they will also expose raw
 values and simple booleans when that is helpful. Result and Option increase codesize (with
 Option having a smaller impact), so developers focused on reducing their codesize can
 choose the lighter forms.
+
+12. Code verification.
 
 ## Non-goals
 

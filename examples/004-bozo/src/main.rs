@@ -8,17 +8,14 @@
 use core::cmp::min;
 
 use bobcat_sdk::{
-    call::{call_bool, call_word_err_vec, safe_call_bool},
+    call::{call_bool, safe_call_bool},
     cd::{address, const_keccak_sel, read_words},
     entry::{
         block_timestamp, contract_address, msg_sender, read_args_safe,
-        revert_if_bad_call_slice_vec, write_result_slice, write_result_word,
+        write_result_slice, write_result_word,
     },
     events::emit,
-    interfaces::{
-        camelotv3_swap_router::make_fn_exact_input_single,
-        eip20::{make_fn_approve, make_fn_transfer, make_fn_transfer_from},
-    },
+    interfaces::eip20::{make_fn_transfer, make_fn_transfer_from},
     maths::U,
     storage::{
         const_keccak256, const_slot_off_curve, flush_guard, keccak256, reentrancy_guard_sel,
@@ -49,9 +46,6 @@ const ADDR_OPERATOR: [u8; 20] = address!(b"6221a9c005f6e47eb398fd867784cacfdcfff
 /// Asset that assets are converted to, to be used in the game. This is USDC.
 const ADDR_ASSET: [u8; 20] = address!(b"af88d065e77c8cC2239327C5EDb3A432268e5831");
 
-/// Swap router that we use with Camelot to get the asset into the one we support here.
-const ADDR_CAMELOT_SWAP_ROUTER: Address = address!(b"1f721e2e82f6676fce4ea07a5958cf098d339e18");
-
 /// Event emitted when a deposit is made.
 const EVENT_DEPOSIT_MADE: U = const_keccak256(b"DepositMade(address,uint256,uint256)");
 
@@ -70,23 +64,26 @@ const SEL_LAST_BETTOR_ADDRESS: [u8; 4] = const_keccak_sel(b"lastBettorAddress()"
 const SEL_DEADLINE: [u8; 4] = const_keccak_sel(b"deadline()");
 const SEL_PLAYER_COUNT: [u8; 4] = const_keccak_sel(b"playerCount()");
 const SEL_TICKET_COUNT: [u8; 4] = const_keccak_sel(b"ticketCount()");
+const SEL_CURRENT_EPOCH: [u8; 4] = const_keccak_sel(b"currentEpoch()");
+const SEL_WAS_EPOCH_COLLECTED: [u8; 4] = const_keccak_sel(b"wasEpochCollected(uint256)");
 
 // ~~~~~ Stateful functions: ~~~~
 //
 const SEL_INIT: [u8; 4] = const_keccak_sel(b"initialise(address)");
-const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(address,uint256,uint256,uint256,address)");
-const SEL_DISTRIBUTE_REWARDS: [u8; 4] = const_keccak_sel(b"distributeRewards(address,uint256)");
+const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(uint256,address,)");
+const SEL_DISTRIBUTE_REWARDS: [u8; 4] =
+    const_keccak_sel(b"distributeRewards(uint256,address,uint256)");
 const SEL_UPGRADE: [u8; 4] = const_keccak_sel(b"upgrade(address)");
 const SEL_CHANGE_ADMIN: [u8; 4] = const_keccak_sel(b"changeAdmin(address)");
 const SEL_COLLECT_FEES: [u8; 4] = const_keccak_sel(b"collectFees()");
 
 fn view_deadline() -> usize {
-    write_result_word(&storage::ts_deadline::get(&storage::epoch::get()));
+    write_result_word(&storage::ts_deadline::get(&pick_epoch().0));
     0
 }
 
 fn view_pool_size() -> usize {
-    write_result_word(&storage::pool_size::get(&storage::epoch::get()));
+    write_result_word(&storage::pool_size::get(&pick_epoch().0));
     0
 }
 
@@ -96,24 +93,32 @@ fn view_pool_asset() -> usize {
 }
 
 fn view_last_bettor_amount() -> usize {
-    write_result_word(&storage::last_bettor_amt::get(&storage::epoch::get()));
+    write_result_word(&storage::last_bettor_amt::get(&pick_epoch().0));
     0
 }
 
 fn view_last_bettor_address() -> usize {
-    write_result_word(&storage::last_bettor_addr::get(&storage::epoch::get()));
+    write_result_word(&storage::last_bettor_addr::get(&pick_epoch().0));
     0
 }
 
 fn view_player_count() -> usize {
-    write_result_word(&storage::user_lottery_ticket_len::get(
-        &storage::epoch::get(),
-    ));
+    write_result_word(&storage::user_lottery_ticket_len::get(&pick_epoch().0));
     0
 }
 
 fn view_ticket_count() -> usize {
-    write_result_word(&storage::global_tickets::get(&storage::epoch::get()));
+    write_result_word(&storage::global_tickets::get(&pick_epoch().0));
+    0
+}
+
+fn view_current_epoch() -> usize {
+    write_result_word(&pick_epoch().0);
+    0
+}
+
+fn view_was_epoch_collected() -> usize {
+    write_result_word(&storage::was_distributed::get(&pick_epoch().0));
     0
 }
 
@@ -126,61 +131,37 @@ fn state_init(admin: Address) -> usize {
     0
 }
 
-fn state_play(
-    asset: Address,
-    camelot_min_asset_out: &U,
-    camelot_deadline: &U,
-    mut amt: U,
-    recipient: Address,
-) -> usize {
+// Get the current epoch by comparing the timestamp with the deadline. If
+// we've exceeded the deadline, we return the next epoch, and a flag to
+// indicate it should be set to the result returned from this function.
+fn pick_epoch() -> (U, bool) {
+    let e = storage::epoch::get();
+    if block_timestamp() > storage::ts_deadline::get(&e).into() {
+        (e + U::ONE, true)
+    } else {
+        (e, false)
+    }
+}
+
+fn state_play(amt: U, recipient: Address) -> usize {
     assert!(amt.is_some(), "amount is zero");
-    let epoch = storage::epoch::get();
+    assert!(recipient != [0u8; 20], "recipient is zero");
     let timestamp = U::from(block_timestamp());
-    {
-        let deadline = storage::ts_deadline::get(&epoch);
-        // Make sure that we're within the deadline, or that it wasn't set:
-        assert!(
-            deadline.is_zero() || storage::ts_deadline::get(&epoch) >= timestamp,
-            "deadline expired"
-        );
+    let (epoch, needs_epoch_setting) = pick_epoch();
+    if needs_epoch_setting {
+        // If we've exceeded the timestamp, we need to set a new epoch.
+        storage::epoch::set(&epoch);
     }
     // Transfer the asset to us:
     assert!(
         safe_call_bool(
-            asset,
+            ADDR_ASSET,
             &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
             &U::ZERO,
             u64::MAX,
         ),
         "transferFrom revert"
     );
-    if asset != ADDR_ASSET {
-        // Approve the swap router so that we can spend this using a call:
-        assert!(
-            call_bool(
-                asset,
-                &make_fn_approve(ADDR_CAMELOT_SWAP_ROUTER, &amt),
-                &U::ZERO,
-                u64::MAX
-            ),
-            "approval revert"
-        );
-        // Swap so that we may receive some of the asset in use here:
-        amt = revert_if_bad_call_slice_vec!(call_word_err_vec(
-            ADDR_CAMELOT_SWAP_ROUTER,
-            &make_fn_exact_input_single(
-                asset,
-                ADDR_ASSET,
-                contract_address(),
-                *camelot_deadline,
-                amt,
-                *camelot_min_asset_out,
-                [0u8; 20],
-            ),
-            &U::ZERO,
-            u64::MAX
-        ));
-    }
     let fee_paid = amt.mul_div_round_up(&FEE, ONE_HUNDRED).unwrap();
     let amt = amt - fee_paid;
     // Get the last deposit made by a user to know how much to beat. Take 105%:
@@ -230,9 +211,8 @@ fn state_play(
     0
 }
 
-fn state_distribute_rewards(rng: &U) -> usize {
+fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
     assert_eq!(ADDR_OPERATOR, msg_sender(), "operator only");
-    let epoch = storage::epoch::get();
     assert!(
         U::from(block_timestamp()) > storage::ts_deadline::get(&epoch),
         "not concluded"
@@ -330,7 +310,7 @@ fn state_distribute_rewards(rng: &U) -> usize {
         }
         i += 1;
     }
-    storage::epoch::incr();
+    storage::was_distributed::set(&epoch, &U::from(true));
     let r: [u8; 32 * 3] = concat_arrays!([0u8; 32], U::from(64u32).0, [0u8; 32]);
     write_result_slice(&r);
     0
@@ -369,46 +349,41 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     // Allocate the full amount that we will see possibly:
     let args = &read_args_safe!(args_len, { 32 * 5 + 4 });
     let sel: [u8; 4] = args[..4].try_into().unwrap();
-    match sel {
-        // View functions:
-        SEL_DEADLINE => view_deadline(),
-        SEL_POOL_SIZE => view_pool_size(),
-        SEL_POOL_ASSET => view_pool_asset(),
-        SEL_LAST_BETTOR_AMOUNT => view_last_bettor_amount(),
-        SEL_LAST_BETTOR_ADDRESS => view_last_bettor_address(),
-        SEL_PLAYER_COUNT => view_player_count(),
-        SEL_TICKET_COUNT => view_ticket_count(),
-        // Side effect generating functions:
-        SEL_INIT => flush_guard(|| {
-            let admin = read_words!(&args[4..], 1);
-            state_init(admin.into())
-        }),
-        SEL_PLAY => flush_guard(|| {
-            reentrancy_guard_sel(&SEL_PLAY, || {
-                let (asset, camelot_min_asset_out, camelot_deadline, amt, recipient) =
-                    read_words!(&args[4..], 5);
-                state_play(
-                    asset.into(),
-                    camelot_min_asset_out,
-                    camelot_deadline,
-                    *amt,
-                    recipient.into(),
-                )
-            })
-        }),
-        SEL_DISTRIBUTE_REWARDS => flush_guard(|| {
-            let (_recipient, rng) = read_words!(&args[4..], 2);
-            state_distribute_rewards(rng)
-        }),
-        SEL_UPGRADE => flush_guard(|| {
-            let new_impl = read_words!(&args[4..], 1);
-            state_upgrade(new_impl.into())
-        }),
-        SEL_CHANGE_ADMIN => flush_guard(|| {
-            let new_admin = read_words!(&args[4..], 1);
-            state_change_admin(new_admin.into())
-        }),
-        SEL_COLLECT_FEES => flush_guard(|| state_collect_fees()),
-        _ => 1,
-    }
+    flush_guard(|| {
+        match sel {
+            // View functions:
+            SEL_DEADLINE => view_deadline(),
+            SEL_POOL_SIZE => view_pool_size(),
+            SEL_POOL_ASSET => view_pool_asset(),
+            SEL_LAST_BETTOR_AMOUNT => view_last_bettor_amount(),
+            SEL_LAST_BETTOR_ADDRESS => view_last_bettor_address(),
+            SEL_PLAYER_COUNT => view_player_count(),
+            SEL_TICKET_COUNT => view_ticket_count(),
+            SEL_CURRENT_EPOCH => view_current_epoch(),
+            SEL_WAS_EPOCH_COLLECTED => view_was_epoch_collected(),
+            // Side effect generating functions:
+            SEL_INIT => {
+                let admin = read_words!(&args[4..], 1);
+                state_init(admin.into())
+            }
+            SEL_PLAY => reentrancy_guard_sel(&SEL_PLAY, || {
+                let (amt, recipient) = read_words!(&args[4..], 2);
+                state_play(*amt, recipient.into())
+            }),
+            SEL_DISTRIBUTE_REWARDS => {
+                let (epoch, _recipient, rng) = read_words!(&args[4..], 3);
+                state_distribute_rewards(epoch, rng)
+            }
+            SEL_UPGRADE => {
+                let new_impl = read_words!(&args[4..], 1);
+                state_upgrade(new_impl.into())
+            }
+            SEL_CHANGE_ADMIN => {
+                let new_admin = read_words!(&args[4..], 1);
+                state_change_admin(new_admin.into())
+            }
+            SEL_COLLECT_FEES => state_collect_fees(),
+            _ => 1,
+        }
+    })
 }

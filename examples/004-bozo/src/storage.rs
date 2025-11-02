@@ -134,4 +134,6 @@ storage! {
     user_lottery_tickets(epoch, address),
     // Count of the users in the lottery tickets array.
     user_lottery_ticket_len(epoch),
+    // Whether rewards were distributed for an epoch.
+    was_distributed(epoch)
 }
