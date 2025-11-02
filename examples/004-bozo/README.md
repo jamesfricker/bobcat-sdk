@@ -11,7 +11,7 @@ after using Rainbow and Wagmi as the wallet-interacting package.
 It was scaffolded using `bobcat-new` at commit `2cd66f9a519f375fbfb31e52625399abcd160497`, at
 1761199872.
 
-The entire webapp is deployed at https://bozo.xyz.
+The webapp is deployed at [https://ripbozo.lol](https://ripbozo.lol).
 
 ## Claiming rewards
 
