@@ -26,8 +26,8 @@ You can read a reference implementation at `src/reference.py`.
 
 ## Deployment
 
-The deployment implementation is hosted at `0x080addd0c2136bb04edc83bb3018ef5144aa818e`.
-The proxy is hosted at `0x3421264e413489b1e69ae84ace8c33c6cb7809ff`. Both of these contracts
+The deployment implementation is hosted at `0x944e82782bb29394939483f3380c69b3b89e6426`.
+The proxy is hosted at `0xb22100180b2062b5fb3dfe741788b2a8b4d8cd97`. Both of these contracts
 are on Arbitrum One.
 
 ## DISCLAIMER

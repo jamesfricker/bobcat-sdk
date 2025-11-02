@@ -213,7 +213,7 @@ fn state_play(amt: U, recipient: Address) -> usize {
         amt,
         storage::pool_size::get(&epoch)
     );
-    storage::ts_deadline::add(&epoch, &(timestamp + EXTRA_TIME));
+    storage::ts_deadline::set(&epoch, &(timestamp + EXTRA_TIME));
     let r: [u8; 32 * 2] = concat_arrays!(epoch.0, amt.0);
     write_result_slice(&r);
     0
@@ -221,10 +221,6 @@ fn state_play(amt: U, recipient: Address) -> usize {
 
 fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
     assert_eq!(ADDR_OPERATOR, msg_sender(), "operator only");
-    assert!(
-        U::from(block_timestamp()) > storage::ts_deadline::get(&epoch),
-        "not concluded"
-    );
     // Take 80% of the pool, and send to the winning depositor:
     let last_bettor_addr: Address = storage::last_bettor_addr::get(&epoch).into();
     let ticket_count = storage::global_tickets::get(&epoch)
