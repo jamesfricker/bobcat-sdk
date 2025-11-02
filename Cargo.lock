@@ -446,7 +446,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-events"
-version = "0.1.0"
+version = "0.6.3"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -461,6 +461,7 @@ dependencies = [
  "alloy-sol-types",
  "array-concat",
  "bobcat-cd",
+ "bobcat-events",
  "bobcat-maths",
  "bobcat-storage",
  "const-hex",
@@ -497,6 +498,7 @@ name = "bobcat-proxy"
 version = "0.6.3"
 dependencies = [
  "array-concat",
+ "bobcat-events",
  "bobcat-interfaces",
  "bobcat-maths",
  "const-hex",
@@ -511,6 +513,7 @@ dependencies = [
  "bobcat-console",
  "bobcat-create",
  "bobcat-entry",
+ "bobcat-events",
  "bobcat-interfaces",
  "bobcat-maths",
  "bobcat-panic",

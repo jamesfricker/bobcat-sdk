@@ -15,7 +15,10 @@ use bobcat_sdk::{
         write_result_word,
     },
     events::emit,
-    interfaces::eip20::{make_fn_transfer, make_fn_transfer_from},
+    interfaces::{
+        eip1967::{TOPIC_ADMIN_CHANGED, TOPIC_UPGRADED},
+        eip20::{make_fn_transfer, make_fn_transfer_from},
+    },
     maths::U,
     storage::{
         const_keccak256, const_slot_off_curve, flush_guard, keccak256, reentrancy_guard_sel,
@@ -326,12 +329,15 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
 fn state_upgrade(new_impl: Address) -> usize {
     assert_eq!(storage_load(&SLOT_ADMIN), msg_sender().into());
     storage_store(&SLOT_IMPL, &U::from(new_impl));
+    emit!(TOPIC_UPGRADED, new_impl);
     0
 }
 
 fn state_change_admin(new_admin: Address) -> usize {
-    assert_eq!(storage_load(&SLOT_ADMIN), msg_sender().into());
+    let last_admin = storage_load(&SLOT_ADMIN);
+    assert_eq!(last_admin, msg_sender().into());
     storage_store(&SLOT_ADMIN, &U::from(new_admin));
+    emit!(TOPIC_ADMIN_CHANGED, last_admin, new_admin);
     0
 }
 

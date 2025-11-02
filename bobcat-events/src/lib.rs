@@ -106,7 +106,7 @@ macro_rules! emit {
         let t0: U =$t0.into();
         let t1: U =$t1.into();
         let t2: U =$t2.into();
-        $crate::emit_log_2_slice::<DATA_LEN, ALL_LEN>(&t0, t1, &t2, [])
+        $crate::emit_log_2_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, [])
     }};
     ($t0:expr, $t1:expr, $t2:expr, data: $data:expr, $data_len:expr) => {{
         const DATA_LEN: usize = $data_len;
@@ -114,7 +114,7 @@ macro_rules! emit {
         let t0: U =$t0.into();
         let t1: U =$t1.into();
         let t2: U =$t2.into();
-        $crate::emit_log_2_slice::<DATA_LEN, ALL_LEN>(&t0, t1, &t2, $data)
+        $crate::emit_log_2_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, $data)
     }};
     ($t0:expr, $t1:expr, $t2:expr, $t3:expr) => {{
         const DATA_LEN: usize = 0;
