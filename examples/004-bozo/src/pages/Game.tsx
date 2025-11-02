@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { GameState, Deposit, Winners, WinnerEvent, PlayerActivityItem } from '../types';
 import { config } from '../lib/config';
-import { formatAddress, formatTokenAmount, formatUsd, getTimeRemaining } from '../lib/utils';
+import { formatAddress, formatTokenAmount, getTimeRemaining } from '../lib/utils';
 import { makeEpochCookieName, readCookie } from '../lib/cookies';
 import { Loader2, AlertTriangle, Settings, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
@@ -30,9 +30,8 @@ import {
 
 const BOZO_CONTRACT_ADDRESS = '0x944e82782bb29394939483f3380c69b3b89e6426' as const;
 const GAME_START_DELAY_MINUTES = 60;
-const DEFAULT_TOKEN_PRICE_USD = 1;
-const HARD_CODED_MIN_RESET_USD = 1;
-const DEFAULT_HOME_TOKEN = 'ETH';
+const HARD_CODED_MIN_RESET_TOKENS = 1;
+const DEFAULT_HOME_TOKEN = 'ARB';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
 const MIN_RESET_PREMIUM_MULTIPLIER = 1.05;
 
@@ -234,23 +233,6 @@ export function Game() {
     return '0';
   }, [assetDecimals, poolSizeData]);
 
-  const tokenPriceUsd = useMemo(() => {
-    const normalizedToken = homeToken.toUpperCase();
-    if (normalizedToken.includes('USDC')) {
-      return 1;
-    }
-
-    return DEFAULT_TOKEN_PRICE_USD;
-  }, [homeToken]);
-
-  const poolSizeUsd = useMemo(() => {
-    const numericAmount = parseFloat(poolSizeTokens);
-    if (Number.isFinite(numericAmount)) {
-      return numericAmount * tokenPriceUsd;
-    }
-    return 0;
-  }, [poolSizeTokens, tokenPriceUsd]);
-
   const lastBettorAmountTokens = useMemo(() => {
     if (typeof lastBettorAmountData === 'bigint') {
       try {
@@ -262,20 +244,13 @@ export function Game() {
     return '0';
   }, [assetDecimals, lastBettorAmountData]);
 
-  const lastBettorAmountUsd = useMemo(() => {
+  const minToResetTokens = useMemo(() => {
     const numericAmount = parseFloat(lastBettorAmountTokens);
-    if (Number.isFinite(numericAmount)) {
-      return numericAmount * tokenPriceUsd;
+    if (Number.isFinite(numericAmount) && numericAmount > 0) {
+      return numericAmount * MIN_RESET_PREMIUM_MULTIPLIER;
     }
-    return 0;
-  }, [lastBettorAmountTokens, tokenPriceUsd]);
-
-  const minToResetUsd = useMemo(() => {
-    if (lastBettorAmountUsd > 0) {
-      return lastBettorAmountUsd * MIN_RESET_PREMIUM_MULTIPLIER;
-    }
-    return HARD_CODED_MIN_RESET_USD;
-  }, [lastBettorAmountUsd]);
+    return HARD_CODED_MIN_RESET_TOKENS;
+  }, [lastBettorAmountTokens]);
 
   const lastBettorAddress = useMemo(() => {
     if (typeof lastBettorAddressData === 'string' && lastBettorAddressData.length > 0) {
@@ -328,9 +303,8 @@ export function Game() {
   const game: GameState = useMemo(
     () => ({
       potTokenAmount: poolSizeTokens,
-      potUsd: poolSizeUsd,
       minPct: 0.01,
-      minToResetUsd,
+      minToResetTokens,
       deadline: deadlineIso,
       lastDepositor: {
         address: lastBettorAddress,
@@ -340,7 +314,7 @@ export function Game() {
       chain: 'arbitrum',
       nextGameStartsAt: undefined,
     }),
-    [deadlineIso, homeToken, minToResetUsd, poolSizeTokens, poolSizeUsd, gameStatus, lastBettorAddress]
+    [deadlineIso, homeToken, minToResetTokens, poolSizeTokens, gameStatus, lastBettorAddress]
   );
 
   const winners: Winners | null = useMemo(() => {
@@ -361,14 +335,13 @@ export function Game() {
       .reverse()
       .map((event) => ({
         address: event.address,
-        amountUsd: event.amountUsd,
+        amountToken: event.amountToken,
       }));
 
     return {
       winner: {
         address: mainWinner.address,
         amountToken: mainWinner.amountToken,
-        amountUsd: mainWinner.amountUsd,
       },
       community: communityWinners,
     } satisfies Winners;
@@ -541,8 +514,7 @@ export function Game() {
               ts: timestampIso,
               address: recipient,
               amountToken,
-              amountUsd: parseFloat(amountToken),
-              potAfterUsd: parseFloat(potAfterToken),
+              potAfterToken,
               txHash: event.transactionHash,
             } satisfies Deposit;
           })
@@ -608,7 +580,6 @@ export function Game() {
             ts: timestampIso,
             address: recipient,
             amountToken,
-            amountUsd: parseFloat(amountToken),
             isLottery: Boolean(isLotteryRaw),
             txHash: event.transactionHash,
           } satisfies WinnerEvent;
@@ -678,7 +649,6 @@ export function Game() {
         ts: deposit.ts,
         type: 'deposit',
         amountToken: deposit.amountToken,
-        amountUsd: deposit.amountUsd,
         txHash: `${deposit.txHash}-deposit`,
       }));
 
@@ -688,7 +658,6 @@ export function Game() {
         ts: winner.ts,
         type: winner.isLottery ? 'lottery' : 'winner',
         amountToken: winner.amountToken,
-        amountUsd: winner.amountUsd,
         txHash: `${winner.txHash}-${winner.isLottery ? 'lottery' : 'winner'}`,
       }));
 
@@ -1112,7 +1081,7 @@ export function Game() {
         {/* Info Footer */}
         <div className="mt-8 text-center text-xs text-muted-foreground space-y-1">
           <div>
-            Min deposit: {formatUsd(minToResetUsd)} • Pool asset: {homeToken} ({poolAssetDisplay}) • 80% to winner • 20% to 10 random bozos
+            Min deposit: {minToResetTokens.toFixed(4)} {homeToken} • Pool asset: {homeToken} ({poolAssetDisplay}) • 80% to winner • 20% to 10 random bozos
           </div>
           <div>
             <a
@@ -1138,14 +1107,13 @@ export function Game() {
         onOpenChange={setBozoModalOpen}
         game={game}
         isConnected={isConnected}
-      poolAssetAddress={poolAssetAddress}
-      assetDecimals={assetDecimals}
-      tokenPriceUsd={tokenPriceUsd}
-      onDepositEpoch={(epoch) => {
-        setLastParticipationEpoch(epoch);
-        setShowCollectedGameOver(false);
-      }}
-    />
+        poolAssetAddress={poolAssetAddress}
+        assetDecimals={assetDecimals}
+        onDepositEpoch={(epoch) => {
+          setLastParticipationEpoch(epoch);
+          setShowCollectedGameOver(false);
+        }}
+      />
 
       <HowItWorksDialog open={howItWorksOpen} onOpenChange={setHowItWorksOpen} />
     </div>

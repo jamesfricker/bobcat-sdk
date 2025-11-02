@@ -33,15 +33,6 @@ export function EndGameScreen({ winners, nextGameStartsAt, homeToken }: EndGameS
     return parseFloat(amount).toFixed(decimals);
   };
 
-  const formatUsd = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
@@ -75,10 +66,7 @@ export function EndGameScreen({ winners, nextGameStartsAt, homeToken }: EndGameS
               {winners.winner.handle || formatAddress(winners.winner.address)}
             </div>
             <div className="text-5xl font-mono text-[#F6C445]">
-              {formatTokenAmount(winners.winner.amountToken, 2)} ${homeToken}
-            </div>
-            <div className="text-xl text-[#FFF2E1]/60">
-              {formatUsd(winners.winner.amountUsd)}
+              {formatTokenAmount(winners.winner.amountToken, 2)} {homeToken}
             </div>
           </div>
         </div>
@@ -102,7 +90,7 @@ export function EndGameScreen({ winners, nextGameStartsAt, homeToken }: EndGameS
                   {winner.handle || formatAddress(winner.address)}
                 </span>
                 <span className="text-sm font-mono text-[#2ED4B7]">
-                  {formatUsd(winner.amountUsd)}
+                  {formatTokenAmount(winner.amountToken, 2)} {homeToken}
                 </span>
               </div>
             ))}

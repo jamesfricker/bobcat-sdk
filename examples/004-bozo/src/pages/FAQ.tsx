@@ -100,7 +100,7 @@ export function FAQ() {
               <AccordionItem value="item-3">
                 <AccordionTrigger>What&apos;s the minimum deposit?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Every deposit must be at least 1% of the current pot value (in USD). This ensures meaningful participation and prevents spam deposits. 
+                  Every deposit must be at least 1% of the current pot value (in ARB). This ensures meaningful participation and prevents spam deposits.
                   The required minimum is clearly displayed in the game room.
                 </AccordionContent>
               </AccordionItem>
