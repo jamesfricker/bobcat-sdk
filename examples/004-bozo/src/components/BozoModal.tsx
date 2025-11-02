@@ -45,9 +45,6 @@ const bozoAbi = [
     name: 'play',
     stateMutability: 'nonpayable',
     inputs: [
-      { name: 'asset', type: 'address' },
-      { name: 'camelotMinAssetOut', type: 'uint256' },
-      { name: 'camelotDeadline', type: 'uint256' },
       { name: 'amount', type: 'uint256' },
       { name: 'recipient', type: 'address' },
     ],
@@ -345,17 +342,11 @@ export function BozoModal({
 
     try {
       setIsDepositing(true);
-      const nowSec = Math.floor(Date.now() / 1000);
-      const deadline = BigInt(nowSec + 3600);
-
       const txHash = await writeContractAsync({
         address: appConfig.contracts.bozo as `0x${string}`,
         abi: bozoAbi,
         functionName: 'play',
         args: [
-          poolAssetAddress,
-          0n,
-          deadline,
           amountWei,
           address,
         ],
