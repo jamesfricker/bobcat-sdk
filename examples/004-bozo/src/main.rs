@@ -58,6 +58,9 @@ const TOPIC_WINNER_CHOSEN: U = const_keccak256(b"WinnerChosen(address,uint256,bo
 /// Event emitted when the epoch is bumped.
 const TOPIC_NEW_EPOCH: U = const_keccak256(b"NewEpoch(uint256)");
 
+/// Someone posted a comment when they played the game.
+const TOPIC_COMMENT_POSTED: U = const_keccak256(b"CommentPosted(address,bytes32)");
+
 /// Fee taken from the users. 3% fee at a dividend
 const FEE: U = U::from_u32(3);
 
@@ -152,7 +155,7 @@ fn pick_epoch() -> (U, bool) {
     }
 }
 
-fn state_play(amt: U, recipient: Address, _comment: U) -> usize {
+fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
     assert!(amt.is_some(), "amount is zero");
     assert!(recipient != [0u8; 20], "recipient is zero");
     let timestamp = U::from(block_timestamp());
@@ -161,6 +164,9 @@ fn state_play(amt: U, recipient: Address, _comment: U) -> usize {
         // If we've exceeded the timestamp, we need to set a new epoch.
         storage::epoch::set(&epoch);
         emit!(TOPIC_NEW_EPOCH, epoch);
+    }
+    if comment.is_some() {
+        emit!(TOPIC_COMMENT_POSTED, recipient, comment);
     }
     // Transfer the asset to us:
     assert!(
@@ -221,6 +227,10 @@ fn state_play(amt: U, recipient: Address, _comment: U) -> usize {
 
 fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
     assert_eq!(ADDR_OPERATOR, msg_sender(), "operator only");
+    assert!(
+        U::from(block_timestamp()) > storage::ts_deadline::get(&epoch),
+        "not concluded"
+    );
     // Take 80% of the pool, and send to the winning depositor:
     let last_bettor_addr: Address = storage::last_bettor_addr::get(&epoch).into();
     let ticket_count = storage::global_tickets::get(&epoch)
@@ -377,7 +387,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             }
             SEL_PLAY => reentrancy_guard_sel(&SEL_PLAY, || {
                 let (amt, recipient, comment) = read_words!(&args[4..], 3);
-                state_play(*amt, recipient.into(), *comment)
+                state_play(*amt, recipient.into(), comment)
             }),
             SEL_DISTRIBUTE_REWARDS => {
                 let (epoch, _recipient, rng) = read_words!(&args[4..], 3);
