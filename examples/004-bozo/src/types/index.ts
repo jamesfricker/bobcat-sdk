@@ -10,9 +10,8 @@ export interface Player {
 
 export interface GameState {
   potTokenAmount: string;
-  potUsd: number;
   minPct: number;
-  minToResetUsd: number;
+  minToResetTokens: number;
   deadline: string;
   lastDepositor: Player;
   status: GameStatus;
@@ -27,8 +26,7 @@ export interface Deposit {
   fid?: number;
   handle?: string;
   amountToken: string;
-  amountUsd: number;
-  potAfterUsd: number;
+  potAfterToken: string;
   txHash: string;
 }
 
@@ -36,7 +34,6 @@ export interface WinnerEvent {
   ts: string;
   address: string;
   amountToken: string;
-  amountUsd: number;
   isLottery: boolean;
   txHash: string;
 }
@@ -47,7 +44,6 @@ export interface PlayerActivityItem {
   ts: string;
   type: PlayerActivityType;
   amountToken: string;
-  amountUsd: number;
   txHash: string;
 }
 
@@ -59,7 +55,7 @@ export interface BozoComment {
 
 export interface RouteQuote {
   ok: boolean;
-  depositUsd: number;
+  depositAmount: string;
   meetsMinPct: boolean;
   estArrivalSec: number;
   hops: Array<{
@@ -88,13 +84,12 @@ export interface Winners {
     fid?: number;
     handle?: string;
     amountToken: string;
-    amountUsd: number;
   };
   community: Array<{
     address: string;
     fid?: number;
     handle?: string;
-    amountUsd: number;
+    amountToken: string;
   }>;
 }
 
@@ -105,7 +100,6 @@ export interface RoundWinner {
   fid?: number;
   handle?: string;
   amountToken: string;
-  amountUsd: number;
   ts: string;
 }
 

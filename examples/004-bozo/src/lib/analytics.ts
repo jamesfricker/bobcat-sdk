@@ -7,15 +7,15 @@ export type AnalyticsEvent =
   | { name: 'connect_farcaster'; props: { fid: number } }
   | { name: 'route_quote_request'; props: { gameId: string; sourceChain: string; sourceAsset: string; amountSource: string } }
   | { name: 'route_quote_response'; props: { router: string; estArrivalSec: number; meetsMinPct: boolean } }
-  | { name: 'deposit_click'; props: { gameId: string; amountUsd: number; localOrBridge: string } }
+  | { name: 'deposit_click'; props: { gameId: string; amountToken: string; localOrBridge: string } }
   | { name: 'pending_intent_created'; props: { expiresInSec: number } }
   | { name: 'deposit_committed'; props: { txHash: string } }
-  | { name: 'deposit_confirmed_on_home'; props: { amountUsd: number } }
+  | { name: 'deposit_confirmed_on_home'; props: { amountToken: string } }
   | { name: 'timer_extended_soft'; props: { sec: number } }
   | { name: 'finalize_start'; props: { gameId: string } }
   | { name: 'rng_complete'; props: { winnerAddr: string } }
   | { name: 'claim_click'; props: { type: string } }
-  | { name: 'claim_success'; props: { type: string; amountUsd: number } }
+  | { name: 'claim_success'; props: { type: string; amountToken: string } }
   | { name: 'share_click'; props: { channel: string } }
   | { name: 'error'; props: { code: string; message: string; context: string } };
 

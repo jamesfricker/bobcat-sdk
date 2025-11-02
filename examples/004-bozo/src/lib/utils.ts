@@ -1,8 +1,8 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function formatAddress(address: string): string {
@@ -14,13 +14,13 @@ export function formatTokenAmount(amount: string, decimals: number = 4): string 
   return num.toFixed(decimals);
 }
 
-export function formatUsd(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount);
+export function formatTokenValue(amount: number, tokenSymbol = 'ARB'): string {
+  return `${
+    new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } ${tokenSymbol}`;
 }
 
 export function getTimeRemaining(deadline: string): {

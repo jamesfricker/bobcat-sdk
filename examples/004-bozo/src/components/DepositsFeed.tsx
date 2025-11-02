@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
-import { formatAddress, formatTokenAmount, formatUsd } from '../lib/utils';
+import { formatAddress, formatTokenAmount } from '../lib/utils';
 import { Deposit } from '../types';
 import { useComments } from '../providers/CommentsProvider';
 
@@ -71,10 +71,10 @@ export function DepositsFeed({ deposits, homeToken }: DepositsFeedProps) {
 
                     <div className="flex items-center gap-3 text-xs">
                       <div className="text-[#2ED4B7]">
-                        +{formatUsd(deposit.amountUsd).replace('$', '')}
+                        +{formatTokenAmount(deposit.amountToken, 4)} {homeToken}
                       </div>
                       <div className="text-muted-foreground">
-                        Pot after: {formatUsd(deposit.potAfterUsd)}
+                        Pot after: {formatTokenAmount(deposit.potAfterToken, 4)} {homeToken}
                       </div>
                     </div>
                   </div>

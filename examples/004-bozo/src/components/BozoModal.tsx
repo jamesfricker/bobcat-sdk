@@ -11,7 +11,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Alert, AlertDescription } from './ui/alert';
-import { formatUsd } from '../lib/utils';
+import { formatTokenAmount, formatTokenValue } from '../lib/utils';
 import { GameState } from '../types';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
@@ -35,7 +35,6 @@ interface BozoModalProps {
   isConnected: boolean;
   poolAssetAddress: `0x${string}` | null;
   assetDecimals: number;
-  tokenPriceUsd: number;
   onDepositEpoch?: (epoch: bigint) => void;
 }
 
@@ -94,7 +93,6 @@ export function BozoModal({
   isConnected,
   poolAssetAddress,
   assetDecimals,
-  tokenPriceUsd,
   onDepositEpoch,
 }: BozoModalProps) {
   const { address, chainId } = useAccount();
@@ -117,13 +115,6 @@ export function BozoModal({
     },
     watch: Boolean(address && poolAssetAddress),
   });
-
-  const derivedTokenPriceUsd = useMemo(() => {
-    if (Number.isFinite(tokenPriceUsd) && tokenPriceUsd > 0) {
-      return tokenPriceUsd;
-    }
-    return 0;
-  }, [tokenPriceUsd]);
 
   const amountWei = useMemo(() => {
     if (!amountToken) {
@@ -154,19 +145,12 @@ export function BozoModal({
     return amountWei > balanceValue;
   }, [amountWei, balanceData?.value]);
 
-  const approxUsd = useMemo(() => {
-    if (derivedTokenPriceUsd > 0 && amountTokenNumber > 0) {
-      return amountTokenNumber * derivedTokenPriceUsd;
-    }
-    return 0;
-  }, [amountTokenNumber, derivedTokenPriceUsd]);
-
   const minDepositTokens = useMemo(() => {
-    if (derivedTokenPriceUsd > 0 && game.minToResetUsd > 0) {
-      return game.minToResetUsd / derivedTokenPriceUsd;
+    if (game.minToResetTokens > 0) {
+      return game.minToResetTokens;
     }
     return 0;
-  }, [derivedTokenPriceUsd, game.minToResetUsd]);
+  }, [game.minToResetTokens]);
 
   const meetsMinimum = useMemo(() => {
     if (minDepositTokens === 0) {
@@ -174,6 +158,10 @@ export function BozoModal({
     }
     return amountTokenNumber >= minDepositTokens;
   }, [amountTokenNumber, minDepositTokens]);
+
+  const formattedEnteredAmount = amountToken
+    ? `${formatTokenAmount(amountToken, 4)} ${game.homeToken}`
+    : `0 ${game.homeToken}`;
 
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: poolAssetAddress ?? ZERO_ADDRESS,
@@ -539,7 +527,7 @@ export function BozoModal({
             />
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
-                ≈ {formatUsd(approxUsd)} USD
+                ≈ {formattedEnteredAmount}
               </span>
               <span className="text-[#2ED4B7]">
                 Min reset ≈{' '}
@@ -593,7 +581,7 @@ export function BozoModal({
             <div className="flex justify-between">
               <span className="text-muted-foreground">MINIMUM TO RESET</span>
               <span className="text-[#F6C445]">
-                {formatUsd(game.minToResetUsd)}
+                {formatTokenValue(game.minToResetTokens, game.homeToken)}
               </span>
             </div>
             <div className="flex justify-between">
