@@ -26,6 +26,7 @@ import {
 import { arbitrum } from 'wagmi/chains';
 import { formatUnits, parseUnits } from 'viem';
 import { config as appConfig } from '../lib/config';
+import { makeEpochCookieName, writeCookie } from '../lib/cookies';
 
 interface BozoModalProps {
   open: boolean;
@@ -35,6 +36,7 @@ interface BozoModalProps {
   poolAssetAddress: `0x${string}` | null;
   assetDecimals: number;
   tokenPriceUsd: number;
+  onDepositEpoch?: (epoch: bigint) => void;
 }
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
@@ -52,6 +54,13 @@ const bozoAbi = [
       { name: 'epoch', type: 'uint256' },
       { name: 'deposited', type: 'uint256' },
     ],
+  },
+  {
+    type: 'function',
+    name: 'currentEpoch',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
   },
 ] as const;
 
@@ -86,6 +95,7 @@ export function BozoModal({
   poolAssetAddress,
   assetDecimals,
   tokenPriceUsd,
+  onDepositEpoch,
 }: BozoModalProps) {
   const { address, chainId } = useAccount();
   const publicClient = usePublicClient();
@@ -361,9 +371,33 @@ export function BozoModal({
 
       toast.success('Deposit confirmed. RIP BOZO! 🤡');
 
+      let epochForCookie: bigint | null = null;
+
       await refetchBalance().catch((error) => {
         console.error('Failed to refresh balance:', error);
       });
+
+      if (publicClient) {
+        try {
+          const epochResult = await publicClient.readContract({
+            address: appConfig.contracts.bozo as `0x${string}`,
+            abi: bozoAbi,
+            functionName: 'currentEpoch',
+          });
+
+          if (typeof epochResult === 'bigint') {
+            epochForCookie = epochResult;
+          }
+        } catch (error) {
+          console.error('Failed to read current epoch after deposit:', error);
+        }
+      }
+
+      if (epochForCookie !== null) {
+        const cookieName = makeEpochCookieName(address);
+        writeCookie(cookieName, epochForCookie.toString());
+        onDepositEpoch?.(epochForCookie);
+      }
 
       onOpenChange(false);
       resetForm();

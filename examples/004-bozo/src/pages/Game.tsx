@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { GameState, Deposit, Winners, WinnerEvent, PlayerActivityItem } from '../types';
 import { config } from '../lib/config';
 import { formatAddress, formatTokenAmount, formatUsd, getTimeRemaining } from '../lib/utils';
+import { makeEpochCookieName, readCookie } from '../lib/cookies';
 import { Loader2, AlertTriangle, Settings, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
@@ -71,6 +72,20 @@ const bozoAbi = [
     inputs: [],
     outputs: [{ name: '', type: 'uint256' }],
   },
+  {
+    type: 'function',
+    name: 'currentEpoch',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'wasEpochCollected',
+    stateMutability: 'view',
+    inputs: [{ name: 'epoch', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
 ] as const;
 
 const erc20Abi = [
@@ -96,11 +111,12 @@ export function Game() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [bozoModalOpen, setBozoModalOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
-  const winners: Winners | null = null;
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [poolAssetAddress, setPoolAssetAddress] = useState<`0x${string}` | null>(null);
   const [assetDecimals, setAssetDecimals] = useState<number>(18);
   const [homeToken, setHomeToken] = useState<string>(DEFAULT_HOME_TOKEN);
+  const [lastParticipationEpoch, setLastParticipationEpoch] = useState<bigint | null>(null);
+  const [showCollectedGameOver, setShowCollectedGameOver] = useState(false);
 
   const { address: accountAddress, isConnected } = useAccount();
   const { getCommentForTxHash, refresh: refreshComments } = useComments();
@@ -156,6 +172,16 @@ export function Game() {
     chainId: arbitrum.id,
     query: {
       refetchInterval: 15000,
+    },
+  });
+
+  const { data: currentEpochData } = useReadContract({
+    address: BOZO_CONTRACT_ADDRESS,
+    abi: bozoAbi,
+    functionName: 'currentEpoch',
+    chainId: arbitrum.id,
+    query: {
+      refetchInterval: 60000,
     },
   });
 
@@ -316,6 +342,112 @@ export function Game() {
     }),
     [deadlineIso, homeToken, minToResetUsd, poolSizeTokens, poolSizeUsd, gameStatus, lastBettorAddress]
   );
+
+  const winners: Winners | null = useMemo(() => {
+    if (winnerEvents.length === 0) {
+      return null;
+    }
+
+    const orderedEvents = [...winnerEvents];
+    const mainWinner = [...orderedEvents].reverse().find((event) => !event.isLottery);
+
+    if (!mainWinner) {
+      return null;
+    }
+
+    const communityWinners = orderedEvents
+      .filter((event) => event.isLottery)
+      .slice(-10)
+      .reverse()
+      .map((event) => ({
+        address: event.address,
+        amountUsd: event.amountUsd,
+      }));
+
+    return {
+      winner: {
+        address: mainWinner.address,
+        amountToken: mainWinner.amountToken,
+        amountUsd: mainWinner.amountUsd,
+      },
+      community: communityWinners,
+    } satisfies Winners;
+  }, [winnerEvents]);
+
+  useEffect(() => {
+    if (!accountAddress) {
+      setLastParticipationEpoch(null);
+      setShowCollectedGameOver(false);
+      return;
+    }
+
+    const cookieName = makeEpochCookieName(accountAddress);
+    const cookieValue = readCookie(cookieName);
+
+    if (!cookieValue) {
+      setLastParticipationEpoch(null);
+      setShowCollectedGameOver(false);
+      return;
+    }
+
+    try {
+      const parsed = BigInt(cookieValue);
+      setLastParticipationEpoch(parsed);
+    } catch (error) {
+      console.error('Failed to parse epoch cookie value:', error);
+      setLastParticipationEpoch(null);
+    }
+  }, [accountAddress]);
+
+  useEffect(() => {
+    if (!publicClient) {
+      setShowCollectedGameOver(false);
+      return;
+    }
+
+    if (!accountAddress || typeof currentEpochData !== 'bigint') {
+      setShowCollectedGameOver(false);
+      return;
+    }
+
+    if (lastParticipationEpoch === null) {
+      setShowCollectedGameOver(false);
+      return;
+    }
+
+    if (currentEpochData === lastParticipationEpoch) {
+      setShowCollectedGameOver(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkEpochCollected = async () => {
+      try {
+        const wasCollected = await publicClient.readContract({
+          address: config.contracts.bozo as `0x${string}`,
+          abi: bozoAbi,
+          functionName: 'wasEpochCollected',
+          args: [lastParticipationEpoch],
+        });
+
+        if (!cancelled) {
+          setShowCollectedGameOver(Boolean(wasCollected));
+        }
+      } catch (error) {
+        console.error('Failed to check collected epoch:', error);
+        if (!cancelled) {
+          setShowCollectedGameOver(false);
+        }
+      }
+    };
+
+    void checkEpochCollected();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accountAddress, currentEpochData, lastParticipationEpoch, publicClient]);
 
   const fetchBlockTimestamps = useCallback(
     async (events: Array<{ blockNumber?: bigint }>) => {
@@ -602,6 +734,8 @@ export function Game() {
     return `${days} DAYS AGO`;
   };
 
+  const shouldShowEndGameScreen = Boolean(winners) && (isGameClosed || showCollectedGameOver);
+
   if (isInitialLoading && deposits.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -611,7 +745,7 @@ export function Game() {
   }
 
   // Show end game screen if game is closed
-  if (isGameClosed && winners) {
+  if (shouldShowEndGameScreen && winners) {
     return (
       <div className="min-h-screen bg-background relative overflow-hidden">
         {/* Decorative elements */}
@@ -1004,10 +1138,14 @@ export function Game() {
         onOpenChange={setBozoModalOpen}
         game={game}
         isConnected={isConnected}
-        poolAssetAddress={poolAssetAddress}
-        assetDecimals={assetDecimals}
-        tokenPriceUsd={tokenPriceUsd}
-      />
+      poolAssetAddress={poolAssetAddress}
+      assetDecimals={assetDecimals}
+      tokenPriceUsd={tokenPriceUsd}
+      onDepositEpoch={(epoch) => {
+        setLastParticipationEpoch(epoch);
+        setShowCollectedGameOver(false);
+      }}
+    />
 
       <HowItWorksDialog open={howItWorksOpen} onOpenChange={setHowItWorksOpen} />
     </div>
