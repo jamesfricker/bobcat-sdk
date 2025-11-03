@@ -15,4 +15,5 @@ each example from its own project directory.
 |----------|--------------------|------------|----------------------------------------------------------------|
 | Counter  | 16807              | 4884       | A simple counter app that does basic manipulation of storage.  |
 | Muldiv   | 19332              | 4683       | A muldiv implementation, compared to the version in 9lives.    |
-| Camelot  | 45360              | 3718       | Acts as an intermediary for Camelot swapping using its router. |
+| Camelot  | 45360              | 4327       | Acts as an intermediary for Camelot swapping using its router. |
+| Bozo     | N/A                | 31959      | The contract code powering (https://ripbozo.lol)[Ripbozo].     |
