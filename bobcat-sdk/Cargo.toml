@@ -31,16 +31,16 @@ std = [
 	"bobcat-panic/std",
 	"bobcat-storage/std",
 ]
-borsh = ["bobcat-maths/borsh"]
 alloc = [
 	"bobcat-create/alloc",
 	"bobcat-entry/alloc",
-	"bobcat-maths/alloc",
 	"bobcat-call/alloc",
 	"bobcat-console",
 	"bobcat-panic/alloc",
 	"bobcat-events/alloc"
 ]
+serde = ["bobcat-maths/serde"]
+borsh = ["bobcat-maths/borsh"]
 console = ["bobcat-panic/console"]
 arbitrary-enabled = ["bobcat-maths/arbitrary-enabled"]
 proptest-enabled = ["bobcat-maths/proptest-enabled"]

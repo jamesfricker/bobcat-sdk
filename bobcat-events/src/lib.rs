@@ -14,7 +14,7 @@ mod impls {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod impls {
-    pub(crate) fn emit_log(_: *const u8, _: usize, _: usize) {}
+    pub(crate) unsafe fn emit_log(_: *const u8, _: usize, _: usize) {}
 }
 
 pub fn emit_log_0_slice<const D: usize, const ALL: usize>(t0: &U, d: [u8; D]) {

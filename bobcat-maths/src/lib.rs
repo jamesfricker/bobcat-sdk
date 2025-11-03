@@ -2,11 +2,12 @@
 
 use core::{
     cmp::{Eq, Ordering},
-    fmt::{Debug, Error as FmtError, Formatter},
+    fmt::{Debug, Display, Error as FmtError, Formatter},
     ops::{
         Add, AddAssign, BitAnd, BitOr, BitOrAssign, BitXor, Deref, DerefMut, Div, Index, IndexMut,
         Mul, MulAssign, Neg, Not, Rem, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
     },
+    str::FromStr,
 };
 
 use num_traits::{One, Zero};
@@ -14,14 +15,11 @@ use num_traits::{One, Zero};
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
+
 #[cfg(feature = "proptest-enabled")]
 pub mod strategies;
-
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
-#[cfg(feature = "alloc")]
-use alloc::{string::String, vec};
 
 pub type Address = [u8; 20];
 
@@ -97,6 +95,7 @@ use alloy::*;
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
+#[cfg_attr(feature = "serde", derive(SerdeSerialize, SerdeDeserialize))]
 #[repr(transparent)]
 pub struct U(pub [u8; 32]);
 
@@ -104,6 +103,7 @@ pub struct U(pub [u8; 32]);
 #[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "borsh", derive(BorshDeserialize, BorshSerialize))]
+#[cfg_attr(feature = "serde", derive(SerdeSerialize, SerdeDeserialize))]
 #[repr(transparent)]
 pub struct I(pub [u8; 32]);
 
@@ -846,6 +846,32 @@ impl Neg for U {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum UFromStrErr {
+    InvalidChar(char),
+    Overflow,
+    Empty,
+}
+
+impl FromStr for U {
+    type Err = UFromStrErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            return Err(UFromStrErr::Empty);
+        }
+        let mut r = U::ZERO;
+        for c in s.chars() {
+            r *= U::from_u32(10);
+            r += match c {
+                '0'..='9' => U::from(c as u8 - b'0'),
+                _ => return Err(UFromStrErr::InvalidChar(c)),
+            };
+        }
+        Ok(r)
+    }
+}
+
 impl U {
     pub const ZERO: Self = U([0u8; 32]);
 
@@ -1008,37 +1034,42 @@ impl U {
     pub fn checked_rooti(self, x: u32) -> Option<Self> {
         checked_rooti(self, x)
     }
+
+    pub fn from_hex(x: &str) -> Option<U> {
+        let mut out = U::ZERO;
+        match const_hex::decode_to_slice(x, &mut out.0) {
+            Ok(_) => (),
+            Err(_) => return None,
+        }
+        Some(out)
+    }
 }
 
-#[cfg(feature = "alloc")]
-impl core::fmt::Display for U {
+impl Display for U {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let mut result = vec![0u8];
-        for &byte in &self.0 {
+        if self.is_zero() {
+            return write!(f, "0");
+        }
+        let mut result = [0u8; 78];
+        let mut i = 0;
+        for byte in self.0 {
             let mut carry = byte as u32;
-            for digit in result.iter_mut() {
+            for digit in result[..i].iter_mut() {
                 let temp = (*digit as u32) * 256 + carry;
                 *digit = (temp % 10) as u8;
                 carry = temp / 10;
             }
             while carry > 0 {
-                result.push((carry % 10) as u8);
+                result[i] = (carry % 10) as u8;
+                i += 1;
+                debug_assert!(78 >= i, "{} > {i}", result.len());
                 carry /= 10;
             }
         }
-        if result.iter().all(|&d| d == 0) {
-            return write!(f, "0");
+        for &digit in result[..i].iter().rev() {
+            write!(f, "{}", digit)?;
         }
-        write!(
-            f,
-            "{}",
-            result
-                .iter()
-                .rev()
-                .skip_while(|&&d| d == 0)
-                .map(|&d| (d + b'0') as char)
-                .collect::<String>()
-        )
+        Ok(())
     }
 }
 
@@ -1410,6 +1441,11 @@ mod test {
 
     use super::*;
 
+    fn strat_any_u256() -> impl Strategy<Value = U256> {
+        // Arbitrary seems to be having some issues with U256:
+        any::<[u8; 32]>().prop_map(U256::from_be_bytes)
+    }
+
     proptest! {
         #[test]
         fn wrapping_div_b_zero_denominator_yields_zero(numerator in any::<[u8; 4]>()) {
@@ -1542,8 +1578,7 @@ mod test {
         }
 
         #[test]
-        #[cfg(feature = "alloc")]
-        fn test_u_str(x in any::<U>()) {
+        fn test_u_to_str(x in any::<U>()) {
             assert_eq!(U256::from_be_bytes(x.0).to_string(), x.to_string());
         }
 
@@ -1615,35 +1650,35 @@ mod test {
         #[test]
         fn test_u_u8(x in any::<u8>()) {
             let mut b = [0u8; 32];
-            b[32-std::mem::size_of::<u8>()..].copy_from_slice(&x.to_be_bytes());
+            b[32-size_of::<u8>()..].copy_from_slice(&x.to_be_bytes());
             assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
         }
 
         #[test]
         fn test_u_u16(x in any::<u16>()) {
             let mut b = [0u8; 32];
-            b[32-std::mem::size_of::<u16>()..].copy_from_slice(&x.to_be_bytes());
+            b[32-size_of::<u16>()..].copy_from_slice(&x.to_be_bytes());
             assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
         }
 
         #[test]
         fn test_u_u32(x in any::<u32>()) {
             let mut b = [0u8; 32];
-            b[32-std::mem::size_of::<u32>()..].copy_from_slice(&x.to_be_bytes());
+            b[32-size_of::<u32>()..].copy_from_slice(&x.to_be_bytes());
             assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
         }
 
         #[test]
         fn test_u_u64(x in any::<u64>()) {
             let mut b = [0u8; 32];
-            b[32-std::mem::size_of::<u64>()..].copy_from_slice(&x.to_be_bytes());
+            b[32-size_of::<u64>()..].copy_from_slice(&x.to_be_bytes());
             assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
         }
 
         #[test]
         fn test_u_u128(x in any::<u128>()) {
             let mut b = [0u8; 32];
-            b[32-std::mem::size_of::<u128>()..].copy_from_slice(&x.to_be_bytes());
+            b[32-size_of::<u128>()..].copy_from_slice(&x.to_be_bytes());
             assert_eq!(&U256::from_be_bytes(b).to_be_bytes(), U::from(x).as_slice());
         }
 
@@ -1656,6 +1691,16 @@ mod test {
         #[test]
         fn test_u_conv_to_and_from_u8(x in any::<u8>()) {
             assert_eq!(x.wrapping_add(1), U::from(x).wrapping_add(&U::ONE).into());
+        }
+
+        #[test]
+        fn test_u_from_str(x in strat_any_u256()) {
+            let v = U::from_str(x.to_string().as_str()).unwrap();
+            assert_eq!(
+                U::from(x.to_be_bytes::<32>()),
+                v,
+                "{x} != {v}",
+            )
         }
     }
 }

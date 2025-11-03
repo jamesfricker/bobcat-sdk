@@ -461,7 +461,6 @@ dependencies = [
  "alloy-sol-types",
  "array-concat",
  "bobcat-cd",
- "bobcat-events",
  "bobcat-maths",
  "bobcat-storage",
  "const-hex",
@@ -483,6 +482,7 @@ dependencies = [
  "paste",
  "proptest",
  "proptest-derive",
+ "serde",
 ]
 
 [[package]]
@@ -498,7 +498,6 @@ name = "bobcat-proxy"
 version = "0.6.3"
 dependencies = [
  "array-concat",
- "bobcat-events",
  "bobcat-interfaces",
  "bobcat-maths",
  "const-hex",
