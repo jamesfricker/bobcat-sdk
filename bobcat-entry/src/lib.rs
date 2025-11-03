@@ -30,8 +30,21 @@ mod impls {
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
-mod impls {
+pub mod host {
+    use super::{Address, U};
+
     use core::{ptr::copy_nonoverlapping, slice::from_raw_parts};
+
+    use std::cell::RefCell;
+
+    thread_local! {
+        static ARGS: RefCell<Vec<u8>> = RefCell::default();
+        static MSG_SENDER: RefCell<[u8; 20]> = RefCell::default();
+        static CONTRACT_ADDRESS: RefCell<Address> = RefCell::default();
+        static MSG_VALUE: RefCell<U> = RefCell::default();
+        static CHAIN_ID: RefCell<u64> = RefCell::default();
+        static BLOCK_TIMESTAMP: RefCell<u64> = RefCell::default();
+    }
 
     #[allow(unused)]
     pub(crate) unsafe fn pay_for_memory_grow(_: u16) {}
@@ -40,33 +53,73 @@ mod impls {
         println!("{}", const_hex::encode(unsafe { from_raw_parts(d, l) }));
     }
 
-    pub(crate) unsafe fn read_args(_out: *mut u8) {
-        unimplemented!("read from stdin separately. todo");
+    pub fn set_args(x: Vec<u8>) {
+        ARGS.with(|s| *s.borrow_mut() = x)
+    }
+
+    pub(crate) unsafe fn read_args(out: *mut u8) {
+        ARGS.with(|s| {
+            let b = s.borrow();
+            unsafe {
+                copy_nonoverlapping(b.as_ptr(), out, b.len());
+            }
+        })
+    }
+
+    pub fn set_msg_sender(x: Address) {
+        MSG_SENDER.with(|s| *s.borrow_mut() = x)
     }
 
     pub(crate) unsafe fn msg_sender(out: *mut u8) {
-        unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
+        MSG_SENDER.with(|s| {
+            let b = s.borrow();
+            unsafe {
+                copy_nonoverlapping(b.as_ptr(), out, 20);
+            }
+        })
+    }
+
+    pub fn set_contract_address(x: Address) {
+        CONTRACT_ADDRESS.with(|s| {
+            *s.borrow_mut() = x;
+        })
     }
 
     pub(crate) unsafe fn contract_address(out: *mut u8) {
-        unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
+        CONTRACT_ADDRESS.with(|s| {
+            let b = s.borrow();
+            unsafe {
+                copy_nonoverlapping(b.as_ptr(), out, 20);
+            }
+        })
     }
 
     pub(crate) unsafe fn msg_value(out: *mut u8) {
-        unsafe { copy_nonoverlapping([0u8; 32].as_ptr(), out, 32) }
+        MSG_VALUE.with(|s| {
+            let b = s.borrow();
+            unsafe {
+                copy_nonoverlapping(b.as_ptr(), out, 32);
+            }
+        })
     }
 
     pub(crate) unsafe fn chain_id() -> u64 {
-        0
+        CHAIN_ID.with(|s| s.borrow().clone())
     }
 
-    pub(crate) unsafe fn account_codehash(_: *const u8, _: *mut u8) {
+    pub(crate) unsafe fn account_codehash(_: *const u8, _: *mut u8) {}
+
+    pub fn set_block_timestamp(n: u64) {
+        BLOCK_TIMESTAMP.with(|s| { *s.borrow_mut() = n })
     }
 
     pub(crate) unsafe fn block_timestamp() -> u64 {
-        0
+        BLOCK_TIMESTAMP.with(|s| *s.borrow())
     }
 }
+
+#[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
+pub use host as impls;
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
 mod impls {
@@ -86,8 +139,7 @@ mod impls {
         0
     }
 
-    pub(crate) unsafe fn account_codehash(_: *const u8, _: *mut u8) {
-    }
+    pub(crate) unsafe fn account_codehash(_: *const u8, _: *mut u8) {}
 
     pub(crate) unsafe fn block_timestamp() -> u64 {
         0

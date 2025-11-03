@@ -51,11 +51,9 @@ contract Bozo is Test {
         // losers receive their money. This code tests that the contract remains
         // solvent.
         (uint256 epoch,) = c.play(
-            address(weth),
-            0,
-            block.timestamp + 1,
             1e18,
-            address(this)
+            address(this),
+            bytes32(0)
         );
         assertEq(0, epoch);
         c.distributeRewards(0, address(this), 123);
