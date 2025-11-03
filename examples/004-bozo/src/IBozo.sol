@@ -25,7 +25,7 @@ interface IBozo {
     function deadline() external view returns (uint256);
     function playerCount() external view returns (uint256);
     function ticketCount() external view returns (uint256);
-    funtion currentEpoch() external view returns (uint256);
+    function currentEpoch() external view returns (uint256);
     function wasEpochCollected(uint256 epoch) external view returns (bool);
 
     function upgrade(address newImpl) external;

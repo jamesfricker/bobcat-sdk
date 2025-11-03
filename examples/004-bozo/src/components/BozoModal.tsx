@@ -24,7 +24,7 @@ import {
   useWriteContract,
 } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits, parseUnits, keccak256, stringToHex } from 'viem';
 import { config as appConfig } from '../lib/config';
 import { makeEpochCookieName, writeCookie } from '../lib/cookies';
 
@@ -39,6 +39,8 @@ interface BozoModalProps {
 }
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
+const ZERO_BYTES32 =
+  '0x0000000000000000000000000000000000000000000000000000000000000000' as const;
 
 const bozoAbi = [
   {
@@ -48,6 +50,7 @@ const bozoAbi = [
     inputs: [
       { name: 'amount', type: 'uint256' },
       { name: 'recipient', type: 'address' },
+      { name: 'comment', type: 'bytes32' },
     ],
     outputs: [
       { name: 'epoch', type: 'uint256' },
@@ -340,6 +343,10 @@ export function BozoModal({
 
     try {
       setIsDepositing(true);
+      const hasComment = comment.trim().length > 0;
+      const commentHash: `0x${string}` = hasComment
+        ? keccak256(stringToHex(comment))
+        : ZERO_BYTES32;
       const txHash = await writeContractAsync({
         address: appConfig.contracts.bozo as `0x${string}`,
         abi: bozoAbi,
@@ -347,6 +354,7 @@ export function BozoModal({
         args: [
           amountWei,
           address,
+          commentHash,
         ],
         chainId: arbitrum.id,
       });
