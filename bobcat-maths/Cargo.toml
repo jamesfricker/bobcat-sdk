@@ -28,7 +28,8 @@ serde = { version = ">=1.0.0", default-features = false, features = ["derive"], 
 proptest = { workspace = true }
 
 [features]
-std = []
+std = ["alloc"]
+alloc = []
 proptest-enabled = ["std", "proptest", "proptest-derive"]
 arbitrary-enabled = ["std", "arbitrary"]
 alloy-enabled = ["alloy-primitives"]

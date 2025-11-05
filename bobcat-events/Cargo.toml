@@ -8,4 +8,4 @@ array-concat.workspace = true
 bobcat-maths = { version = "0.6.3", path = "../bobcat-maths" }
 
 [features]
-alloc = []
+alloc = ["bobcat-maths/alloc"]

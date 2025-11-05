@@ -21,6 +21,9 @@ use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
 #[cfg(feature = "proptest-enabled")]
 pub mod strategies;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 pub type Address = [u8; 20];
 
 #[link(wasm_import_module = "vm_hooks")]
@@ -927,6 +930,11 @@ impl U {
 
     pub fn as_slice(&self) -> &[u8; 32] {
         &self.0
+    }
+
+    #[cfg(feature = "alloc")]
+    pub fn as_vec(self) -> alloc::vec::Vec<u8> {
+        self.0.to_vec()
     }
 
     pub fn checked_add(&self, y: &Self) -> Option<Self> {

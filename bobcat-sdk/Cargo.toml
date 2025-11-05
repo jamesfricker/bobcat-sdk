@@ -37,7 +37,8 @@ alloc = [
 	"bobcat-call/alloc",
 	"bobcat-console",
 	"bobcat-panic/alloc",
-	"bobcat-events/alloc"
+	"bobcat-events/alloc",
+	"bobcat-maths/alloc"
 ]
 serde = ["bobcat-maths/serde"]
 borsh = ["bobcat-maths/borsh"]

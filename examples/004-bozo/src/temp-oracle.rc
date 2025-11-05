@@ -6,13 +6,14 @@
 for(n in BOZO_PRIVATE_KEY BOZO_ENDPOINT BOZO_ADDR) if(~ $$n '') exit 2
 
 fn rand_word {
-	dd if=/dev/urandom bs=1 count=32 status=none | xxd -p -c32
+	echo 0x`{dd if=/dev/urandom bs=1 count=32 status=none | xxd -p -c32}
 }
 
 cast send \
 	--private-key $BOZO_PRIVATE_KEY \
 	--rpc-url $BOZO_ENDPOINT \
 	$BOZO_ADDR \
-	'distributeRewards(uint256, address,uint256)' \
-	0x0000000000000000000000000000000000000000 \
+	'distributeRewards(uint256,address,uint256)' \
+	0 \
+	0x6221a9c005f6e47eb398fd867784cacfdcfff4e7 \
 	`{rand_word}
