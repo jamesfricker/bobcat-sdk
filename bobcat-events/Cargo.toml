@@ -2,6 +2,7 @@
 name = "bobcat-events"
 version = "0.6.4"
 edition = "2024"
+description = "bobcat-sdk utilities performing event emission on Arbitrum Stylus."
 
 [dependencies]
 array-concat.workspace = true
