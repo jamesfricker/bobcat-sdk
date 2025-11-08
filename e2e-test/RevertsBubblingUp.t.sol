@@ -17,16 +17,23 @@ contract TestERC20 is ERC20 {
     }
 }
 
+contract TestERC20Two {
+    function transferFrom(address,address,uint256) external returns (bool) {
+        revert("testing");
+        return true;
+    }
+}
+
 interface IRevertsBubblingUp {
-    function test(TestERC20 target) external;
+    function test(TestERC20Two target) external;
 }
 
 contract RevertsBubblingUp is Test {
-    TestERC20 erc20;
+    TestERC20Two erc20;
     IRevertsBubblingUp revertsBubblingUp;
 
     function setUp() public {
-        erc20 = new TestERC20();
+        erc20 = new TestERC20Two();
         revertsBubblingUp = IRevertsBubblingUp(
             IArbFoundry(address(vm)).deployStylusCode(
                 "e2e-test/reverts-bubbling-up.wasm"
