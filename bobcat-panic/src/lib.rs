@@ -1,15 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "panic-revert")]
+#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
 use bobcat_entry::{write_result_slice, U};
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "panic-revert")]
+#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
 use alloc::vec::Vec;
 
-#[cfg(feature = "panic-revert")]
+#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
 use core::fmt::{Result as FmtResult, Write};
 
 #[cfg(target_arch = "wasm32")]
@@ -27,7 +27,7 @@ mod wasm {
     }
 }
 
-#[cfg(feature = "panic-revert")]
+#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
 const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
     b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
 ) {
@@ -35,10 +35,10 @@ const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 
     Err(_) => panic!(),
 };
 
-#[cfg(feature = "panic-revert")]
+#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
 struct VecWriter<'a>(&'a mut Vec<u8>);
 
-#[cfg(feature = "panic-revert")]
+#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
 impl<'a> Write for VecWriter<'a> {
     fn write_str(&mut self, s: &str) -> FmtResult {
         self.0.extend_from_slice(s.as_bytes());

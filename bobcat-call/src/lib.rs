@@ -163,11 +163,12 @@ macro_rules! generate_call_variants {
             /// Call a contract, writing its returndata to the slice given. Returns
             /// true for if the contract ran without issue, or false if a revert
             /// happened. An offset can be used to start reading the return data from,
-            /// writing to the buffer given. The function will panic if the returndata
-            /// exceeds the capacity. Enforces write control if static, and delegates if
-            /// delegatecall. The function will also panic if the offset is greater than
-            /// the size of the returndata. Programmers making this mistake must be
-            /// making an error with the decoding.
+            /// writing to the buffer given. The code will not read from the offset
+            /// given if a revert has happened. The function will panic if the
+            /// returndata exceeds the capacity. Enforces write control if static, and
+            /// delegates if delegatecall. The function will also panic if the offset
+            /// is greater than the size of the returndata. Programmers making this
+            /// mistake must be making an error with the decoding.
             pub fn [<$base_fn _slice>]<const DATA_CAP: usize>(
                 contract: Address,
                 calldata: &[u8],
@@ -176,8 +177,23 @@ macro_rules! generate_call_variants {
                 offset: usize,
             ) -> (bool, usize, [u8; DATA_CAP]) {
                 let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
-                let size = rd_len - offset;
-                assert!(DATA_CAP >= size, "not enough capacity");
+                // When it comes to a revert, we don't cut it up like we do a normal slice.
+                let size = if rc {
+                    rd_len
+                } else {
+                    assert!(
+                        rd_len > offset,
+                        "offset greater than rd len ok status: rd len: {rd_len}, offset: {offset}"
+                    );
+                    rd_len - offset
+                };
+                // Capacity errors if the contract was in error where the revert value
+                // size isn't known and we want to show it to the user should use err_vec
+                // functions instead with the allocator.
+                assert!(
+                    DATA_CAP >= size,
+                    "not enough capacity. size: {size}. returned error: {rc}",
+                );
                 let mut b = [0u8; DATA_CAP];
                 unsafe { impls::read_return_data(b.as_mut_ptr(), offset, DATA_CAP) };
                 (rc, size, b)
@@ -416,6 +432,69 @@ macro_rules! generate_call_variants {
                     (rc, U::from(v), None)
                 } else {
                     (rc, U::ZERO, Some(v))
+                }
+            }
+
+            /// Allocates a slice with a single u8 if a word was returned, or
+            /// returns a Vec<u8> if something went wrong.
+            #[cfg(feature = "alloc")]
+            pub fn [<$base_fn _bool_err_vec>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64
+            ) -> (bool, Option<Vec<u8>>) {
+                let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
+                if rc {
+                    assert_eq!(32, rd_len, "return for bool wasn't a word, was: {rd_len}");
+                    let mut b = [0u8; 1];
+                    unsafe {
+                        impls::read_return_data(b.as_mut_ptr(), 31, 1);
+                    }
+                    (b[0] == 1, None)
+                } else {
+                    let mut b = Vec::with_capacity(rd_len);
+                    unsafe {
+                        impls::read_return_data(b.as_mut_ptr(), 0, rd_len);
+                        b.set_len(rd_len);
+                    }
+                    (false, Some(b))
+                }
+            }
+
+            /// Call a function, returning whether the call returned true if the
+            /// contract returned something, or true if the contract returned nothing
+            /// but does exist. The vector contains revertdata if the call was
+            /// unsuccessful. Does not read returndata.
+            #[cfg(feature = "alloc")]
+            pub fn [<safe_ $base_fn _bool_err_vec>](
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64
+            ) -> (bool, Option<Vec<u8>>) {
+                if !addr_has_code(contract) {
+                    return (false, None)
+                }
+                let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
+                match (rc, rd_len) {
+                    (true, 32) => {
+                        let mut b = [0u8; 1];
+                        unsafe {
+                            impls::read_return_data(b.as_mut_ptr(), 31, 1);
+                        }
+                        (b[0] == 1, None)
+                    }
+                    (true, 0) => (true, None),
+                    (true, rd_len) => panic!("word not returned for safe_bool_err_vec: len: {rd_len}"),
+                    (false, rd_len) => {
+                        let mut b = Vec::with_capacity(rd_len);
+                        unsafe {
+                            impls::read_return_data(b.as_mut_ptr(), 0, rd_len);
+                            b.set_len(rd_len);
+                        }
+                        (false, Some(b))
+                    }
                 }
             }
 

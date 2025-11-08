@@ -7,16 +7,11 @@ import {IArbFoundry} from "./IArbFoundry.sol";
 
 import {IBozo} from "../src/IBozo.sol";
 
-interface IWETH10 {
-    function deposit() payable external;
-    function balanceOf(address) external view returns (uint256);
-    function approve(address, uint256) external;
-    function allowance(address, address) external view returns (uint256);
-}
+import {TestERC20} from "./TestERC20.sol";
 
 contract Bozo is Test {
-    IBozo c;
-    IWETH10 weth = IWETH10(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
+    address impl;
+    TestERC20 erc20;
 
     function deployProxy(address _impl) internal returns (address deployed) {
         // Proxy taken from the eip1967 code:
@@ -25,37 +20,37 @@ contract Bozo is Test {
             _impl,
             hex"7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc55603a8060403d393df3365f5f375f5f365f7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545af45f3d5f5f3e3d9161003857fd5bf3"
         );
+        erc20 = new TestERC20();
         assembly {
             deployed := create(0, add(bytecode, 0x20), mload(bytecode))
         }
     }
 
+    function createGame() internal returns (IBozo a) {
+        a = IBozo(deployProxy(impl));
+        a.initialise(address(this), address(erc20));
+    }
+
     function setUp() external {
-        vm.createSelectFork("https://arb1.arbitrum.io/rpc");
-        c = IBozo(deployProxy(IArbFoundry(address(vm)).deployStylusCode(
+        impl = IArbFoundry(address(vm)).deployStylusCode(
             "bozo.wasm"
-        )));
-        vm.deal(address(this), 10e18);
-        weth.deposit{value: 10e18}();
-        weth.approve(address(c), type(uint256).max);
-        assertEq(type(uint256).max, weth.allowance(address(this), address(c)));
-    }
-
-    function test_contractDeployed() public view {
-        assertNotEq(address(0), address(c));
-    }
-
-    function test_fuzzFlay() external {
-        // Test that a user can start the game, a number of other users can
-        // deposit liquidity, then the winner goes to redeem, and some of the
-        // losers receive their money. This code tests that the contract remains
-        // solvent.
-        (uint256 epoch,) = c.play(
-            1e18,
-            address(this),
-            bytes32(0)
         );
-        assertEq(0, epoch);
-        c.distributeRewards(0, address(this), 123);
+    }
+
+    struct Action {
+        uint256 amount;
+        address spender;
+        bytes32 comment;
+    }
+
+    function test_fuzzContractSolvent(Action[] memory a) external {
+        // Test that the contract and user group will remain solvent at all times.
+        IBozo g = createGame();
+        for (uint i = 0; i < a.length; ++i) {
+            vm.prank(a[i].spender);
+            erc20.mint(a[i].spender, a[i].amount);
+            erc20.approve(address(g), type(uint256).max);
+            g.play(a[i].amount, a[i].spender, a[i].comment);
+        }
     }
 }

@@ -11,7 +11,8 @@ PROJECTS := \
 	mul-div \
 	beacon \
 	panic-revert \
-	eip1967-proxy
+	eip1967-proxy \
+	reverts-bubbling-up
 
 all: wasm
 
@@ -28,7 +29,8 @@ wasm: \
 	mul-div.wasm \
 	beacon.wasm \
 	panic-revert.wasm \
-	eip1967-proxy.wasm
+	eip1967-proxy.wasm \
+	reverts-bubbling-up.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -62,6 +64,10 @@ eip1967-proxy.wasm: ${BUILT}
 	@rm -f eip1967-proxy.wasm
 	@./wasm-post.sh ${RELEASE}/eip1967-proxy.wasm eip1967-proxy.wasm
 
+reverts-bubbling-up.wasm: ${BUILT}
+	@rm -f reverts-bubbling-up.wasm
+	@./wasm-post.sh ${RELEASE}/reverts-bubbling-up.wasm reverts-bubbling-up.wasm
+
 clean:
 	@rm -rf \
 		target \
@@ -72,5 +78,5 @@ clean:
 		mul-div.wasm \
 		beacon.wasm \
 		panic-revert.wasm \
-		eip1967-proxy.wasm
-
+		eip1967-proxy.wasm \
+		reverts-bubbling-up.wasm

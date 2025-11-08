@@ -91,5 +91,6 @@ storage! {
     user_lottery_tickets(epoch, address),
     user_lottery_ticket_len(epoch),
     was_distributed(epoch),
-    points_collected(address)
+    points_collected(address),
+    asset()
 }

@@ -29,3 +29,7 @@ incremental = true
 
 [features]
 std = ["bobcat-sdk/std"]
+
+[dev-dependencies]
+proptest = "1.9.0"
+bobcat-sdk = { workspace = true, features = ["panic-revert", "alloc", "alloy-enabled"] }

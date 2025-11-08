@@ -3,21 +3,21 @@
 // this contract lives on.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![no_main]
+#![cfg_attr(target_arch = "wasm32", no_main)]
 
 use core::cmp::{max, min};
 
 use bobcat_sdk::{
-    call::{call_bool, safe_call_bool},
+    call::{call_bool, safe_call_bool, safe_call_bool_err_vec},
     cd::{address, const_keccak_sel, read_words},
     entry::{
         block_timestamp, contract_address, msg_sender, read_args_safe, write_result_slice,
-        write_result_word,
+        write_result_word, revert_if_bad_call_unit_vec,
     },
     events::emit,
     interfaces::{
         eip1967::{TOPIC_ADMIN_CHANGED, TOPIC_UPGRADED},
-        eip20::{make_fn_transfer, make_fn_transfer_from},
+        eip20::{make_fn_transfer, make_fn_transfer_from, make_fn_allowance},
     },
     maths::{u, U},
     storage::{
@@ -28,10 +28,14 @@ use bobcat_sdk::{
 
 use array_concat::concat_arrays;
 
+#[cfg(target_arch = "wasm32")]
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 pub mod storage;
+
+#[cfg(test)]
+mod test;
 
 type Address = [u8; 20];
 
@@ -45,9 +49,6 @@ const SLOT_IMPL: U = const_slot_off_curve(b"eip1967.proxy.implementation");
 
 /// Operator that's able to trigger the reset cron.
 const ADDR_OPERATOR: [u8; 20] = address!(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7");
-
-/// Asset that assets are converted to, to be used in the game. This is ARB.
-const ADDR_ASSET: [u8; 20] = address!(b"912CE59144191C1204E64559FE8253a0e49E6548");
 
 /// Event emitted when a deposit is made.
 const TOPIC_DEPOSIT_MADE: U = const_keccak256(b"DepositMade(address,uint256,uint256)");
@@ -72,8 +73,8 @@ const CAP_PCT: U = u!(20);
 
 const SCALING_FACTOR: U = u!(1000);
 
-/// Fee taken from the users. 3% fee at a dividend
-const FEE: U = U::from_u32(3);
+/// Owner fee taken from the users. 3% fee.
+const FEE_OWNER: U = U::from_u32(30);
 
 /// 40 minutes extra time.
 const EXTRA_TIME: U = U::from_u32(2400);
@@ -93,7 +94,7 @@ const SEL_WAS_EPOCH_COLLECTED: [u8; 4] = const_keccak_sel(b"wasEpochCollected(ui
 
 // ~~~~~ Stateful functions: ~~~~
 //
-const SEL_INIT: [u8; 4] = const_keccak_sel(b"initialise(address)");
+const SEL_INIT: [u8; 4] = const_keccak_sel(b"initialise(address,address)");
 const SEL_PLAY: [u8; 4] = const_keccak_sel(b"play(uint256,address,bytes32)");
 const SEL_DISTRIBUTE_REWARDS: [u8; 4] =
     const_keccak_sel(b"distributeRewards(uint256,address,uint256)");
@@ -112,7 +113,7 @@ fn view_pool_size() -> usize {
 }
 
 fn view_pool_asset() -> usize {
-    write_result_word(&U::from(ADDR_ASSET));
+    write_result_word(&U::from(storage::asset::get()));
     0
 }
 
@@ -126,9 +127,9 @@ fn view_last_bettor_address() -> usize {
     0
 }
 
-fn get_min_deposit(pool_size: &U, last_deposit: &U) -> Option<U> {
+pub(crate) fn get_min_deposit(pool_size: &U, last_deposit: &U) -> Option<U> {
     if last_deposit.is_zero() {
-        return Some(U::ZERO)
+        return Some(U::ZERO);
     }
     let floor = pool_size.mul_div_round_up(&FLOOR_PCT, SCALING_FACTOR)?;
     let escalation = last_deposit.mul_div_round_up(&ESCALATION_MULTIPLIER, SCALING_FACTOR)?;
@@ -168,11 +169,10 @@ fn view_was_epoch_collected() -> usize {
     0
 }
 
-const ONE_HUNDRED: U = U::from_u32(100);
-
-fn state_init(admin: Address) -> usize {
+fn state_init(admin: Address, asset: Address) -> usize {
     assert!(storage::initialised::get().is_zero(), "already created");
     storage_store(&SLOT_ADMIN, &admin.into());
+    storage::asset::set(&asset.into());
     storage::initialised::set(&U::from(true));
     0
 }
@@ -202,17 +202,21 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
     if comment.is_some() {
         emit!(TOPIC_COMMENT_POSTED, recipient, comment);
     }
+    let addr_asset: Address = storage::asset::get().into();
+    revert_if_bad_call_unit_vec!(safe_call_bool_err_vec(
+        addr_asset,
+        &make_fn_allowance(msg_sender(), contract_address()),
+        &U::ZERO,
+        u64::MAX
+    ));
     // Transfer the asset to us:
-    assert!(
-        safe_call_bool(
-            ADDR_ASSET,
-            &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
-            &U::ZERO,
-            u64::MAX,
-        ),
-        "transferFrom revert"
-    );
-    let fee_paid = amt.mul_div_round_up(&FEE, ONE_HUNDRED).unwrap();
+    revert_if_bad_call_unit_vec!(safe_call_bool_err_vec(
+        addr_asset,
+        &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
+        &U::ZERO,
+        u64::MAX,
+    ));
+    let fee_paid = amt.mul_div_round_up(&FEE_OWNER, SCALING_FACTOR).unwrap();
     let amt = amt.checked_sub(&fee_paid).unwrap();
     let pool_size = storage::pool_size::get(&epoch);
     let last_bettor_amt = storage::last_bettor_amt::get(&epoch);
@@ -247,11 +251,7 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
         &recipient,
         &existing_tickets.checked_add(&lottery_tickets).unwrap(),
     );
-    emit!(
-        TOPIC_POINTS_COLLECTED,
-        recipient,
-        lottery_tickets
-    );
+    emit!(TOPIC_POINTS_COLLECTED, recipient, lottery_tickets);
     storage::points_collected::add(&recipient, &lottery_tickets);
     emit!(
         TOPIC_DEPOSIT_MADE,
@@ -275,13 +275,14 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
     let last_bettor_addr: Address = storage::last_bettor_addr::get(&epoch).into();
     let ticket_count = storage::global_tickets::get(&epoch)
         - storage::user_lottery_tickets::get(&epoch, &last_bettor_addr.into());
+    let addr_asset: Address = storage::asset::get().into();
     if ticket_count.is_zero() {
         // We only had one player! Let's transfer them the full amount, and stop.
         if last_bettor_addr != [0u8; 20] {
             let winner_amt = storage::pool_size::get(&epoch);
             assert!(
                 call_bool(
-                    ADDR_ASSET,
+                    addr_asset,
                     &make_fn_transfer(last_bettor_addr, &winner_amt),
                     &U::ZERO,
                     u64::MAX
@@ -301,7 +302,7 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
         .0;
     assert!(
         call_bool(
-            ADDR_ASSET,
+            addr_asset,
             &make_fn_transfer(last_bettor_addr, &winner_reward),
             &U::ZERO,
             u64::MAX
@@ -345,7 +346,7 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
                     // Transfer the winner their amount:
                     assert!(
                         call_bool(
-                            ADDR_ASSET,
+                            addr_asset,
                             &make_fn_transfer(w, &user_lottery_reward),
                             &U::ZERO,
                             u64::MAX
@@ -391,7 +392,7 @@ fn state_collect_fees() -> usize {
     let f = storage::fees_collected::get();
     assert!(
         safe_call_bool(
-            ADDR_ASSET,
+            storage::asset::get().into(),
             &make_fn_transfer(ADDR_OPERATOR, &f),
             &U::ZERO,
             u64::MAX
@@ -423,8 +424,8 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             SEL_WAS_EPOCH_COLLECTED => view_was_epoch_collected(),
             // Side effect generating functions:
             SEL_INIT => {
-                let admin = read_words!(&args[4..], 1);
-                state_init(admin.into())
+                let (admin, asset) = read_words!(&args[4..], 2);
+                state_init(admin.into(), asset.into())
             }
             SEL_PLAY => reentrancy_guard_sel(&SEL_PLAY, || {
                 let (amt, recipient, comment) = read_words!(&args[4..], 3);
@@ -447,3 +448,6 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
         }
     })
 }
+
+#[allow(unused)]
+fn main() {}

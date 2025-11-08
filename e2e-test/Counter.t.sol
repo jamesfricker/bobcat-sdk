@@ -51,5 +51,4 @@ contract CounterTest is Test {
         counter.addFromMsgValue{value: 9 ether}();
         assertEq(counter.number(), 9 ether + 1);
     }
-
 }

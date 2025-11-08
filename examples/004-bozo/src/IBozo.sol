@@ -2,6 +2,8 @@
 pragma solidity 0.8.20;
 
 interface IBozo {
+    function initialise(address admin, address asset) external;
+
     function play(
         uint256 amount,
         address recipient,
