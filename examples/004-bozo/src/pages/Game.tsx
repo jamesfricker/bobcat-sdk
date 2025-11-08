@@ -59,6 +59,13 @@ const bozoAbi = [
   },
   {
     type: 'function',
+    name: 'minDeposit',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    type: 'function',
     name: 'lastBettorAddress',
     stateMutability: 'view',
     inputs: [],
@@ -148,6 +155,16 @@ export function Game() {
     address: BOZO_CONTRACT_ADDRESS,
     abi: bozoAbi,
     functionName: 'lastBettorAmount',
+    chainId: arbitrum.id,
+    query: {
+      refetchInterval: 15000,
+    },
+  });
+
+  const { data: minDepositData } = useReadContract({
+    address: BOZO_CONTRACT_ADDRESS,
+    abi: bozoAbi,
+    functionName: 'minDeposit',
     chainId: arbitrum.id,
     query: {
       refetchInterval: 15000,
@@ -245,12 +262,24 @@ export function Game() {
   }, [assetDecimals, lastBettorAmountData]);
 
   const minToResetTokens = useMemo(() => {
+    if (typeof minDepositData === 'bigint') {
+      try {
+        const formatted = formatUnits(minDepositData, assetDecimals);
+        const numericFormatted = parseFloat(formatted);
+        if (Number.isFinite(numericFormatted) && numericFormatted > 0) {
+          return numericFormatted;
+        }
+      } catch (error) {
+        console.error('Failed to format min deposit:', error);
+      }
+    }
+
     const numericAmount = parseFloat(lastBettorAmountTokens);
     if (Number.isFinite(numericAmount) && numericAmount > 0) {
       return numericAmount * MIN_RESET_PREMIUM_MULTIPLIER;
     }
     return HARD_CODED_MIN_RESET_TOKENS;
-  }, [lastBettorAmountTokens]);
+  }, [assetDecimals, lastBettorAmountTokens, minDepositData]);
 
   const lastBettorAddress = useMemo(() => {
     if (typeof lastBettorAddressData === 'string' && lastBettorAddressData.length > 0) {
