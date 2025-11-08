@@ -1,5 +1,5 @@
 
-.PHONY: build
+.PHONY: build clean
 
 build: bozo.wasm bozo.out
 
@@ -19,3 +19,6 @@ bootstrap: bozo.out
 
 bootstrap.zip: bootstrap
 	@zip bootstrap.zip bootstrap
+
+clean:
+	@rm -rf bootstrap.zip bootstrap bozo.wasm target bozo.out

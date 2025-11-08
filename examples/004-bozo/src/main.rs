@@ -5,7 +5,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![no_main]
 
-use core::cmp::min;
+use core::cmp::{max, min};
 
 use bobcat_sdk::{
     call::{call_bool, safe_call_bool},
@@ -19,7 +19,7 @@ use bobcat_sdk::{
         eip1967::{TOPIC_ADMIN_CHANGED, TOPIC_UPGRADED},
         eip20::{make_fn_transfer, make_fn_transfer_from},
     },
-    maths::U,
+    maths::{u, U},
     storage::{
         const_keccak256, const_slot_off_curve, flush_guard, keccak256, reentrancy_guard_sel,
         storage_load, storage_store,
@@ -52,6 +52,9 @@ const ADDR_ASSET: [u8; 20] = address!(b"912CE59144191C1204E64559FE8253a0e49E6548
 /// Event emitted when a deposit is made.
 const TOPIC_DEPOSIT_MADE: U = const_keccak256(b"DepositMade(address,uint256,uint256)");
 
+/// Some points were collected by a user!
+const TOPIC_POINTS_COLLECTED: U = const_keccak256(b"PointsCollected(address,uint256)");
+
 /// A winner was chosen for a game!
 const TOPIC_WINNER_CHOSEN: U = const_keccak256(b"WinnerChosen(address,uint256,bool)");
 
@@ -61,11 +64,19 @@ const TOPIC_NEW_EPOCH: U = const_keccak256(b"NewEpoch(uint256)");
 /// Someone posted a comment when they played the game.
 const TOPIC_COMMENT_POSTED: U = const_keccak256(b"CommentPosted(address,bytes32)");
 
+const FLOOR_PCT: U = u!(5);
+
+const ESCALATION_MULTIPLIER: U = u!(1050);
+
+const CAP_PCT: U = u!(20);
+
+const SCALING_FACTOR: U = u!(1000);
+
 /// Fee taken from the users. 3% fee at a dividend
 const FEE: U = U::from_u32(3);
 
-/// An hour extra time.
-const EXTRA_TIME: U = U::from_u32(3600);
+/// 40 minutes extra time.
+const EXTRA_TIME: U = U::from_u32(2400);
 
 // ~~~~~ View functions: ~~~~
 //
@@ -73,6 +84,7 @@ const SEL_POOL_SIZE: [u8; 4] = const_keccak_sel(b"poolSize()");
 const SEL_POOL_ASSET: [u8; 4] = const_keccak_sel(b"poolAsset()");
 const SEL_LAST_BETTOR_AMOUNT: [u8; 4] = const_keccak_sel(b"lastBettorAmount()");
 const SEL_LAST_BETTOR_ADDRESS: [u8; 4] = const_keccak_sel(b"lastBettorAddress()");
+const SEL_MIN_DEPOSIT: [u8; 4] = const_keccak_sel(b"minDeposit()");
 const SEL_DEADLINE: [u8; 4] = const_keccak_sel(b"deadline()");
 const SEL_PLAYER_COUNT: [u8; 4] = const_keccak_sel(b"playerCount()");
 const SEL_TICKET_COUNT: [u8; 4] = const_keccak_sel(b"ticketCount()");
@@ -114,6 +126,28 @@ fn view_last_bettor_address() -> usize {
     0
 }
 
+fn get_min_deposit(pool_size: &U, last_deposit: &U) -> Option<U> {
+    if last_deposit.is_zero() {
+        return Some(U::ZERO)
+    }
+    let floor = pool_size.mul_div_round_up(&FLOOR_PCT, SCALING_FACTOR)?;
+    let escalation = last_deposit.mul_div_round_up(&ESCALATION_MULTIPLIER, SCALING_FACTOR)?;
+    let cap = CAP_PCT.mul_div_round_up(pool_size, SCALING_FACTOR)?;
+    Some(max(floor, min(escalation, cap)))
+}
+
+fn view_min_deposit() -> usize {
+    let epoch = pick_epoch().0;
+    write_result_word(
+        &get_min_deposit(
+            &storage::pool_size::get(&epoch),
+            &storage::last_bettor_amt::get(&epoch),
+        )
+        .unwrap(),
+    );
+    0
+}
+
 fn view_player_count() -> usize {
     write_result_word(&storage::user_lottery_ticket_len::get(&pick_epoch().0));
     0
@@ -137,9 +171,9 @@ fn view_was_epoch_collected() -> usize {
 const ONE_HUNDRED: U = U::from_u32(100);
 
 fn state_init(admin: Address) -> usize {
-    assert!(!storage::initialised::get(), "already created");
+    assert!(storage::initialised::get().is_zero(), "already created");
     storage_store(&SLOT_ADMIN, &admin.into());
-    storage::initialised::set(true);
+    storage::initialised::set(&U::from(true));
     0
 }
 
@@ -179,11 +213,11 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
         "transferFrom revert"
     );
     let fee_paid = amt.mul_div_round_up(&FEE, ONE_HUNDRED).unwrap();
-    let amt = amt - fee_paid;
-    // Get the last deposit made by a user to know how much to beat. Take 105%:
-    let extra_amt = storage::last_bettor_amt::get(&epoch)
-        .mul_div_round_up(&U::from(105u32), U::from(100u32))
-        .unwrap();
+    let amt = amt.checked_sub(&fee_paid).unwrap();
+    let pool_size = storage::pool_size::get(&epoch);
+    let last_bettor_amt = storage::last_bettor_amt::get(&epoch);
+    // Get the amount that the user has to beat to play the game next:
+    let extra_amt = get_min_deposit(&pool_size, &last_bettor_amt).unwrap();
     assert!(amt > extra_amt, "amount not enough: {extra_amt} needed");
     // Figure out how many "lottery tickets" to give the user -- aka, the
     // chance of them winning 20% of the prize without actually being the
@@ -197,7 +231,7 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
     storage::last_bettor_addr::set(&epoch, &U::from(msg_sender()));
     storage::last_bettor_amt::set(&epoch, &amt);
     storage::fees_collected::add(&fee_paid);
-    storage::pool_size::add(&epoch, &amt);
+    storage::pool_size::set(&epoch, &(pool_size + amt));
     storage::early_participants::add(&epoch, &U::ONE);
     storage::global_tickets::add(&epoch, &lottery_tickets);
     let recipient = U::from(recipient);
@@ -213,6 +247,12 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
         &recipient,
         &existing_tickets.checked_add(&lottery_tickets).unwrap(),
     );
+    emit!(
+        TOPIC_POINTS_COLLECTED,
+        recipient,
+        lottery_tickets
+    );
+    storage::points_collected::add(&recipient, &lottery_tickets);
     emit!(
         TOPIC_DEPOSIT_MADE,
         recipient,
@@ -376,6 +416,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             SEL_POOL_ASSET => view_pool_asset(),
             SEL_LAST_BETTOR_AMOUNT => view_last_bettor_amount(),
             SEL_LAST_BETTOR_ADDRESS => view_last_bettor_address(),
+            SEL_MIN_DEPOSIT => view_min_deposit(),
             SEL_PLAYER_COUNT => view_player_count(),
             SEL_TICKET_COUNT => view_ticket_count(),
             SEL_CURRENT_EPOCH => view_current_epoch(),

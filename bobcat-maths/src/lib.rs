@@ -1264,6 +1264,11 @@ macro_rules! from_ints {
     };
 }
 
+#[macro_export]
+macro_rules! u {
+    ($e:expr) => { $crate::U::from_u32($e) }
+}
+
 from_ints! { u8, u16, u32, u64, u128, usize }
 
 impl From<I> for [u8; 32] {
