@@ -43,18 +43,13 @@ contract Bozo is Test {
         );
     }
 
-    struct Action {
-        uint64 amount;
-        address spender;
-        bytes32 comment;
-    }
-
     function test_fuzzContractSolvent(Action[] memory a) external {
         // Test that the contract and user group will remain solvent at all times.
         IBozo g = createGame();
         for (uint i = 0; i < a.length; ++i) {
             vm.prank(a[i].spender);
-            g.play(a[i].amount, a[i].spender, a[i].comment);
+            //g.play(a[i].amount, a[i].spender, a[i].comment);
+            revert("todo");
         }
     }
 }
