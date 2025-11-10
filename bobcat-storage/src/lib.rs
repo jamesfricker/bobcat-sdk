@@ -20,7 +20,7 @@ unsafe extern "C" {
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
-mod host {
+pub mod host {
     use super::*;
 
     use std::{cell::RefCell, collections::HashMap, ptr::copy_nonoverlapping};
@@ -28,8 +28,16 @@ mod host {
     type WordHashMap = HashMap<U, U>;
 
     thread_local! {
-        static STORAGE: RefCell<WordHashMap> = RefCell::default();
-        static TRANSIENT: RefCell<WordHashMap> = RefCell::default();
+        pub static STORAGE: RefCell<WordHashMap> = RefCell::default();
+        pub static TRANSIENT: RefCell<WordHashMap> = RefCell::default();
+    }
+
+    pub fn storage_clear() {
+        STORAGE.with(|s| s.borrow_mut().clear())
+    }
+
+    pub fn transient_clear() {
+        TRANSIENT.with(|s| s.borrow_mut().clear())
     }
 
     unsafe fn read_word(key: *const u8) -> U {

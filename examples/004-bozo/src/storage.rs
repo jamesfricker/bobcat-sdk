@@ -80,17 +80,26 @@ macro_rules! storage {
 storage! {
     initialised(),
     epoch(),
-    fees_collected(),
+    owner_fees_collected(),
+    dao_fees_collected(),
     ts_deadline(epoch),
     last_bettor_addr(epoch),
     last_bettor_amt(epoch),
     pool_size(epoch),
     early_participants(epoch),
     global_tickets(epoch),
+    // Address => position for (has played . pos):
+    user_lottery_pos(epoch, addr),
+    // Position => address for ticket count:
     user_lottery_addresses(epoch, pos),
-    user_lottery_tickets(epoch, address),
+    // Position => tickets owned by user:
+    user_lottery_tickets(epoch, pos),
+    // Amount of tickets in circulation:
     user_lottery_ticket_len(epoch),
+    // Whether this epoch had its winners given out:
     was_distributed(epoch),
+    // The points this address owns:
     points_collected(address),
+    // The asset in use:
     asset()
 }

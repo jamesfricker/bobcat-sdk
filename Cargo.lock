@@ -408,7 +408,6 @@ version = "0.6.4"
 dependencies = [
  "bobcat-entry",
  "bobcat-maths",
- "const-hex",
  "paste",
 ]
 

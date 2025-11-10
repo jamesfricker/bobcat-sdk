@@ -3,8 +3,7 @@ resolver = "3"
 members = [
     "001-counter",
     "002-mul_div",
-    "003-camelot-swapping",
-    "004-bozo"
+    "003-camelot-swapping"
 ]
 
 [workspace.dependencies]

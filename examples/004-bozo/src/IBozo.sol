@@ -14,11 +14,7 @@ interface IBozo {
         uint256 epoch,
         address rewardRecipient,
         uint256 rngWord
-    ) external returns (
-        uint256 winnerReward,
-        uint256 losersDistributed,
-        address[] memory winners
-    );
+    ) external returns (uint256 winnerReward);
 
     function poolSize() external view returns (uint256);
     function poolAsset() external view returns (address);

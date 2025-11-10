@@ -2,23 +2,19 @@
 // hardcoded address is a contract deployed on Arbitrum One, the network
 // this contract lives on.
 
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(target_arch = "wasm32", no_std)]
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
 use core::cmp::{max, min};
 
 use bobcat_sdk::{
-    call::{call_bool, safe_call_bool, safe_call_bool_err_vec},
     cd::{address, const_keccak_sel, read_words},
     entry::{
         block_timestamp, contract_address, msg_sender, read_args_safe, write_result_slice,
-        write_result_word, revert_if_bad_call_unit_vec,
+        write_result_word,
     },
     events::emit,
-    interfaces::{
-        eip1967::{TOPIC_ADMIN_CHANGED, TOPIC_UPGRADED},
-        eip20::{make_fn_transfer, make_fn_transfer_from, make_fn_allowance},
-    },
+    interfaces::eip1967::{TOPIC_ADMIN_CHANGED, TOPIC_UPGRADED},
     maths::{u, U},
     storage::{
         const_keccak256, const_slot_off_curve, flush_guard, keccak256, reentrancy_guard_sel,
@@ -33,6 +29,8 @@ use array_concat::concat_arrays;
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 pub mod storage;
+
+mod eip20;
 
 #[cfg(test)]
 mod test;
@@ -76,6 +74,9 @@ const SCALING_FACTOR: U = u!(1000);
 /// Owner fee taken from the users. 3% fee.
 const FEE_OWNER: U = U::from_u32(30);
 
+/// Fee paid to the DAO for the game. 2%.
+const FEE_DAO: U = U::from_u32(20);
+
 /// 40 minutes extra time.
 const EXTRA_TIME: U = U::from_u32(2400);
 
@@ -100,7 +101,8 @@ const SEL_DISTRIBUTE_REWARDS: [u8; 4] =
     const_keccak_sel(b"distributeRewards(uint256,address,uint256)");
 const SEL_UPGRADE: [u8; 4] = const_keccak_sel(b"upgrade(address)");
 const SEL_CHANGE_ADMIN: [u8; 4] = const_keccak_sel(b"changeAdmin(address)");
-const SEL_COLLECT_FEES: [u8; 4] = const_keccak_sel(b"collectFees()");
+const SEL_OWNER_COLLECT_FEES: [u8; 4] = const_keccak_sel(b"ownerCollectFees()");
+const SEL_DAO_COLLECT_FEES: [u8; 4] = const_keccak_sel(b"daoCollectFees()");
 
 fn view_deadline() -> usize {
     write_result_word(&storage::ts_deadline::get(&pick_epoch().0));
@@ -139,12 +141,15 @@ pub(crate) fn get_min_deposit(pool_size: &U, last_deposit: &U) -> Option<U> {
 
 fn view_min_deposit() -> usize {
     let epoch = pick_epoch().0;
+    let v = get_min_deposit(
+        &storage::pool_size::get(&epoch),
+        &storage::last_bettor_amt::get(&epoch),
+    )
+    .unwrap();
+    let extra_fee_scale = SCALING_FACTOR + FEE_OWNER + FEE_DAO;
     write_result_word(
-        &get_min_deposit(
-            &storage::pool_size::get(&epoch),
-            &storage::last_bettor_amt::get(&epoch),
-        )
-        .unwrap(),
+        &v.mul_div_round_up(&extra_fee_scale, SCALING_FACTOR)
+            .unwrap(),
     );
     0
 }
@@ -182,7 +187,8 @@ fn state_init(admin: Address, asset: Address) -> usize {
 // indicate it should be set to the result returned from this function.
 fn pick_epoch() -> (U, bool) {
     let e = storage::epoch::get();
-    if block_timestamp() > storage::ts_deadline::get(&e).into() {
+    let x = storage::ts_deadline::get(&e).into();
+    if block_timestamp() > x && x != 0 {
         (e + U::ONE, true)
     } else {
         (e, false)
@@ -203,26 +209,23 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
         emit!(TOPIC_COMMENT_POSTED, recipient, comment);
     }
     let addr_asset: Address = storage::asset::get().into();
-    revert_if_bad_call_unit_vec!(safe_call_bool_err_vec(
-        addr_asset,
-        &make_fn_allowance(msg_sender(), contract_address()),
-        &U::ZERO,
-        u64::MAX
-    ));
     // Transfer the asset to us:
-    revert_if_bad_call_unit_vec!(safe_call_bool_err_vec(
-        addr_asset,
-        &make_fn_transfer_from(msg_sender(), contract_address(), &amt),
-        &U::ZERO,
-        u64::MAX,
-    ));
-    let fee_paid = amt.mul_div_round_up(&FEE_OWNER, SCALING_FACTOR).unwrap();
-    let amt = amt.checked_sub(&fee_paid).unwrap();
+    eip20::transfer_from(addr_asset, msg_sender(), contract_address(), &amt).unwrap();
+    let owner_fee_paid = amt.mul_div_round_up(&FEE_OWNER, SCALING_FACTOR).unwrap();
+    let dao_fee_paid = amt.mul_div_round_up(&FEE_DAO, SCALING_FACTOR).unwrap();
+    let amt = amt
+        .checked_sub(&owner_fee_paid)
+        .and_then(|x| x.checked_sub(&dao_fee_paid))
+        .unwrap();
     let pool_size = storage::pool_size::get(&epoch);
     let last_bettor_amt = storage::last_bettor_amt::get(&epoch);
     // Get the amount that the user has to beat to play the game next:
     let extra_amt = get_min_deposit(&pool_size, &last_bettor_amt).unwrap();
-    assert!(amt > extra_amt, "amount not enough: {extra_amt} needed");
+    assert!(
+        amt >= extra_amt,
+        "amount not enough: {extra_amt} needed, {amt} provided. diff: {}",
+        amt.abs_diff(&extra_amt)
+    );
     // Figure out how many "lottery tickets" to give the user -- aka, the
     // chance of them winning 20% of the prize without actually being the
     // one to win.
@@ -232,25 +235,33 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
     } else {
         amt
     };
-    storage::last_bettor_addr::set(&epoch, &U::from(msg_sender()));
+    let recipient = U::from(recipient);
+    storage::last_bettor_addr::set(&epoch, &recipient);
     storage::last_bettor_amt::set(&epoch, &amt);
-    storage::fees_collected::add(&fee_paid);
+    storage::owner_fees_collected::add(&owner_fee_paid);
+    storage::dao_fees_collected::add(&dao_fee_paid);
     storage::pool_size::set(&epoch, &(pool_size + amt));
     storage::early_participants::add(&epoch, &U::ONE);
     storage::global_tickets::add(&epoch, &lottery_tickets);
-    let recipient = U::from(recipient);
-    let existing_tickets = storage::user_lottery_tickets::get(&epoch, &recipient);
-    if existing_tickets.is_zero() {
+    let packed_pos = storage::user_lottery_pos::get(&epoch, &recipient);
+    // We get a new position if the user has never had one, then we add the
+    // tickets there.
+    let has_played = packed_pos[0] >= 1;
+    let mut pos = packed_pos;
+    pos[0] = 0;
+    if !has_played {
         // If this is the first time that the recipient is playing, we need to track them:
         let ticket_len = storage::user_lottery_ticket_len::get(&epoch);
         storage::user_lottery_addresses::set(&epoch, &ticket_len, &recipient);
-        storage::user_lottery_ticket_len::set(&epoch, &(ticket_len + U::ONE));
+        pos = ticket_len;
+        // The position in this epoch will never exceed a u64, so this is safe:
+        let mut packed_pos = pos;
+        // If the value here is anything other than 0, we're going to ignore it.
+        packed_pos[0] = if packed_pos[0] == 0 { 1 } else { packed_pos[0] };
+        storage::user_lottery_pos::set(&epoch, &recipient, &packed_pos);
+        storage::user_lottery_ticket_len::set(&epoch, &(pos + U::ONE));
     }
-    storage::user_lottery_tickets::set(
-        &epoch,
-        &recipient,
-        &existing_tickets.checked_add(&lottery_tickets).unwrap(),
-    );
+    storage::user_lottery_tickets::add(&epoch, &pos, &lottery_tickets).unwrap();
     emit!(TOPIC_POINTS_COLLECTED, recipient, lottery_tickets);
     storage::points_collected::add(&recipient, &lottery_tickets);
     emit!(
@@ -276,44 +287,27 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
     let ticket_count = storage::global_tickets::get(&epoch)
         - storage::user_lottery_tickets::get(&epoch, &last_bettor_addr.into());
     let addr_asset: Address = storage::asset::get().into();
+    let full_pool = storage::pool_size::get(&epoch);
     if ticket_count.is_zero() {
         // We only had one player! Let's transfer them the full amount, and stop.
         if last_bettor_addr != [0u8; 20] {
-            let winner_amt = storage::pool_size::get(&epoch);
-            assert!(
-                call_bool(
-                    addr_asset,
-                    &make_fn_transfer(last_bettor_addr, &winner_amt),
-                    &U::ZERO,
-                    u64::MAX
-                ),
-                "transfer revert"
-            );
-            emit!(TOPIC_WINNER_CHOSEN, last_bettor_addr, winner_amt, false);
+            eip20::transfer(addr_asset, last_bettor_addr, &full_pool).unwrap();
+            emit!(TOPIC_WINNER_CHOSEN, last_bettor_addr, full_pool, false);
         }
-        let r: [u8; 32 * 3] = concat_arrays!([0u8; 32], U::from(64u32).0, [0u8; 32]);
-        write_result_slice(&r);
+        write_result_word(&full_pool);
         return 0;
     }
     // If we had more than one player, we give the top 80% to the last user:
-    let winner_reward = storage::pool_size::get(&epoch)
+    let winner_reward = full_pool
         .mul_div(&U::from(8u32), U::from(10u32))
         .unwrap()
         .0;
-    assert!(
-        call_bool(
-            addr_asset,
-            &make_fn_transfer(last_bettor_addr, &winner_reward),
-            &U::ZERO,
-            u64::MAX
-        ),
-        "transfer revert"
-    );
+    eip20::transfer(addr_asset, last_bettor_addr, &winner_reward).unwrap();
     emit!(TOPIC_WINNER_CHOSEN, last_bettor_addr, winner_reward, false);
     // Using the random word, we start to pick some random words using
     // keccak. We're only ever going to see 10 winners at max, since we
     // divide the winnings up to at most 10 people. We take the 20%:
-    let full_lottery_reward = storage::pool_size::get(&epoch)
+    let full_lottery_reward = full_pool
         .mul_div(&U::from(2u32), U::from(10u32))
         .unwrap()
         .0;
@@ -326,8 +320,9 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
         let rng_preimage: [u8; 32 + size_of::<usize>()] = concat_arrays!(rng.0, i.to_be_bytes());
         let rng = keccak256(&rng_preimage);
         // The amount outstanding that we can distribute here. We'll reduce this
-        // until it's zero, then do the reward:
-        let mut leftover_tickets = rng % ticket_count;
+        // until it's zero, then do the reward. We reduce this so we reduce the amount
+        // of gas that's used here:
+        let mut leftover_tickets = rng % (ticket_count / SCALING_FACTOR);
         // We prefer to use the storage, though we could actually just load this
         // in ourselves. We'll repeatedly use the storage cache instead to get
         // the elements we want.
@@ -344,15 +339,7 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
                 if !has_user_won_already {
                     winners[i] = w;
                     // Transfer the winner their amount:
-                    assert!(
-                        call_bool(
-                            addr_asset,
-                            &make_fn_transfer(w, &user_lottery_reward),
-                            &U::ZERO,
-                            u64::MAX
-                        ),
-                        "transfer revert"
-                    );
+                    eip20::transfer(addr_asset, w, &user_lottery_reward).unwrap();
                     emit!(TOPIC_WINNER_CHOSEN, w, user_lottery_reward, true);
                     break;
                 }
@@ -388,18 +375,18 @@ fn state_change_admin(new_admin: Address) -> usize {
     0
 }
 
-fn state_collect_fees() -> usize {
-    let f = storage::fees_collected::get();
-    assert!(
-        safe_call_bool(
-            storage::asset::get().into(),
-            &make_fn_transfer(ADDR_OPERATOR, &f),
-            &U::ZERO,
-            u64::MAX
-        ),
-        "transfer revert"
-    );
-    storage::fees_collected::clear();
+fn state_owner_collect_fees() -> usize {
+    let f = storage::owner_fees_collected::get();
+    eip20::transfer(storage::asset::get().into(), ADDR_OPERATOR, &f).unwrap();
+    storage::owner_fees_collected::clear();
+    write_result_word(&f);
+    0
+}
+
+fn state_dao_collect_fees() -> usize {
+    let f = storage::dao_fees_collected::get();
+    eip20::transfer(storage::asset::get().into(), ADDR_OPERATOR, &f).unwrap();
+    storage::dao_fees_collected::clear();
     write_result_word(&f);
     0
 }
@@ -443,7 +430,8 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
                 let new_admin = read_words!(&args[4..], 1);
                 state_change_admin(new_admin.into())
             }
-            SEL_COLLECT_FEES => state_collect_fees(),
+            SEL_OWNER_COLLECT_FEES => state_owner_collect_fees(),
+            SEL_DAO_COLLECT_FEES => state_dao_collect_fees(),
             _ => 1,
         }
     })

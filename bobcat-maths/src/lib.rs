@@ -814,7 +814,7 @@ impl Ord for U {
 
 impl Debug for U {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        let mut b = [0u8; 20 * 2];
+        let mut b = [0u8; 32 * 2];
         let Ok(s) = const_hex::encode_to_str(self.0, &mut b) else {
             return Err(FmtError);
         };
@@ -898,6 +898,14 @@ impl U {
             i += 1;
         }
         true
+    }
+
+    pub fn abs_diff(&self, y: &U) ->U {
+        if self > y {
+            self - y
+        } else {
+            y - self
+        }
     }
 
     pub const fn is_max(&self) -> bool {
@@ -1704,6 +1712,13 @@ mod test {
         #[test]
         fn test_u_conv_to_and_from_u8(x in any::<u8>()) {
             assert_eq!(x.wrapping_add(1), U::from(x).wrapping_add(&U::ONE).into());
+        }
+
+        #[test]
+        fn test_print_to_and_from(x in any::<[u8; 32]>()) {
+            let e = format!("{}", U256::from_be_bytes(x));
+            let v = format!("{}", U(x));
+            assert_eq!(e, v);
         }
 
         #[test]

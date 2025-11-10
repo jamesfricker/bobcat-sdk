@@ -7,7 +7,13 @@ import {IArbFoundry} from "./IArbFoundry.sol";
 
 import {IBozo} from "../src/IBozo.sol";
 
-import {TestERC20} from "./TestERC20.sol";
+contract TestERC20 {
+    mapping (address => uint256) public balanceOf;
+
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
+        revert("Not implemented");
+    }
+}
 
 contract Bozo is Test {
     address impl;
@@ -38,7 +44,7 @@ contract Bozo is Test {
     }
 
     struct Action {
-        uint256 amount;
+        uint64 amount;
         address spender;
         bytes32 comment;
     }
@@ -48,8 +54,6 @@ contract Bozo is Test {
         IBozo g = createGame();
         for (uint i = 0; i < a.length; ++i) {
             vm.prank(a[i].spender);
-            erc20.mint(a[i].spender, a[i].amount);
-            erc20.approve(address(g), type(uint256).max);
             g.play(a[i].amount, a[i].spender, a[i].comment);
         }
     }

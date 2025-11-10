@@ -4,6 +4,8 @@
 # want to test in Rust on the native host:
 #cargo test --features std
 
+cargo nextest run --features std
+
 make
 
-arbos-forge test $@
+# arbos-forge test $@
