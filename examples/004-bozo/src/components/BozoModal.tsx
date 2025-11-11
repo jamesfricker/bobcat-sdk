@@ -594,7 +594,7 @@ export function BozoModal({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">YOU&apos;LL STAY LEADER FOR</span>
-              <span className="text-foreground">5 MINUTES</span>
+              <span className="text-foreground">45 MINUTES</span>
             </div>
           </div>
 
