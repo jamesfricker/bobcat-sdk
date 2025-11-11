@@ -297,6 +297,10 @@ pub fn saturating_mul(x: &U, y: &U) -> U {
     checked_mul(x, y).unwrap_or(U::MAX)
 }
 
+pub fn saturating_div(x: &U, y: &U) -> U {
+    checked_div(x, y).unwrap_or(U::MAX)
+}
+
 fn gcd(mut x: U, mut y: U) -> U {
     while y.is_some() {
         (x, y) = (y, x % y);
@@ -900,7 +904,7 @@ impl U {
         true
     }
 
-    pub fn abs_diff(&self, y: &U) ->U {
+    pub fn abs_diff(&self, y: &U) -> U {
         if self > y {
             self - y
         } else {
@@ -991,6 +995,10 @@ impl U {
 
     pub fn saturating_mul(&self, y: &Self) -> U {
         saturating_mul(self, y)
+    }
+
+    pub fn saturating_div(&self, y: &Self) -> Self {
+        saturating_div(self, y)
     }
 
     pub fn wrapping_neg(self) -> Self {
@@ -1274,7 +1282,9 @@ macro_rules! from_ints {
 
 #[macro_export]
 macro_rules! u {
-    ($e:expr) => { $crate::U::from_u32($e) }
+    ($e:expr) => {
+        $crate::U::from_u32($e)
+    };
 }
 
 from_ints! { u8, u16, u32, u64, u128, usize }
