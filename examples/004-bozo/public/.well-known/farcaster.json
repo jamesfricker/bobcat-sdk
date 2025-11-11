@@ -10,5 +10,10 @@
     "subtitle": "RIP BOZO: Be the last Bozo standing",
     "description": "BOZO is a social game where players compete to be the last Bozo standing. The last deposit wins the pot!",
     "primaryCategory": "finance"
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjE5Nzc4LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4QjBEZDZlMzMyOTkyRUY0Mzg2NjA4RWYyYjkyOTRkNjM2RjI3MTM4MyJ9",
+    "payload": "eyJkb21haW4iOiJyaXBib3pvLmxvbCJ9",
+    "signature": "cZqr8CfVShUtXeDMgtjGA9K7RJ0osvK1tj1ZckwwvrMEdsv+VEUChmhO9MlITRjC9mtWQOHDTbrN+BNY/pcMLxs="
   }
 }
