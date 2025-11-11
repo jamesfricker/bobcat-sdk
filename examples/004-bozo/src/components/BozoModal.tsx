@@ -27,6 +27,7 @@ import { arbitrum } from 'wagmi/chains';
 import { formatUnits, parseUnits, keccak256, stringToHex } from 'viem';
 import { config as appConfig } from '../lib/config';
 import { makeEpochCookieName, writeCookie } from '../lib/cookies';
+import { RelayPurchaseDialog } from './RelayPurchaseDialog';
 
 interface BozoModalProps {
   open: boolean;
@@ -108,6 +109,7 @@ export function BozoModal({
   const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [hasPromptedChain, setHasPromptedChain] = useState(false);
+  const [relayDialogOpen, setRelayDialogOpen] = useState(false);
 
   const { data: balanceData, refetch: refetchBalance } = useBalance({
     address,
@@ -257,6 +259,16 @@ export function BozoModal({
 
     setAmountToken(maxAmount);
   }, [hasBalance, maxAmount]);
+
+  const handleRelayPrefill = useCallback(
+    (value: string) => {
+      setAmountToken(value);
+      if (!open) {
+        onOpenChange(true);
+      }
+    },
+    [onOpenChange, open],
+  );
 
   const handleApprove = async () => {
     if (!address || !poolAssetAddress) {
@@ -418,6 +430,12 @@ export function BozoModal({
   }, [open, poolAssetAddress, address, refetchBalance]);
 
   useEffect(() => {
+    if (!open) {
+      setRelayDialogOpen(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (!open || !isWrongChain) {
       setHasPromptedChain(false);
       return;
@@ -463,8 +481,9 @@ export function BozoModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#1a1d32] border-border max-w-md">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-[#1a1d32] border-border max-w-md">
         <DialogHeader>
           <DialogTitle className="text-foreground text-center">
             <div className="flex flex-col items-center gap-3 mb-4">
@@ -533,6 +552,18 @@ export function BozoModal({
               min="0"
               step="0.000001"
             />
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Need more {game.homeToken}?</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-3 border-[#2ED4B7]/50 text-[#2ED4B7] hover:bg-[#2ED4B7]/10"
+                onClick={() => setRelayDialogOpen(true)}
+              >
+                Buy with Relay
+              </Button>
+            </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
                 ≈ {formattedEnteredAmount}
@@ -675,6 +706,17 @@ export function BozoModal({
           </div>
         </div>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      <RelayPurchaseDialog
+        open={relayDialogOpen}
+        onOpenChange={setRelayDialogOpen}
+        poolAssetAddress={poolAssetAddress}
+        assetDecimals={assetDecimals}
+        destinationSymbol={game.homeToken}
+        accountAddress={address}
+        defaultOriginChainId={typeof chainId === 'number' ? chainId : undefined}
+        onPrefillAmount={handleRelayPrefill}
+      />
+    </>
   );
 }

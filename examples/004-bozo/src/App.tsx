@@ -13,7 +13,7 @@ import { useEffect } from "react";
 
 import { WagmiProvider, http, createConfig } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
-import { injected, metaMask, walletConnect } from 'wagmi/connectors';
+import { injected, metaMask } from 'wagmi/connectors';
 
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 
@@ -25,6 +25,16 @@ import {
 } from '@tanstack/react-query';
 import { CommentsProvider } from './providers/CommentsProvider';
 import { FarcasterMiniAppProvider } from './providers/FarcasterMiniAppProvider';
+import { config as appConfig } from './lib/config';
+import { createClient as createRelayClient, configureDynamicChains, LogLevel } from '@relayprotocol/relay-sdk';
+
+const relayLogLevelMap: Record<string, LogLevel> = {
+  verbose: LogLevel.Verbose,
+  info: LogLevel.Info,
+  warn: LogLevel.Warn,
+  error: LogLevel.Error,
+  none: LogLevel.None,
+};
 
 const queryClient = new QueryClient();
 
@@ -44,6 +54,20 @@ export default function App() {
   useEffect(() => {
     // Force dark mode
     document.documentElement.classList.add("dark");
+  }, []);
+
+  useEffect(() => {
+    const logLevel = relayLogLevelMap[appConfig.relay.logLevel?.toLowerCase?.() ?? ''] ?? LogLevel.Error;
+
+    createRelayClient({
+      baseApiUrl: appConfig.relay.apiUrl,
+      source: appConfig.relay.source,
+      logLevel,
+    });
+
+    configureDynamicChains().catch((error) => {
+      console.error('Failed to fetch Relay chain configuration:', error);
+    });
   }, []);
 
   return (
