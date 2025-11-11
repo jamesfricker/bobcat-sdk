@@ -928,13 +928,6 @@ export function Game() {
                   GAME
                 </button>
                 <button
-                  type="button"
-                  disabled
-                  className="text-sm text-muted-foreground cursor-not-allowed"
-                >
-                  LEADERBOARD
-                </button>
-                <button
                   onClick={() => navigate('/faq')}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
