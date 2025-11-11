@@ -1,11 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
@@ -55,9 +48,8 @@ type TokenSelection =
       decimals: number;
     };
 
-interface RelayPurchaseDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface RelaySwapSectionProps {
+  enabled: boolean;
   poolAssetAddress: `0x${string}` | null;
   assetDecimals: number;
   destinationSymbol: string;
@@ -102,16 +94,15 @@ const normalizeToken = (
   };
 };
 
-export function RelayPurchaseDialog({
-  open,
-  onOpenChange,
+export function RelaySwapSection({
+  enabled,
   poolAssetAddress,
   assetDecimals,
   destinationSymbol,
   accountAddress,
   defaultOriginChainId,
   onPrefillAmount,
-}: RelayPurchaseDialogProps) {
+}: RelaySwapSectionProps) {
   const { data: walletClient } = useWalletClient();
 
   const [chains, setChains] = useState<RelayChain[]>([]);
@@ -129,13 +120,15 @@ export function RelayPurchaseDialog({
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [progressAction, setProgressAction] = useState<string | null>(null);
 
-  const selectedChain = useMemo(
-    () => (selectedChainId ? chains.find((chain) => chain.id === selectedChainId) ?? null : null),
-    [chains, selectedChainId],
-  );
+  const resetForm = useCallback(() => {
+    setAmountIn('');
+    setQuote(null);
+    setQuoteError(null);
+    setProgressAction(null);
+  }, []);
 
   useEffect(() => {
-    if (!open) {
+    if (!enabled) {
       return;
     }
 
@@ -174,10 +167,10 @@ export function RelayPurchaseDialog({
     return () => {
       isMounted = false;
     };
-  }, [open]);
+  }, [enabled]);
 
   useEffect(() => {
-    if (!chains.length) {
+    if (!enabled || !chains.length) {
       return;
     }
 
@@ -190,7 +183,12 @@ export function RelayPurchaseDialog({
       }
       return chains[0]?.id ?? null;
     });
-  }, [chains, defaultOriginChainId]);
+  }, [chains, defaultOriginChainId, enabled]);
+
+  const selectedChain = useMemo(
+    () => (selectedChainId ? chains.find((chain) => chain.id === selectedChainId) ?? null : null),
+    [chains, selectedChainId],
+  );
 
   const availableTokens = useMemo(() => {
     if (!selectedChain) {
@@ -225,7 +223,7 @@ export function RelayPurchaseDialog({
   }, [destinationSymbol, selectedChain]);
 
   useEffect(() => {
-    if (!open) {
+    if (!enabled) {
       return;
     }
 
@@ -247,17 +245,18 @@ export function RelayPurchaseDialog({
       }
       return { type: 'list', ...availableTokens[0] };
     });
-  }, [availableTokens, open, tokenSelection?.type]);
+  }, [availableTokens, enabled, tokenSelection?.type]);
 
   useEffect(() => {
-    if (!open) {
+    if (!enabled) {
+      resetForm();
       return;
     }
 
     setQuote(null);
     setQuoteError(null);
     setProgressAction(null);
-  }, [open]);
+  }, [enabled, resetForm]);
 
   const parsedCustomDecimals = useMemo(() => {
     const parsed = Number.parseInt(customTokenDecimals, 10);
@@ -288,13 +287,6 @@ export function RelayPurchaseDialog({
     };
   }, [customTokenAddress, customTokenSymbol, parsedCustomDecimals, tokenSelection]);
 
-  const resetForm = useCallback(() => {
-    setAmountIn('');
-    setQuote(null);
-    setQuoteError(null);
-    setProgressAction(null);
-  }, []);
-
   const normalizedOriginCurrency = useMemo(() => {
     if (!resolvedToken) {
       return null;
@@ -306,6 +298,10 @@ export function RelayPurchaseDialog({
   }, [resolvedToken]);
 
   const handleGetQuote = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+
     if (!accountAddress) {
       toast.error('Connect your wallet to continue.');
       return;
@@ -317,7 +313,7 @@ export function RelayPurchaseDialog({
     }
 
     if (!poolAssetAddress) {
-      toast.error('Destination asset is unavailable. Try again shortly.');
+      toast.error('Destination asset is still loading. Try again in a moment.');
       return;
     }
 
@@ -379,6 +375,7 @@ export function RelayPurchaseDialog({
     accountAddress,
     amountIn,
     destinationSymbol,
+    enabled,
     normalizedOriginCurrency,
     poolAssetAddress,
     resolvedToken,
@@ -387,6 +384,10 @@ export function RelayPurchaseDialog({
   ]);
 
   const handleExecute = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+
     if (!quote) {
       toast.error('Generate a quote before executing.');
       return;
@@ -421,7 +422,6 @@ export function RelayPurchaseDialog({
 
       toast.success('Relay swap submitted. You can now finish your Bozo deposit.');
       resetForm();
-      onOpenChange(false);
     } catch (error) {
       console.error('Relay execution failed:', error);
       const description = error instanceof Error ? error.message : 'Unable to execute Relay transaction.';
@@ -430,7 +430,7 @@ export function RelayPurchaseDialog({
       setIsExecuting(false);
       setProgressAction(null);
     }
-  }, [onOpenChange, onPrefillAmount, quote, resetForm, walletClient]);
+  }, [enabled, onPrefillAmount, quote, resetForm, walletClient]);
 
   const estimatedOutput = useMemo(() => {
     if (!quote?.details?.currencyOut?.amountFormatted) {
@@ -455,218 +455,223 @@ export function RelayPurchaseDialog({
   }, [assetDecimals, quote?.details?.currencyOut?.currency?.decimals, quote?.details?.currencyOut?.minimumAmount]);
 
   const disabledExecute = !quote || isExecuting;
+  const destinationReady = Boolean(poolAssetAddress);
+
+  if (!enabled) {
+    return null;
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#1a1d32] border-border max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-foreground text-center flex items-center justify-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#F6C445]" /> Buy {destinationSymbol} with Relay
-          </DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">
-            Swap any supported asset into {destinationSymbol} on Arbitrum without leaving Bozo.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4 rounded-lg border border-border/40 bg-[#101225] p-4">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 text-foreground">
+          <Sparkles className="h-4 w-4 text-[#F6C445]" />
+          <h4 className="text-sm font-semibold">Swap with Relay</h4>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Swap from another asset and we&apos;ll prefill your {destinationSymbol} deposit once the swap is complete.
+        </p>
+      </div>
 
-        <div className="space-y-5">
-          {chainError && (
-            <Alert className="bg-[#F6C445]/10 border-[#F6C445] text-sm text-foreground">
-              <Info className="h-4 w-4 text-[#F6C445]" />
-              <AlertDescription>{chainError}</AlertDescription>
-            </Alert>
-          )}
+      {chainError && (
+        <Alert className="bg-[#F6C445]/10 border-[#F6C445] text-sm text-foreground">
+          <Info className="h-4 w-4 text-[#F6C445]" />
+          <AlertDescription>{chainError}</AlertDescription>
+        </Alert>
+      )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">From chain</Label>
-              <Select
-                value={selectedChainId ? String(selectedChainId) : ''}
-                onValueChange={(value) => {
-                  setSelectedChainId(Number.parseInt(value, 10));
-                  setTokenSelection(null);
-                  setQuote(null);
-                  setQuoteError(null);
-                }}
-                disabled={isLoadingChains || chains.length === 0}
-              >
-                <SelectTrigger className="bg-[#252840] border-0 text-left">
-                  <SelectValue placeholder={isLoadingChains ? 'Loading chains…' : 'Select a chain'} />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1d32] border-border text-foreground">
-                  {chains.map((chain) => (
-                    <SelectItem key={chain.id} value={String(chain.id)}>
-                      {chain.displayName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {!destinationReady && (
+        <Alert className="bg-[#FF4B4B]/10 border-[#FF4B4B] text-xs text-foreground">
+          <Info className="h-4 w-4 text-[#FF4B4B]" />
+          <AlertDescription>Detecting the destination asset… try again in a few seconds.</AlertDescription>
+        </Alert>
+      )}
 
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">From asset</Label>
-              <Select
-                value={
-                  tokenSelection?.type === 'list'
-                    ? tokenSelection.key
-                    : tokenSelection?.type === 'custom'
-                      ? 'custom'
-                      : ''
-                }
-                onValueChange={(value) => {
-                  if (value === 'custom') {
-                    setTokenSelection({
-                      type: 'custom',
-                      address: customTokenAddress,
-                      symbol: customTokenSymbol,
-                      decimals: parsedCustomDecimals ?? 18,
-                    });
-                    setQuote(null);
-                    setQuoteError(null);
-                    return;
-                  }
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground">From chain</Label>
+          <Select
+            value={selectedChainId ? String(selectedChainId) : ''}
+            onValueChange={(value) => {
+              setSelectedChainId(Number.parseInt(value, 10));
+              setTokenSelection(null);
+              setQuote(null);
+              setQuoteError(null);
+            }}
+            disabled={isLoadingChains || chains.length === 0}
+          >
+            <SelectTrigger className="bg-[#252840] border-0 text-left">
+              <SelectValue placeholder={isLoadingChains ? 'Loading chains…' : 'Select a chain'} />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a1d32] border-border text-foreground">
+              {chains.map((chain) => (
+                <SelectItem key={chain.id} value={String(chain.id)}>
+                  {chain.displayName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-                  const token = availableTokens.find((item) => item.key === value);
-                  if (token) {
-                    setTokenSelection({ type: 'list', ...token });
-                    setQuote(null);
-                    setQuoteError(null);
-                  }
-                }}
-                disabled={!availableTokens.length && !tokenSelection}
-              >
-                <SelectTrigger className="bg-[#252840] border-0 text-left">
-                  <SelectValue placeholder={availableTokens.length ? 'Select an asset' : 'Add a custom asset'} />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1d32] border-border text-foreground max-h-72">
-                  {availableTokens.map((token) => (
-                    <SelectItem key={token.key} value={token.key}>
-                      {token.symbol} · {token.name}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Custom token…</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <div className="space-y-2">
+          <Label className="text-sm text-muted-foreground">From asset</Label>
+          <Select
+            value={
+              tokenSelection?.type === 'list'
+                ? tokenSelection.key
+                : tokenSelection?.type === 'custom'
+                  ? 'custom'
+                  : ''
+            }
+            onValueChange={(value) => {
+              if (value === 'custom') {
+                setTokenSelection({
+                  type: 'custom',
+                  address: customTokenAddress,
+                  symbol: customTokenSymbol,
+                  decimals: parsedCustomDecimals ?? 18,
+                });
+              } else {
+                const next = availableTokens.find((token) => token.key === value);
+                setTokenSelection(next ? { type: 'list', ...next } : null);
+              }
+              setQuote(null);
+              setQuoteError(null);
+            }}
+            disabled={availableTokens.length === 0 && !tokenSelection}
+          >
+            <SelectTrigger className="bg-[#252840] border-0 text-left">
+              <SelectValue placeholder={
+                availableTokens.length === 0 ? 'No assets found' : 'Select an asset'
+              } />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a1d32] border-border text-foreground max-h-64 overflow-y-auto">
+              {availableTokens.map((token) => (
+                <SelectItem key={token.key} value={token.key}>
+                  {token.symbol} · {token.name}
+                </SelectItem>
+              ))}
+              <SelectItem value="custom">Custom token…</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          {tokenSelection?.type === 'custom' && (
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Token address</Label>
-                <Input
-                  value={customTokenAddress}
-                  onChange={(event) => setCustomTokenAddress(event.target.value)}
-                  placeholder="0x…"
-                  className="bg-[#252840] border-0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Symbol</Label>
-                <Input
-                  value={customTokenSymbol}
-                  onChange={(event) => setCustomTokenSymbol(event.target.value.toUpperCase())}
-                  placeholder="e.g. USDC"
-                  className="bg-[#252840] border-0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Decimals</Label>
-                <Input
-                  value={customTokenDecimals}
-                  onChange={(event) => setCustomTokenDecimals(event.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="18"
-                  className="bg-[#252840] border-0"
-                  inputMode="numeric"
-                />
-              </div>
-            </div>
-          )}
-
+      {tokenSelection?.type === 'custom' && (
+        <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Amount to swap</Label>
+            <Label className="text-sm text-muted-foreground">Token address</Label>
             <Input
-              value={amountIn}
-              onChange={(event) => setAmountIn(event.target.value)}
-              placeholder="0.0"
+              value={customTokenAddress}
+              onChange={(event) => setCustomTokenAddress(event.target.value)}
+              placeholder="0x…"
               className="bg-[#252840] border-0"
-              inputMode="decimal"
             />
           </div>
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">Symbol</Label>
+            <Input
+              value={customTokenSymbol}
+              onChange={(event) => setCustomTokenSymbol(event.target.value.toUpperCase())}
+              placeholder="e.g. USDC"
+              className="bg-[#252840] border-0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">Decimals</Label>
+            <Input
+              value={customTokenDecimals}
+              onChange={(event) => setCustomTokenDecimals(event.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="18"
+              className="bg-[#252840] border-0"
+              inputMode="numeric"
+            />
+          </div>
+        </div>
+      )}
 
-          {quoteError && (
-            <Alert className="bg-[#FF4B4B]/10 border-[#FF4B4B] text-sm text-foreground">
-              <Info className="h-4 w-4 text-[#FF4B4B]" />
-              <AlertDescription>{quoteError}</AlertDescription>
-            </Alert>
-          )}
+      <div className="space-y-2">
+        <Label className="text-sm text-muted-foreground">Amount to swap</Label>
+        <Input
+          value={amountIn}
+          onChange={(event) => setAmountIn(event.target.value)}
+          placeholder="0.0"
+          className="bg-[#252840] border-0"
+          inputMode="decimal"
+        />
+      </div>
 
-          {quote && (
-            <div className="rounded-lg border border-border/40 bg-[#252840]/60 p-4 space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Estimated output</span>
-                <span className="text-foreground font-medium">
-                  {estimatedOutput ?? `~ ${destinationSymbol}`}
-                </span>
-              </div>
-              {minimumOutput && (
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Minimum received</span>
-                  <span>{minimumOutput} {destinationSymbol}</span>
-                </div>
-              )}
-              {quote.details?.timeEstimate && (
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <span>Estimated time</span>
-                  <span>{Math.round(quote.details.timeEstimate / 60)} min</span>
-                </div>
-              )}
-              {progressAction && (
-                <div className="flex items-center gap-2 text-[#F6C445]">
-                  <RefreshCcw className="h-4 w-4 animate-spin" />
-                  <span>{progressAction}</span>
-                </div>
-              )}
+      {quoteError && (
+        <Alert className="bg-[#FF4B4B]/10 border-[#FF4B4B] text-sm text-foreground">
+          <Info className="h-4 w-4 text-[#FF4B4B]" />
+          <AlertDescription>{quoteError}</AlertDescription>
+        </Alert>
+      )}
+
+      {quote && (
+        <div className="rounded-lg border border-border/40 bg-[#252840]/60 p-4 space-y-3 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Estimated output</span>
+            <span className="text-foreground font-medium">
+              {estimatedOutput ?? `~ ${destinationSymbol}`}
+            </span>
+          </div>
+          {minimumOutput && (
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>Minimum received</span>
+              <span>{minimumOutput} {destinationSymbol}</span>
             </div>
           )}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              variant="outline"
-              className="w-full border-[#2ED4B7]/50 text-[#2ED4B7] hover:bg-[#2ED4B7]/10"
-              onClick={handleGetQuote}
-              disabled={isFetchingQuote || isExecuting}
-            >
-              {isFetchingQuote ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Getting quote
-                </>
-              ) : (
-                <>
-                  <ArrowRightLeft className="h-4 w-4 mr-2" /> Get Relay quote
-                </>
-              )}
-            </Button>
-            <Button
-              className="w-full bg-[#F6C445] hover:bg-[#F6C445]/90 text-[#0E1020]"
-              onClick={handleExecute}
-              disabled={disabledExecute}
-            >
-              {isExecuting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executing on Relay…
-                </>
-              ) : (
-                'Execute with Relay'
-              )}
-            </Button>
-          </div>
-
-          <p className="text-xs text-muted-foreground text-center">
-            Powered by Relay. After the swap confirms, your purchased {destinationSymbol} will be ready for Bozo.
-          </p>
+          {quote.details?.timeEstimate && (
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>Estimated time</span>
+              <span>{Math.round(quote.details.timeEstimate / 60)} min</span>
+            </div>
+          )}
+          {progressAction && (
+            <div className="flex items-center gap-2 text-[#F6C445]">
+              <RefreshCcw className="h-4 w-4 animate-spin" />
+              <span>{progressAction}</span>
+            </div>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button
+          variant="outline"
+          className="w-full border-[#2ED4B7]/50 text-[#2ED4B7] hover:bg-[#2ED4B7]/10"
+          onClick={handleGetQuote}
+          disabled={isFetchingQuote || isExecuting || !destinationReady}
+        >
+          {isFetchingQuote ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Getting quote
+            </>
+          ) : (
+            <>
+              <ArrowRightLeft className="h-4 w-4 mr-2" /> Get Relay quote
+            </>
+          )}
+        </Button>
+        <Button
+          className="w-full bg-[#F6C445] hover:bg-[#F6C445]/90 text-[#0E1020]"
+          onClick={handleExecute}
+          disabled={disabledExecute}
+        >
+          {isExecuting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executing on Relay…
+            </>
+          ) : (
+            'Execute with Relay'
+          )}
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        Powered by Relay. After the swap confirms, your purchased {destinationSymbol} will be ready for Bozo.
+      </p>
+    </div>
   );
 }
-

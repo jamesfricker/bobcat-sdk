@@ -27,7 +27,7 @@ import { arbitrum } from 'wagmi/chains';
 import { formatUnits, parseUnits, keccak256, stringToHex } from 'viem';
 import { config as appConfig } from '../lib/config';
 import { makeEpochCookieName, writeCookie } from '../lib/cookies';
-import { RelayPurchaseDialog } from './RelayPurchaseDialog';
+import { RelaySwapSection } from './RelaySwapSection';
 
 interface BozoModalProps {
   open: boolean;
@@ -109,7 +109,7 @@ export function BozoModal({
   const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [hasPromptedChain, setHasPromptedChain] = useState(false);
-  const [relayDialogOpen, setRelayDialogOpen] = useState(false);
+  const [showRelaySwap, setShowRelaySwap] = useState(false);
 
   const { data: balanceData, refetch: refetchBalance } = useBalance({
     address,
@@ -266,6 +266,7 @@ export function BozoModal({
       if (!open) {
         onOpenChange(true);
       }
+      setShowRelaySwap(false);
     },
     [onOpenChange, open],
   );
@@ -431,7 +432,7 @@ export function BozoModal({
 
   useEffect(() => {
     if (!open) {
-      setRelayDialogOpen(false);
+      setShowRelaySwap(false);
     }
   }, [open]);
 
@@ -553,15 +554,15 @@ export function BozoModal({
               step="0.000001"
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Need more {game.homeToken}?</span>
+              <span>Want to pay with another asset?</span>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 className="h-7 px-3 border-[#2ED4B7]/50 text-[#2ED4B7] hover:bg-[#2ED4B7]/10"
-                onClick={() => setRelayDialogOpen(true)}
+                onClick={() => setShowRelaySwap((current) => !current)}
               >
-                Buy with Relay
+                {showRelaySwap ? 'Hide Relay swap' : 'Swap with Relay'}
               </Button>
             </div>
             <div className="flex justify-between text-xs">
@@ -597,6 +598,16 @@ export function BozoModal({
               </AlertDescription>
             </Alert>
           )}
+
+          <RelaySwapSection
+            enabled={showRelaySwap}
+            poolAssetAddress={poolAssetAddress}
+            assetDecimals={assetDecimals}
+            destinationSymbol={game.homeToken}
+            accountAddress={address}
+            defaultOriginChainId={typeof chainId === 'number' ? chainId : undefined}
+            onPrefillAmount={handleRelayPrefill}
+          />
 
           {needsApproval && (
             <Alert className="bg-[#F6C445]/10 border-[#F6C445]">
@@ -707,16 +718,6 @@ export function BozoModal({
         </div>
       </DialogContent>
       </Dialog>
-      <RelayPurchaseDialog
-        open={relayDialogOpen}
-        onOpenChange={setRelayDialogOpen}
-        poolAssetAddress={poolAssetAddress}
-        assetDecimals={assetDecimals}
-        destinationSymbol={game.homeToken}
-        accountAddress={address}
-        defaultOriginChainId={typeof chainId === 'number' ? chainId : undefined}
-        onPrefillAmount={handleRelayPrefill}
-      />
     </>
   );
 }
