@@ -33,8 +33,8 @@ export function HowItWorksDialog({ open, onOpenChange }: HowItWorksDialogProps) 
             <div>
               <h3 className="text-[#F6C445] mb-2">The Timer Game</h3>
               <p className="text-sm text-[#FFF2E1]/80 leading-relaxed">
-                Each round has a 60-minute countdown timer. Every time someone makes a valid deposit (BOZO),
-                the timer resets to 60 minutes. When the timer hits zero, the round ends and the last person
+                Each round has a 45-minute countdown timer. Every time someone makes a valid deposit (BOZO),
+                the timer resets to 45 minutes. When the timer hits zero, the round ends and the last person
                 to deposit wins!
               </p>
             </div>

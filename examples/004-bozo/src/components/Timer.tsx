@@ -18,7 +18,7 @@ export function Timer({ deadline, size = 200 }: TimerProps) {
     return () => clearInterval(interval);
   }, [deadline]);
 
-  const totalMinutes = 60;
+  const totalMinutes = 45;
   const progress = (timeRemaining.total / (totalMinutes * 60 * 1000)) * 100;
 
   return (
