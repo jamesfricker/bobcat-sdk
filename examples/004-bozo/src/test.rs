@@ -10,7 +10,9 @@ use bobcat_sdk::{
     storage::host as storage_host,
 };
 
-use crate::{eip20, get_min_deposit, ADDR_OPERATOR, FEE_DAO, FEE_OWNER, SCALING_FACTOR, pick_epoch};
+use crate::{
+    eip20, get_min_deposit, pick_epoch, ADDR_OPERATOR, FEE_DAO, FEE_OWNER, SCALING_FACTOR,
+};
 
 type Address = [u8; 20];
 
