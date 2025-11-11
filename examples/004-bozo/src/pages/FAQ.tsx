@@ -92,7 +92,7 @@ export function FAQ() {
               <AccordionItem value="item-2">
                 <AccordionTrigger>How does the timer work?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Each game starts with a 60-minute countdown. Every valid deposit resets the timer back to 60 minutes. 
+                  Each game starts with a 45-minute countdown. Every valid deposit resets the timer back to 45 minutes.
                   When the timer reaches 0, the game ends and the last depositor wins. In the final 2 minutes, valid deposits add an extra 40 minutes to the clock to prevent last-second sniping.
                 </AccordionContent>
               </AccordionItem>
