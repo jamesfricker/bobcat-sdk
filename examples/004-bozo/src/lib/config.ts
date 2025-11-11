@@ -32,6 +32,12 @@ export const config = {
     bozo: (env.VITE_BOZO_CONTRACT as `0x${string}`) || '0x0b8f1939481a337488aae1146063ecacd03462a1',
   },
 
+  relay: {
+    apiUrl: env.VITE_RELAY_API_URL || 'https://api.relay.link',
+    source: env.VITE_RELAY_SOURCE || 'ripbozo.lol',
+    logLevel: env.VITE_RELAY_LOG_LEVEL || 'error',
+  },
+
   // Testing flags
   testEndGameScreen: false // Set to true to preview the end game screen
 };
