@@ -20,6 +20,7 @@ import { arbitrum } from 'wagmi/chains';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useComments } from '../providers/CommentsProvider';
+import { useFarcasterMiniApp } from '../providers/FarcasterMiniAppProvider';
 import { formatUnits } from 'viem';
 import {
   DEPOSIT_LOOKBACK_BLOCKS,
@@ -128,6 +129,15 @@ export function Game() {
   const { getCommentForTxHash, refresh: refreshComments } = useComments();
   const publicClient = usePublicClient();
   const [winnerEvents, setWinnerEvents] = useState<WinnerEvent[]>([]);
+  const {
+    isMiniApp,
+    ready: miniAppReady,
+    context: miniAppContext,
+    setPrimaryButton,
+    hidePrimaryButton,
+    onPrimaryButtonClick,
+    composeCast,
+  } = useFarcasterMiniApp();
 
   const fallbackDeadline = useMemo(
     () => new Date(Date.now() + GAME_START_DELAY_MINUTES * 60 * 1000).toISOString(),
@@ -323,6 +333,22 @@ export function Game() {
   const isGameActive = gameStatus === 'Active';
   const isGamePaused = false;
   const poolAssetDisplay = poolAssetAddress ? formatAddress(poolAssetAddress) : 'Unknown';
+  const miniAppUserDisplay = useMemo(() => {
+    if (!isMiniApp) {
+      return null;
+    }
+
+    const user = miniAppContext?.user;
+    if (!user) {
+      return null;
+    }
+
+    if (user.username && user.username.trim().length > 0) {
+      return `@${user.username}`;
+    }
+
+    return `FID ${user.fid}`;
+  }, [isMiniApp, miniAppContext]);
 
   const loadGame = useCallback(() => {
     // Game state is derived directly from contract reads, so this is a no-op placeholder.
@@ -695,9 +721,20 @@ export function Game() {
     });
   }, [accountAddress, deposits, winnerEvents]);
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     const text = 'RIP BOZO 🤡';
     const shareText = `${text}\n${window.location.href}`;
+
+    if (isMiniApp && miniAppReady) {
+      try {
+        toast.success('Opening Farcaster composer...');
+        await composeCast({ text: shareText });
+        return;
+      } catch (error) {
+        console.error('Failed to share via Farcaster mini app:', error);
+        toast.error('Could not open Farcaster composer. Copying link instead.');
+      }
+    }
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -705,15 +742,73 @@ export function Game() {
         toast.success('Link copied to clipboard');
       } else {
         toast.success('Share: ' + shareText, {
-          duration: 5000
+          duration: 5000,
         });
       }
     } catch (error) {
       toast.success('Share: ' + shareText, {
-        duration: 5000
+        duration: 5000,
       });
     }
-  };
+  }, [composeCast, isMiniApp, miniAppReady]);
+
+  const headerActions = useMemo(
+    () => (
+      <div className="flex items-center gap-3">
+        {isMiniApp && miniAppUserDisplay ? (
+          <div className="px-3 py-1 rounded-full bg-[#2ED4B7]/10 text-[#2ED4B7] text-xs font-medium tracking-wider">
+            FARCASTER {miniAppUserDisplay}
+          </div>
+        ) : null}
+        <Button
+          onClick={handleShare}
+          variant="outline"
+          size="sm"
+          className="border-border/60 text-xs font-semibold tracking-widest uppercase"
+        >
+          SHARE
+        </Button>
+        <ConnectButton />
+      </div>
+    ),
+    [handleShare, isMiniApp, miniAppUserDisplay]
+  );
+
+  useEffect(() => {
+    if (!isMiniApp || !miniAppReady) {
+      return;
+    }
+
+    const buttonText = isConnected ? 'BOZO' : 'CONNECT TO BOZO';
+    void setPrimaryButton({
+      text: buttonText,
+      disabled: !isConnected || !isGameActive,
+      hidden: bozoModalOpen,
+    });
+  }, [bozoModalOpen, isConnected, isGameActive, isMiniApp, miniAppReady, setPrimaryButton]);
+
+  useEffect(() => {
+    if (!isMiniApp || !miniAppReady) {
+      return;
+    }
+
+    return () => {
+      void hidePrimaryButton();
+    };
+  }, [hidePrimaryButton, isMiniApp, miniAppReady]);
+
+  useEffect(() => {
+    if (!isMiniApp || !miniAppReady) {
+      return;
+    }
+
+    return onPrimaryButtonClick(() => {
+      if (!isConnected || !isGameActive) {
+        return;
+      }
+      setBozoModalOpen(true);
+    });
+  }, [isConnected, isGameActive, isMiniApp, miniAppReady, onPrimaryButtonClick]);
 
   const formatTime = (ts: string) => {
     const date = new Date(ts);
@@ -790,6 +885,7 @@ export function Game() {
                   </button>
                 </nav>
               </div>
+              {headerActions}
             </div>
           </div>
         </header>
@@ -854,7 +950,7 @@ export function Game() {
               </nav>
             </div>
 
-            <ConnectButton />
+            {headerActions}
           </div>
         </div>
       </header>

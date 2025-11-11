@@ -24,6 +24,7 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query';
 import { CommentsProvider } from './providers/CommentsProvider';
+import { FarcasterMiniAppProvider } from './providers/FarcasterMiniAppProvider';
 
 const queryClient = new QueryClient();
 
@@ -49,23 +50,25 @@ export default function App() {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <CommentsProvider>
-            <div className="dark">
-              <Router>
-                <Routes>
-                  <Route path="/" element={<Game />} />
-                  <Route path="/stats" element={<Stats />} />
-                  <Route path="/faq" element={<FAQ />} />
-                  {/* Catch-all route */}
-                  <Route
-                    path="*"
-                    element={<Navigate to="/" replace />}
-                  />
-                </Routes>
-                <Toaster position="bottom-right" />
-              </Router>
-            </div>
-          </CommentsProvider>
+          <FarcasterMiniAppProvider>
+            <CommentsProvider>
+              <div className="dark">
+                <Router>
+                  <Routes>
+                    <Route path="/" element={<Game />} />
+                    <Route path="/stats" element={<Stats />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    {/* Catch-all route */}
+                    <Route
+                      path="*"
+                      element={<Navigate to="/" replace />}
+                    />
+                  </Routes>
+                  <Toaster position="bottom-right" />
+                </Router>
+              </div>
+            </CommentsProvider>
+          </FarcasterMiniAppProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
