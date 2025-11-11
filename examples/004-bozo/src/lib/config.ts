@@ -29,7 +29,7 @@ export const config = {
   },
 
   contracts: {
-    bozo: (env.VITE_BOZO_CONTRACT as `0x${string}`) || '0xb22100180b2062b5fb3dfe741788b2a8b4d8cd97',
+    bozo: (env.VITE_BOZO_CONTRACT as `0x${string}`) || '0x0b8f1939481a337488aae1146063ecacd03462a1',
   },
 
   // Testing flags
