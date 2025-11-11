@@ -194,6 +194,10 @@ macro_rules! storage_mutate_ops {
                     [<$prefix _store>](x, &bobcat_maths::[<wrapping_ $op>](&[<$prefix _load>](x), new))
                 }
 
+                pub fn [<$prefix _saturating_ $op>](x: &U, new: &U) {
+                    [<$prefix _store>](x, &bobcat_maths::[<saturating_ $op>](&[<$prefix _load>](x), new))
+                }
+
                 pub fn [<$prefix _checked_ $op>](x: &U, new: &U) -> Option<()> {
                     let y = [<$prefix _load>](x);
                     let v = bobcat_maths::[<checked_ $op>](&y, new)?;
