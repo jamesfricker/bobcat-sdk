@@ -213,10 +213,7 @@ fn state_play(amt: U, recipient: Address, comment: &U) -> usize {
     eip20::transfer_from(addr_asset, msg_sender(), contract_address(), &amt).unwrap();
     let owner_fee_paid = amt.mul_div_round_up(&FEE_OWNER, SCALING_FACTOR).unwrap();
     let dao_fee_paid = amt.mul_div_round_up(&FEE_DAO, SCALING_FACTOR).unwrap();
-    let amt = amt
-        .checked_sub(&owner_fee_paid)
-        .and_then(|x| x.checked_sub(&dao_fee_paid))
-        .unwrap();
+    let amt = amt.checked_sub(&owner_fee_paid).checked_sub(&dao_fee_paid);
     let pool_size = storage::pool_size::get(&epoch);
     let last_bettor_amt = storage::last_bettor_amt::get(&epoch);
     // Get the amount that the user has to beat to play the game next:
@@ -298,19 +295,13 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
         return 0;
     }
     // If we had more than one player, we give the top 80% to the last user:
-    let winner_reward = full_pool
-        .mul_div(&U::from(8u32), U::from(10u32))
-        .unwrap()
-        .0;
+    let winner_reward = full_pool.mul_div(&U::from(8u32), U::from(10u32)).unwrap().0;
     eip20::transfer(addr_asset, last_bettor_addr, &winner_reward).unwrap();
     emit!(TOPIC_WINNER_CHOSEN, last_bettor_addr, winner_reward, false);
     // Using the random word, we start to pick some random words using
     // keccak. We're only ever going to see 10 winners at max, since we
     // divide the winnings up to at most 10 people. We take the 20%:
-    let full_lottery_reward = full_pool
-        .mul_div(&U::from(2u32), U::from(10u32))
-        .unwrap()
-        .0;
+    let full_lottery_reward = full_pool.mul_div(&U::from(2u32), U::from(10u32)).unwrap().0;
     let ticket_len: usize = storage::user_lottery_ticket_len::get(&epoch).into();
     let max_winners = min(ticket_len, 10usize);
     let user_lottery_reward = full_lottery_reward / U::from(max_winners);

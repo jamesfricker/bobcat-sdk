@@ -13,7 +13,7 @@ each example from its own project directory.
 
 |   Name   | stylus-sdk (0.9.2) | bobcat-sdk |                          Description                           |
 |----------|--------------------|------------|----------------------------------------------------------------|
-| Counter  | 16807              | 4884       | A simple counter app that does basic manipulation of storage.  |
-| Muldiv   | 19332              | 4683       | A muldiv implementation, compared to the version in 9lives.    |
+| Counter  | 16807              | 4721       | A simple counter app that does basic manipulation of storage.  |
+| Muldiv   | 19332              | 4337       | A muldiv implementation, compared to the version in 9lives.    |
 | Camelot  | 45360              | 4327       | Acts as an intermediary for Camelot swapping using its router. |
-| Bozo     | N/A                | 31959      | The contract code powering (https://ripbozo.lol)[Ripbozo].     |
+| Bozo     | N/A                | 39222      | The contract code powering (https://ripbozo.lol)[Ripbozo].     |

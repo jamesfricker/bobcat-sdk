@@ -3,7 +3,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
+#[cfg(feature = "panic-revert")]
 use core::fmt::{Result as FmtResult, Write};
 
 #[cfg(target_arch = "wasm32")]
@@ -26,14 +26,14 @@ fn write_result_slice(s: &[u8]) {
     unsafe { wasm::write_result(s.as_ptr(), s.len()) }
 }
 
-const PANIC_PREAMBLE_WORD: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
+pub const PANIC_PREAMBLE_WORD: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
     b"4e487b710000000000000000000000000000000000000000000000000000000000000000",
 ) {
     Ok(v) => v,
     Err(_) => panic!(),
 };
 
-const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to_array::<{ 4 + 32}>(
+pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to_array::<{ 4 + 32}>(
     b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
 ) {
     Ok(v) => v,
@@ -84,8 +84,10 @@ macro_rules! panic_on_err_div_by_zero {
     }}
 }
 
+#[cfg(feature = "panic-revert")]
 struct SliceWriter<'a>(&'a mut [u8], usize);
 
+#[cfg(feature = "panic-revert")]
 impl<'a> Write for SliceWriter<'a> {
     fn write_str(&mut self, s: &str) -> FmtResult {
         if self.1 + s.len() > self.0.len() {
@@ -100,6 +102,7 @@ impl<'a> Write for SliceWriter<'a> {
 /// Revert buffer size that's used to write the panic. We can afford to
 /// use a large page here since a panic will consume all the gas anyway,
 /// and a user will see this during simulation hopefully.
+#[cfg(feature = "panic-revert")]
 const REVERT_BUF_SIZE: usize = 1024 * 10;
 
 #[cfg(all(feature = "panic", target_arch = "wasm32"))]

@@ -21,8 +21,8 @@ for n in $files; do
 	f="$release_dir/$n"
 	size="$(du -b $f)"
 	case $n in
-		bobcat_sdk_examples_001.wasm) check_size $f 4884 ;;
-		bobcat-sdk-examples-002.wasm) check_size $f 4376 ;;
+		bobcat_sdk_examples_001.wasm) check_size $f 4721 ;;
+		bobcat-sdk-examples-002.wasm) check_size $f 4337 ;;
 		bobcat-sdk-examples-003.wasm) check_size $f 4327 ;;
 	esac
 done
