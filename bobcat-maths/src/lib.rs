@@ -10,6 +10,8 @@ use core::{
     str::FromStr,
 };
 
+use bobcat_panic::{panic_on_err_div_by_zero, panic_on_err_overflow};
+
 use num_traits::{One, Zero};
 
 #[cfg(feature = "borsh")]
@@ -148,12 +150,20 @@ pub fn const_wrapping_div(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_div(x: &U, y: &U) -> Option<U> {
+pub fn checked_div_opt(x: &U, y: &U) -> Option<U> {
     if y.is_zero() {
         None
     } else {
         Some(wrapping_div(x, y))
     }
+}
+
+#[cfg_attr(test, mutants::skip)]
+pub fn checked_div(x: &U, y: &U) -> U {
+    panic_on_err_div_by_zero!(
+        checked_div_opt(x, y),
+        "Division by zero: {x}"
+    )
 }
 
 pub fn modd(x: &U, y: &U) -> U {
@@ -188,7 +198,7 @@ pub const fn wrapping_add(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_add(x: &U, y: &U) -> Option<U> {
+pub fn checked_add_opt(x: &U, y: &U) -> Option<U> {
     if x > &(U::MAX - *y) {
         None
     } else {
@@ -202,8 +212,16 @@ pub fn checked_add(x: &U, y: &U) -> Option<U> {
 }
 
 #[cfg_attr(test, mutants::skip)]
+pub fn checked_add(x: &U, y: &U) -> U {
+    panic_on_err_overflow!(
+        checked_add_opt(x, y),
+        "Checked add overflow: {x}, y: {y}"
+    )
+}
+
+#[cfg_attr(test, mutants::skip)]
 pub fn saturating_add(x: &U, y: &U) -> U {
-    checked_add(x, y).unwrap_or(U::MAX)
+    checked_add_opt(x, y).unwrap_or(U::MAX)
 }
 
 const fn wrapping_sub_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
@@ -232,16 +250,24 @@ pub const fn wrapping_sub(x: &U, y: &U) -> U {
 }
 
 pub fn saturating_sub(x: &U, y: &U) -> U {
-    checked_sub(x, y).unwrap_or(U::ZERO)
+    checked_sub_opt(x, y).unwrap_or(U::ZERO)
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_sub(x: &U, y: &U) -> Option<U> {
+pub fn checked_sub_opt(x: &U, y: &U) -> Option<U> {
     if x < y {
         None
     } else {
         Some(wrapping_sub(x, y))
     }
+}
+
+#[cfg_attr(test, mutants::skip)]
+pub fn checked_sub(x: &U, y: &U) -> U {
+    panic_on_err_overflow!(
+        checked_sub_opt(x, y),
+        "Checked sub overflow: {x}, y: {y}"
+    )
 }
 
 pub const fn wrapping_mul_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
@@ -277,7 +303,7 @@ pub const fn wrapping_mul(x: &U, y: &U) -> U {
 }
 
 #[cfg_attr(test, mutants::skip)]
-pub fn checked_mul(x: &U, y: &U) -> Option<U> {
+pub fn checked_mul_opt(x: &U, y: &U) -> Option<U> {
     if x.is_zero() || y.is_zero() {
         return Some(U::ZERO);
     }
@@ -293,12 +319,16 @@ pub fn checked_mul(x: &U, y: &U) -> Option<U> {
     }
 }
 
+pub fn checked_mul(x: &U, y: &U) -> U {
+    panic_on_err_overflow!(checked_mul_opt(x, y), "Checked mul overflow: {x}, y: {y}")
+}
+
 pub fn saturating_mul(x: &U, y: &U) -> U {
-    checked_mul(x, y).unwrap_or(U::MAX)
+    checked_mul_opt(x, y).unwrap_or(U::MAX)
 }
 
 pub fn saturating_div(x: &U, y: &U) -> U {
-    checked_div(x, y).unwrap_or(U::MAX)
+    checked_div_opt(x, y).unwrap_or(U::MAX)
 }
 
 fn gcd(mut x: U, mut y: U) -> U {
@@ -318,7 +348,7 @@ pub fn gcd_mul_div(x: &U, y: &U, denom: U) -> Option<(U, bool)> {
     let g2 = gcd(*y, denom_reduced);
     let y_reduced = y / &g2;
     let denom_final = denom_reduced / g2;
-    let product = x_reduced.checked_mul(&y_reduced)?;
+    let product = x_reduced.checked_mul(&y_reduced);
     let result = (x_reduced * y_reduced) / denom_final;
     let remainder = product % denom_final;
     Some((result, remainder.is_some()))
@@ -541,7 +571,7 @@ pub fn checked_pow(x: &U, exp: &U) -> Option<U> {
     let mut r = U::ONE;
     let mut i = U::ZERO;
     while &i < exp {
-        r = checked_mul(&r, x)?;
+        r = checked_mul_opt(&r, x)?;
         i += U::ONE;
     }
     Some(r)
@@ -949,19 +979,35 @@ impl U {
         self.0.to_vec()
     }
 
-    pub fn checked_add(&self, y: &Self) -> Option<Self> {
+    pub fn checked_add_opt(&self, y: &Self) -> Option<Self> {
+        checked_add_opt(self, y)
+    }
+
+    pub fn checked_add(&self, y: &Self) -> Self {
         checked_add(self, y)
     }
 
-    pub fn checked_mul(&self, y: &Self) -> Option<Self> {
+    pub fn checked_mul_opt(&self, y: &Self) -> Option<Self> {
+        checked_mul_opt(self, y)
+    }
+
+    pub fn checked_mul(&self, y: &Self) -> Self {
         checked_mul(self, y)
     }
 
-    pub fn checked_sub(&self, y: &Self) -> Option<Self> {
+    pub fn checked_sub_opt(&self, y: &Self) -> Option<Self> {
+        checked_sub_opt(self, y)
+    }
+
+    pub fn checked_sub(&self, y: &Self) -> Self {
         checked_sub(self, y)
     }
 
-    pub fn checked_div(&self, y: &Self) -> Option<Self> {
+    pub fn checked_div_opt(&self, y: &Self) -> Option<Self> {
+        checked_div_opt(self, y)
+    }
+
+    pub fn checked_div(&self, y: &Self) -> Self {
         checked_div(self, y)
     }
 

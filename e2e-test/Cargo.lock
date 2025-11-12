@@ -109,6 +109,7 @@ name = "bobcat-maths"
 version = "0.6.5"
 dependencies = [
  "array-concat",
+ "bobcat-panic",
  "cfg-if",
  "const-hex",
  "mutants",
@@ -120,7 +121,6 @@ dependencies = [
 name = "bobcat-panic"
 version = "0.6.5"
 dependencies = [
- "bobcat-entry",
  "const-hex",
 ]
 

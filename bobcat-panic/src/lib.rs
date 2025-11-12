@@ -26,17 +26,71 @@ fn write_result_slice(s: &[u8]) {
     unsafe { wasm::write_result(s.as_ptr(), s.len()) }
 }
 
-const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
+const PANIC_PREAMBLE_WORD: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
+    b"4e487b710000000000000000000000000000000000000000000000000000000000000000",
+) {
+    Ok(v) => v,
+    Err(_) => panic!(),
+};
+
+const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to_array::<{ 4 + 32}>(
     b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
 ) {
     Ok(v) => v,
     Err(_) => panic!(),
 };
 
+#[repr(u8)]
+pub enum PanicCodes {
+    OverflowOrUnderflow = 0x11,
+    NoMemory = 0x41,
+    DivByZero = 0x12
+}
+
+pub fn panic_with_code(x: PanicCodes) -> ! {
+    let mut b = PANIC_PREAMBLE_WORD;
+    b[4 + 32 - 1] = x as u8;
+    write_result_slice(&b);
+    unsafe { wasm::exit_early(1) }
+}
+
+#[macro_export]
+macro_rules! panic_on_err_overflow {
+    ($e:expr, $msg:expr) => {{
+        match $e {
+            Some(v) => v,
+            None => {
+                #[cfg(feature = "msg-on-sdk-err")]
+                panic!("overflow: {}", $msg);
+                #[cfg(not(feature = "msg-on-sdk-err"))]
+                $crate::panic_with_code($crate::PanicCodes::OverflowOrUnderflow);
+            }
+        }
+    }}
+}
+
+#[macro_export]
+macro_rules! panic_on_err_div_by_zero {
+    ($e:expr, $msg:expr) => {{
+        match $e {
+            Some(v) => v,
+            None => {
+                #[cfg(feature = "msg-on-sdk-err")]
+                panic!("division by zero: {}", $msg);
+                #[cfg(not(feature = "msg-on-sdk-err"))]
+                $crate::panic_with_code($crate::PanicCodes::DivByZero);
+            }
+        }
+    }}
+}
+
 struct SliceWriter<'a>(&'a mut [u8], usize);
 
 impl<'a> Write for SliceWriter<'a> {
     fn write_str(&mut self, s: &str) -> FmtResult {
+        if self.1 + s.len() > self.0.len() {
+            panic_with_code(PanicCodes::NoMemory);
+        }
         self.0[self.1..self.1 + s.len()].copy_from_slice(s.as_bytes());
         self.1 += s.len();
         Ok(())
@@ -59,13 +113,13 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     #[cfg(feature = "panic-revert")]
     {
         let mut buf = [0u8; REVERT_BUF_SIZE];
-        buf[..ERROR_PREAMBLE.len()].copy_from_slice(&ERROR_PREAMBLE);
-        let mut w = SliceWriter(&mut buf[ERROR_PREAMBLE.len() + 32..], 0);
+        buf[..ERROR_PREAMBLE_OFFSET.len()].copy_from_slice(&ERROR_PREAMBLE_OFFSET);
+        let mut w = SliceWriter(&mut buf[ERROR_PREAMBLE_OFFSET.len() + 32..], 0);
         write!(&mut w, "{_msg}").unwrap();
         let len_msg = w.1;
-        let len_offset = ERROR_PREAMBLE.len();
+        let len_offset = ERROR_PREAMBLE_OFFSET.len();
         buf[len_offset + 28..len_offset + 32].copy_from_slice(&(len_msg as u32).to_be_bytes());
-        let len_full = ERROR_PREAMBLE.len() + 32 + len_msg;
+        let len_full = ERROR_PREAMBLE_OFFSET.len() + 32 + len_msg;
         let len_padded = len_full + (32 - (len_full % 32)) % 32;
         write_result_slice(&buf[..len_padded]);
         unsafe { wasm::exit_early(1) }
