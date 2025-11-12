@@ -33,7 +33,7 @@ pub const PANIC_PREAMBLE_WORD: [u8; 32 + 4] = match const_hex::const_decode_to_a
     Err(_) => panic!(),
 };
 
-pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to_array::<{ 4 + 32}>(
+pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to_array::<{ 4 + 32 }>(
     b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
 ) {
     Ok(v) => v,
@@ -44,7 +44,8 @@ pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to
 pub enum PanicCodes {
     OverflowOrUnderflow = 0x11,
     NoMemory = 0x41,
-    DivByZero = 0x12
+    DivByZero = 0x12,
+    DecodingError = 0x22,
 }
 
 pub fn panic_with_code(x: PanicCodes) -> ! {
@@ -66,7 +67,7 @@ macro_rules! panic_on_err_overflow {
                 $crate::panic_with_code($crate::PanicCodes::OverflowOrUnderflow);
             }
         }
-    }}
+    }};
 }
 
 #[macro_export]
@@ -82,6 +83,21 @@ macro_rules! panic_on_err_div_by_zero {
             }
         }
     }}
+}
+
+#[macro_export]
+macro_rules! panic_on_err_bad_decoding_bool {
+    ($msg:expr) => {{
+        #[cfg(feature = "msg-on-sdk-err")]
+        panic!("error decoding: {}", $msg);
+        #[cfg(not(feature = "msg-on-sdk-err"))]
+        $crate::panic_with_code($crate::PanicCodes::DecodingError);
+    }};
+    ($e:expr, $msg:expr) => {{
+        if !$e {
+            panic_on_err_bad_decoding_bool!($msg);
+        }
+    }};
 }
 
 #[cfg(feature = "panic-revert")]

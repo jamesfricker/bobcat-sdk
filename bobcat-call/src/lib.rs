@@ -10,6 +10,8 @@ use bobcat_maths::U;
 
 use bobcat_entry::code_hash;
 
+use bobcat_panic::panic_on_err_bad_decoding_bool;
+
 pub type Address = [u8; 20];
 
 #[cfg(target_arch = "wasm32")]
@@ -427,7 +429,7 @@ macro_rules! generate_call_variants {
                     0
                 );
                 if rc {
-                    assert!(v.len() == 32, "word not returned: {}", v.len());
+                    panic_on_err_bad_decoding_bool!(v.len() == 32, "not return for word");
                     let v: [u8; 32] = v.try_into().unwrap();
                     (rc, U::from(v), None)
                 } else {
@@ -446,7 +448,7 @@ macro_rules! generate_call_variants {
             ) -> (bool, Option<Vec<u8>>) {
                 let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
                 if rc {
-                    assert_eq!(32, rd_len, "return for bool wasn't a word, was: {rd_len}");
+                    panic_on_err_bad_decoding_bool!(rd_len == 32, "not return for bool word");
                     let mut b = [0u8; 1];
                     unsafe {
                         impls::read_return_data(b.as_mut_ptr(), 31, 1);
@@ -486,7 +488,9 @@ macro_rules! generate_call_variants {
                         (b[0] == 1, None)
                     }
                     (true, 0) => (true, None),
-                    (true, rd_len) => panic!("word not returned for safe_bool_err_vec: len: {rd_len}"),
+                    (true, _) => panic_on_err_bad_decoding_bool!(
+                        "word not returned for safe_ _bool_err_vec"
+                    ),
                     (false, rd_len) => {
                         let mut b = Vec::with_capacity(rd_len);
                         unsafe {
