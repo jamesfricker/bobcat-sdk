@@ -23,6 +23,7 @@ const-hex.workspace = true
 paste.workspace = true
 array-concat.workspace = true
 serde = { version = ">=1.0.0", default-features = false, features = ["derive"], optional = true }
+bobcat-panic = { version = "0.6.5", path = "../bobcat-panic", optional = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -34,3 +35,4 @@ proptest-enabled = ["std", "proptest", "proptest-derive"]
 arbitrary-enabled = ["std", "arbitrary"]
 alloy-enabled = ["alloy-primitives"]
 ruint-enabled = ["alloy-primitives"]
+msg-on-sdk-err = ["bobcat-panic/msg-on-sdk-err"]

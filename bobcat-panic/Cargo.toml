@@ -14,8 +14,9 @@ name = "bobcat_panic"
 alloc = []
 console = ["alloc"]
 std = []
-panic-revert = ["alloc"]
+panic-revert = ["panic"]
+panic = []
+msg-on-sdk-err = ["panic-revert"]
 
 [dependencies]
-bobcat-entry = { version = "0.6.5", path = "../bobcat-entry" }
 const-hex.workspace = true

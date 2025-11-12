@@ -1,13 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
-use bobcat_entry::{write_result_slice, U};
-
 #[cfg(feature = "alloc")]
 extern crate alloc;
-
-#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
-use alloc::vec::Vec;
 
 #[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
 use core::fmt::{Result as FmtResult, Write};
@@ -24,10 +18,14 @@ mod wasm {
     #[allow(unused)]
     unsafe extern "C" {
         pub(crate) fn exit_early(code: i32) -> !;
+        pub(crate) fn write_result(d: *const u8, l: usize);
     }
 }
 
-#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
+fn write_result_slice(s: &[u8]) {
+    unsafe { wasm::write_result(s.as_ptr(), s.len()) }
+}
+
 const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
     b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
 ) {
@@ -35,18 +33,22 @@ const ERROR_PREAMBLE: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 
     Err(_) => panic!(),
 };
 
-#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
-struct VecWriter<'a>(&'a mut Vec<u8>);
+struct SliceWriter<'a>(&'a mut [u8], usize);
 
-#[cfg(all(feature = "panic-revert", target_arch = "wasm32"))]
-impl<'a> Write for VecWriter<'a> {
+impl<'a> Write for SliceWriter<'a> {
     fn write_str(&mut self, s: &str) -> FmtResult {
-        self.0.extend_from_slice(s.as_bytes());
+        self.0[self.1..self.1 + s.len()].copy_from_slice(s.as_bytes());
+        self.1 += s.len();
         Ok(())
     }
 }
 
-#[cfg(all(not(feature = "std"), target_arch = "wasm32"))]
+/// Revert buffer size that's used to write the panic. We can afford to
+/// use a large page here since a panic will consume all the gas anyway,
+/// and a user will see this during simulation hopefully.
+const REVERT_BUF_SIZE: usize = 1024 * 10;
+
+#[cfg(all(feature = "panic", target_arch = "wasm32"))]
 #[panic_handler]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     #[cfg(feature = "console")]
@@ -56,15 +58,16 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     }
     #[cfg(feature = "panic-revert")]
     {
-        let mut d = ERROR_PREAMBLE.to_vec();
-        let mut b = Vec::new();
-        write!(VecWriter(&mut b), "{_msg}").unwrap();
-        let l = b.len();
-        let p = (32 - (l % 32)) % 32;
-        d.extend_from_slice(&U::from(l).0);
-        d.append(&mut b);
-        d.resize(d.len() + p, 0);
-        write_result_slice(&d);
+        let mut buf = [0u8; REVERT_BUF_SIZE];
+        buf[..ERROR_PREAMBLE.len()].copy_from_slice(&ERROR_PREAMBLE);
+        let mut w = SliceWriter(&mut buf[ERROR_PREAMBLE.len() + 32..], 0);
+        write!(&mut w, "{_msg}").unwrap();
+        let len_msg = w.1;
+        let len_offset = ERROR_PREAMBLE.len();
+        buf[len_offset + 28..len_offset + 32].copy_from_slice(&(len_msg as u32).to_be_bytes());
+        let len_full = ERROR_PREAMBLE.len() + 32 + len_msg;
+        let len_padded = len_full + (32 - (len_full % 32)) % 32;
+        write_result_slice(&buf[..len_padded]);
         unsafe { wasm::exit_early(1) }
     }
     // Prefer the normal behaviour if the user hasn't opted into this
