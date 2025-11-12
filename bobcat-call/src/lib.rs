@@ -10,6 +10,7 @@ use bobcat_maths::U;
 
 use bobcat_entry::code_hash;
 
+#[allow(unused)]
 use bobcat_panic::panic_on_err_bad_decoding_bool;
 
 pub type Address = [u8; 20];
@@ -183,18 +184,18 @@ macro_rules! generate_call_variants {
                 let size = if rc {
                     rd_len
                 } else {
-                    assert!(
+                    panic_on_err_bad_decoding_bool!(
                         rd_len > offset,
-                        "offset greater than rd len ok status: rd len: {rd_len}, offset: {offset}"
+                        "offset greater than rd len ok"
                     );
                     rd_len - offset
                 };
                 // Capacity errors if the contract was in error where the revert value
                 // size isn't known and we want to show it to the user should use err_vec
                 // functions instead with the allocator.
-                assert!(
+                panic_on_err_bad_decoding_bool!(
                     DATA_CAP >= size,
-                    "not enough capacity. size: {size}. returned error: {rc}",
+                    "not enough _slice capacity"
                 );
                 let mut b = [0u8; DATA_CAP];
                 unsafe { impls::read_return_data(b.as_mut_ptr(), offset, DATA_CAP) };
@@ -211,7 +212,7 @@ macro_rules! generate_call_variants {
                 offset: usize,
             ) -> (bool, U) {
                 let (rc, len, v) = [<$base_fn _slice>]::<32>(contract, calldata, $($value_param,)? gas, offset);
-                assert!(len == 32, "response didn't write 32, wrote {len}");
+                panic_on_err_bad_decoding_bool!(len == 32, "response didn't write 32");
                 (rc, U::from(v))
             }
 

@@ -54,3 +54,4 @@ dont-define-symbols = [
 	"bobcat-call/dont-define-symbols"
 ]
 ruint-enabled = ["bobcat-maths/ruint-enabled"]
+msg-on-sdk-err = ["bobcat-panic/msg-on-sdk-err"]

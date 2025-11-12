@@ -583,7 +583,7 @@ impl Add for U {
     fn add(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_add(&self, &rhs).expect("overflow when add")
+                checked_add_opt(&self, &rhs).expect("overflow when add")
             } else {
                 wrapping_add(&self, &rhs)
             }
@@ -597,7 +597,7 @@ impl Add for &U {
     fn add(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_add(self, rhs).expect("overflow when add")
+                checked_add_opt(self, rhs).expect("overflow when add")
             } else {
                 wrapping_add(self, rhs)
             }
@@ -617,7 +617,7 @@ impl Sub for U {
     fn sub(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_sub(&self, &rhs).expect("overflow when sub")
+                checked_sub_opt(&self, &rhs).expect("overflow when sub")
             } else {
                 wrapping_sub(&self, &rhs)
             }
@@ -631,7 +631,7 @@ impl Sub for &U {
     fn sub(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_sub(self, rhs).expect("overflow when sub")
+                checked_sub_opt(self, rhs).expect("overflow when sub")
             } else {
                 wrapping_sub(self, rhs)
             }
@@ -651,7 +651,7 @@ impl Mul for U {
     fn mul(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_mul(&self, &rhs).expect("overflow when mul")
+                checked_mul_opt(&self, &rhs).expect("overflow when mul")
             } else {
                 wrapping_mul(&self, &rhs)
             }
@@ -665,7 +665,7 @@ impl Mul for &U {
     fn mul(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_mul(self, rhs).expect("overflow when mul")
+                checked_mul_opt(self, rhs).expect("overflow when mul")
             } else {
                 wrapping_mul(self, rhs)
             }
@@ -685,7 +685,7 @@ impl Div for U {
     fn div(self, rhs: U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_div(&self, &rhs).expect("overflow when div")
+                checked_div_opt(&self, &rhs).expect("overflow when div")
             } else {
                 wrapping_div(&self, &rhs)
             }
@@ -699,7 +699,7 @@ impl Div for &U {
     fn div(self, rhs: &U) -> U {
         cfg_if::cfg_if! {
             if #[cfg(debug_assertions)] {
-                checked_div(self, rhs).expect("overflow when div")
+                checked_div_opt(self, rhs).expect("overflow when div")
             } else {
                 wrapping_div(self, rhs)
             }
