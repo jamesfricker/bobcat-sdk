@@ -22,6 +22,7 @@ mod wasm {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 fn write_result_slice(s: &[u8]) {
     unsafe { wasm::write_result(s.as_ptr(), s.len()) }
 }
@@ -40,6 +41,7 @@ pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to
     Err(_) => panic!(),
 };
 
+#[derive(Clone, Debug, PartialEq)]
 #[repr(u8)]
 pub enum PanicCodes {
     OverflowOrUnderflow = 0x11,
@@ -48,11 +50,17 @@ pub enum PanicCodes {
     DecodingError = 0x22,
 }
 
+#[cfg(target_arch = "wasm32")]
 pub fn panic_with_code(x: PanicCodes) -> ! {
     let mut b = PANIC_PREAMBLE_WORD;
     b[4 + 32 - 1] = x as u8;
     write_result_slice(&b);
     unsafe { wasm::exit_early(1) }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn panic_with_code(x: PanicCodes) -> ! {
+    panic!("panicked with code: {x:?}");
 }
 
 #[macro_export]
