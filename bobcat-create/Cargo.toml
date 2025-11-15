@@ -14,6 +14,7 @@ name = "bobcat_create"
 bobcat-proxy = { version = "0.6.6", path = "../bobcat-proxy" }
 bobcat-maths = { version = "0.6.6", path = "../bobcat-maths" }
 bobcat-storage = { version = "0.6.6", path = "../bobcat-storage" }
+array-concat.workspace = true
 
 [features]
 alloc = []

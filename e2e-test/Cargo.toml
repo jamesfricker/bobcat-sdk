@@ -9,7 +9,9 @@ members = [
 	"beacon",
 	"panic-revert",
 	"eip1967-proxy"
-, "reverts-bubbling-up"]
+	, "reverts-bubbling-up",
+	"proxy-predicts-create2"
+]
 
 [workspace.dependencies]
 bobcat-sdk = { path = "../bobcat-sdk", features = ["alloc", "panic-revert"] }

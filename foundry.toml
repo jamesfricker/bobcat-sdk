@@ -12,4 +12,5 @@ fs_permissions = [
 	{ access = "read", path = "e2e-test/panic-revert.wasm"},
 	{ access = "read", path = "e2e-test/eip1967-proxy.wasm"},
 	{ access = "read", path = "e2e-test/reverts-bubbling-up.wasm"},
+	{ access = "read", path = "e2e-test/proxy-predicts-create2.wasm"},
 ]

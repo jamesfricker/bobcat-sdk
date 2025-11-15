@@ -6,11 +6,13 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use bobcat_storage::const_keccak256;
+use bobcat_storage::{const_keccak256, keccak256};
 
 pub use bobcat_maths::U;
 
-pub type Address = [u8; 20];
+type Address = [u8; 20];
+
+use array_concat::concat_arrays;
 
 #[cfg(target_arch = "wasm32")]
 mod impls {
@@ -167,16 +169,42 @@ pub fn create2_vec(code: &[u8], endowment: U, salt: U) -> Result<Address, Vec<u8
 pub fn create2_slice_salt_keccak256<const REVERT_CAP: usize>(
     code: &[u8],
     endowment: U,
-    salt: &[u8],
+    salt_pre: &[u8],
 ) -> Result<Address, ([u8; REVERT_CAP], usize)> {
-    create2_slice::<REVERT_CAP>(code, endowment, const_keccak256(salt))
+    create2_slice::<REVERT_CAP>(code, endowment, const_keccak256(salt_pre))
 }
 
 #[cfg(feature = "alloc")]
 pub fn create2_vec_salt_keccak256(
     code: &[u8],
     endowment: U,
-    salt: &[u8],
+    salt_pre: &[u8],
 ) -> Result<Address, Vec<u8>> {
-    create2_vec(code, endowment, const_keccak256(salt))
+    create2_vec(code, endowment, keccak256(salt_pre))
+}
+
+/// Estimate the address of the create2 deployment.
+pub const fn const_estimate_addr_pre(
+    factory: Address,
+    initcode_pre: &[u8],
+    salt_pre: &[u8],
+) -> Address {
+    let b: [u8; 1 + 20 + 32 * 2] = concat_arrays!(
+        [0xff],
+        factory,
+        const_keccak256(salt_pre).0,
+        const_keccak256(initcode_pre).0
+    );
+    let x = const_keccak256(&b);
+    todo!()
+}
+
+pub fn estimate_addr(factory: Address, initcode: U, salt: U) -> Address {
+    let b: [u8; 1 + 20 + 32 * 2] = concat_arrays!([0xff], factory, salt.0, initcode.0);
+    keccak256(&b).into()
+}
+
+/// Estimate the address of the create2 deployment.
+pub fn estimate_addr_pre(factory: Address, initcode_pre: &[u8], salt_pre: &[u8]) -> Address {
+    estimate_addr(factory, keccak256(initcode_pre), keccak256(salt_pre))
 }

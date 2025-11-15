@@ -10,6 +10,9 @@ use core::{
     str::FromStr,
 };
 
+#[cfg(feature = "std")]
+use clap::builder::TypedValueParser;
+
 use bobcat_panic::{panic_on_err_div_by_zero, panic_on_err_overflow};
 
 use num_traits::{One, Zero};
@@ -26,7 +29,7 @@ pub mod strategies;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-pub type Address = [u8; 20];
+type Address = [u8; 20];
 
 #[link(wasm_import_module = "vm_hooks")]
 #[cfg(not(feature = "alloy-enabled"))]
@@ -111,6 +114,44 @@ pub struct U(pub [u8; 32]);
 #[cfg_attr(feature = "serde", derive(SerdeSerialize, SerdeDeserialize))]
 #[repr(transparent)]
 pub struct I(pub [u8; 32]);
+
+#[cfg(feature = "std")]
+impl clap::builder::ValueParserFactory for U {
+    type Parser = UValueParser;
+
+    fn value_parser() -> Self::Parser {
+        UValueParser
+    }
+}
+
+#[derive(Clone)]
+pub struct UValueParser;
+
+#[cfg(feature = "std")]
+impl TypedValueParser for UValueParser {
+    type Value = U;
+
+    fn parse_ref(
+        &self,
+        _: &clap::Command,
+        _: Option<&clap::Arg>,
+        value: &std::ffi::OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let s = value.to_str().ok_or_else(|| {
+            clap::Error::raw(
+                clap::error::ErrorKind::InvalidUtf8,
+                "bad utf8",
+            )
+        })?;
+        U::from_str(s).map_err(|e| {
+            clap::Error::raw(
+                clap::error::ErrorKind::ValueValidation,
+                format!("invalid u256: {e}\n"),
+            )
+        })
+    }
+}
+
 
 pub fn wrapping_div(x: &U, y: &U) -> U {
     assert!(y.is_some(), "divide by zero");
@@ -888,6 +929,12 @@ pub enum UFromStrErr {
     InvalidChar(char),
     Overflow,
     Empty,
+}
+
+impl Display for UFromStrErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 impl FromStr for U {

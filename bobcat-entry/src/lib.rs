@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 pub use bobcat_maths::U;
 
-pub type Address = [u8; 20];
+type Address = [u8; 20];
 
 pub use bobcat_cd::read_words;
 

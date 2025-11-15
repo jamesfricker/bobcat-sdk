@@ -6,8 +6,6 @@ use array_concat::concat_arrays;
 
 pub use bobcat_maths::U;
 
-pub type Address = [u8; 32];
-
 #[link(wasm_import_module = "vm_hooks")]
 #[cfg(target_arch = "wasm32")]
 unsafe extern "C" {

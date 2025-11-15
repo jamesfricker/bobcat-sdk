@@ -13,7 +13,7 @@ use bobcat_entry::code_hash;
 #[allow(unused)]
 use bobcat_panic::panic_on_err_bad_decoding_bool;
 
-pub type Address = [u8; 20];
+type Address = [u8; 20];
 
 #[cfg(target_arch = "wasm32")]
 mod impls {

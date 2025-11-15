@@ -4,7 +4,7 @@ use array_concat::concat_arrays;
 
 use bobcat_interfaces::selectors;
 
-pub type Address = [u8; 20];
+type Address = [u8; 20];
 
 pub const fn make_minimal_proxy(addr: Address) -> [u8; 18 + 16 + 20] {
     // I can't remember where this comes from (TODO), but we use this in
@@ -31,8 +31,10 @@ macro_rules! unpack_arr {
     };
 }
 
+pub const SIZE_EIP1967: usize = 1 + 20 + 76;
+
 /// Make a EIP1967 proxy that reads from the standard storage slot.
-pub const fn make_eip1967_proxy(logic: Address) -> [u8; 1 + 20 + 76] {
+pub const fn make_eip1967_proxy(logic: Address) -> [u8; SIZE_EIP1967] {
     // Created from eip1967.huff .
     concat_arrays!(
       [0x73],
@@ -58,10 +60,12 @@ pub const fn make_beacon_proxy(beacon: Address) -> [u8; 20 + 110] {
     )
 }
 
+pub const SIZE_UPGRADEABLE_BEACON_PROXY: usize = 1 + 20 + 123;
+
 /// Make a beacon proxy that loads from the beacon slot to get the
 /// "implementation()(address)" to get the logic address to delegate to,
 /// with the value initially set during the constructor.
-pub const fn make_upgradeable_beacon_proxy(beacon: Address) -> [u8; 1 + 20 + 123] {
+pub const fn make_upgradeable_beacon_proxy(beacon: Address) -> [u8; SIZE_UPGRADEABLE_BEACON_PROXY] {
     // Created from beacon-proxy.huff .
     concat_arrays!(
         [0x73],
@@ -73,12 +77,14 @@ pub const fn make_upgradeable_beacon_proxy(beacon: Address) -> [u8; 1 + 20 + 123
     )
 }
 
+pub const SIZE_MULTI3_PROXY: usize = 46 + 20 + 7 + 20 + 7 + 20 + 6 + 20 + 21;
+
 pub const fn make_multi3_proxy(
     one: Address,
     two: Address,
     three: Address,
     all: Address,
-) -> [u8; 46 + 20 + 7 + 20 + 7 + 20 + 6 + 20 + 21] {
+) -> [u8; SIZE_MULTI3_PROXY] {
     // Created from multi3-proxy.huff .
     concat_arrays!(
         unpack_arr!(
@@ -96,12 +102,14 @@ pub const fn make_multi3_proxy(
     )
 }
 
+pub const SIZE_BEACON_SEL_PROXY: usize = 24 + 4 + 12 + 20 + 30;
+
 /// Create a proxy that calls the selector on the beacon given
 /// to figure out where to delegatecall its calldata to.
 pub const fn make_beacon_sel_proxy_sel(
     sel: [u8; 4],
     beacon: Address,
-) -> [u8; 24 + 4 + 12 + 20 + 30] {
+) -> [u8; SIZE_BEACON_SEL_PROXY] {
     // Created from sel-beacon-proxy.huff .
     concat_arrays!(
         unpack_arr!(b"60518060093d393df3602460046020368282355f5f368663", 24),
@@ -122,6 +130,6 @@ selectors! {
 /// Create a proxy that calls "implementation(bytes4)" on the beacon
 /// address given with the selector in the calldata to this proxy. Use the
 /// returned address as the target of a delegatecall.
-pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; 24 + 4 + 12 + 20 + 30] {
+pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; SIZE_BEACON_SEL_PROXY] {
     make_beacon_sel_proxy_sel(SEL_IMPLEMENTATION, beacon)
 }
