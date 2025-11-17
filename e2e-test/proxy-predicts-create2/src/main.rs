@@ -9,8 +9,8 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 const SEL_DEPLOY: [u8; 4] = const_keccak_sel(b"deploy()");
 const SEL_PREDICT: [u8; 4] = const_keccak_sel(b"predict()");
 
-const CODE: [u8; SIZE_BEACON_SEL_PROXY] =
-    make_beacon_sel_proxy(address!(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7"));
+const CODE: [u8; SIZE_METAMORPHIC_ON_FN] =
+    make_metamorphic_proxy(address!(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7"));
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {

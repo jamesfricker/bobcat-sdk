@@ -6,7 +6,7 @@ use bobcat_sdk::{
     entry::{write_result_word, read_args_safe},
     maths::U,
     cd::read_words,
-    create::create1_vec
+    create::create1_unit
 };
 
 #[global_allocator]
@@ -16,7 +16,7 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let args = &read_args_safe!(args_len, { 32 + 4 });
     let impl_ = read_words!(&args[4..], 1);
-    let addr = create1_vec(&make_eip1967_proxy(impl_.into()), U::ZERO).unwrap();
-    write_result_word(&addr.into());
+    let addr = create1_unit(&make_eip1967_proxy(impl_.into()), U::ZERO);
+    write_result_word(&addr.unwrap().into());
     0
 }
