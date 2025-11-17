@@ -124,7 +124,10 @@ pub const fn make_beacon_sel_proxy_sel(
 }
 
 selectors! {
+    // Used by the beacon proxy to implement a fallback.
     SEL_IMPLEMENTATION = b"implementation(bytes4)",
+    // Used by the metamorphic proxy to support a migrate feature.
+    SEL_MIGRATE = b"migrate()"
 }
 
 /// Create a proxy that calls "implementation(bytes4)" on the beacon
@@ -132,4 +135,19 @@ selectors! {
 /// returned address as the target of a delegatecall.
 pub const fn make_beacon_sel_proxy(beacon: Address) -> [u8; SIZE_BEACON_SEL_PROXY] {
     make_beacon_sel_proxy_sel(SEL_IMPLEMENTATION, beacon)
+}
+
+pub const SIZE_METAMORPHIC_ON_FN: usize = 34 + 20 + 61;
+
+/// Make a metamorphic with an opt-in migrate function proxy.
+pub const fn make_metamorphic_proxy(deployer: Address) -> [u8; SIZE_METAMORPHIC_ON_FN] {
+    // Created from metamorphic-on-fn.huff .
+    concat_arrays!(
+        unpack_arr!(b"606a8060093d393df3365f5f375f3560e01c638fd3ab801461001757610031565b73", 34),
+        deployer,
+        unpack_arr!(
+            b"610054565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545b5f365f5f935af43d5f5f3e3d5f8261006857fd5bf3",
+            61
+        )
+    )
 }

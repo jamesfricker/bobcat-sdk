@@ -17,7 +17,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     let args = &read_args_safe!(args_len, 4);
     write_result_word(
         &match args[..4].try_into().unwrap() {
-            SEL_DEPLOY => create2_vec(&CODE, U::ZERO, msg_sender().into()).unwrap(),
+            SEL_DEPLOY => create2_unit(&CODE, U::ZERO, msg_sender().into()).unwrap(),
             SEL_PREDICT => estimate_addr(contract_address(), keccak256(&CODE), msg_sender().into()),
             _ => panic!("call not supported")
         }
