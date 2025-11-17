@@ -3,13 +3,13 @@
 
 ## Gas test results
 
-At arbos-forge release `711fb2ebff74930048716d06cb21e75f57e5eb41`:
+At arbos-forge release `5e956b7586b924778ff3b6117afb9153d47a18ce` (1.4.4):
 
 |            Name           |  Gas cost |
 |---------------------------|-----------|
-| Ruint                     | 8672      |
-| Muldiv Uniswap            | 12730     |
-| Widening then truncating  | 607900    |
+| Ruint                     | 8673      |
+| Muldiv Uniswap            | 12674     |
+| Widening then truncating  | 587751    |
 
 ## 9lives and storage
 

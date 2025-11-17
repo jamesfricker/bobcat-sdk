@@ -18,9 +18,8 @@ contract TestERC20 is ERC20 {
 }
 
 contract TestERC20Two {
-    function transferFrom(address,address,uint256) external returns (bool) {
+    function transferFrom(address,address,uint256) external pure returns (bool) {
         revert("testing");
-        return true;
     }
 }
 
@@ -45,8 +44,8 @@ contract RevertsBubblingUp is Test {
         try revertsBubblingUp.test(erc20) {
             revert("Didn't revert");
         }
-        catch Error(string memory msg) {
-            assertEq("testing", msg);
+        catch Error(string memory m) {
+            assertEq("testing", m);
         }
     }
 }
