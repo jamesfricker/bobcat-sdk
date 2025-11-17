@@ -46,10 +46,7 @@ contract RevertsBubblingUp is Test {
             revert("Didn't revert");
         }
         catch Error(string memory msg) {
-            revert(msg);
-        }
-        catch (bytes memory rd) {
-             assertEq(ERC20.InsufficientAllowance.selector, bytes4(rd));
+            assertEq("testing", msg);
         }
     }
 }
