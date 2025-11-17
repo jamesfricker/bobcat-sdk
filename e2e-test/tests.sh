@@ -2,4 +2,4 @@
 
 make
 
-arbos-forge test $@
+arbos-forge test --gas-snapshot-check true $@

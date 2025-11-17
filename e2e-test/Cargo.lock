@@ -110,6 +110,7 @@ dependencies = [
 name = "bobcat-maths"
 version = "0.6.6"
 dependencies = [
+ "alloy-primitives",
  "array-concat",
  "bobcat-panic",
  "cfg-if",

@@ -3,13 +3,14 @@ pragma solidity ^0.8.20;
 
 import {console} from "forge-std/console.sol";
 
-import {Test} from "forge-std/Test.sol";
+import "forge-std/Test.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
 interface IMulDiv {
-    function online(uint256,uint256,uint256) external pure returns (uint256);
-    function offline(uint256,uint256,uint256) external pure returns (uint256);
+    function uniswap(uint256,uint256,uint256) external pure returns (uint256);
+    function widening(uint256,uint256,uint256) external pure returns (uint256);
+    function ruint(uint256,uint256,uint256) external pure returns (uint256);
 }
 
 contract MulDiv is Test {
@@ -21,7 +22,23 @@ contract MulDiv is Test {
         ));
     }
 
+    function testFuzz_ruint(uint256 x, uint256 y, uint256 z) public {
+        mulDiv.ruint(x, y, z);
+    }
+
+    function testFuzz_widening(uint256 x, uint256 y, uint256 z) public {
+        mulDiv.widening(x, y, z);
+    }
+
+    function testFuzz_uniswap(uint256 x, uint256 y, uint256 z) public {
+        mulDiv.uniswap(x, y, z);
+    }
+
     function testFuzz_online(uint256 x, uint256 y, uint256 z) public {
-        assertEq(mulDiv.offline(x, y, z), mulDiv.online(x, y, z));
+        uint256 ruint = mulDiv.ruint(x, y, z);
+        uint256 online = mulDiv.uniswap(x, y, z);
+        uint256 widening = mulDiv.widening(x, y, z);
+        assertEq(ruint, online);
+        assertEq(ruint, widening);
     }
 }

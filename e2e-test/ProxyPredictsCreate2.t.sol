@@ -22,7 +22,7 @@ contract ProxyPredictsCreate2 is Test {
     }
 
     function test_fuzzEqualToEstimation(address _sender) external {
-        vm.prank(_sender);
+        vm.startPrank(_sender);
         assertEq(proxyPredictsCreate2.predict(), proxyPredictsCreate2.deploy());
     }
 }
