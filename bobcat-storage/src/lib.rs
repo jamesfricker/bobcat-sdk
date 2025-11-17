@@ -18,7 +18,7 @@ unsafe extern "C" {
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
-pub mod host {
+pub mod storage_host {
     use super::*;
 
     use std::{cell::RefCell, collections::HashMap, ptr::copy_nonoverlapping};
@@ -86,7 +86,7 @@ pub mod host {
 }
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
-mod host {
+mod storage_host {
     pub(crate) unsafe fn storage_load_bytes32(_: *const u8, _: *mut u8) {}
 
     pub(crate) unsafe fn storage_cache_bytes32(_: *const u8, _: *const u8) {}
@@ -99,10 +99,10 @@ mod host {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-use host::*;
+use storage_host::*;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use host::storage_flush_cache;
+pub use storage_host::storage_flush_cache;
 
 macro_rules! storage_ops {
     ($($prefix:ident),* $(,)?) => {

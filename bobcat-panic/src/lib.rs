@@ -3,7 +3,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "panic-revert")]
+#[allow(unused)]
 use core::fmt::{Write, Result as FmtResult};
 
 #[cfg(target_arch = "wasm32")]

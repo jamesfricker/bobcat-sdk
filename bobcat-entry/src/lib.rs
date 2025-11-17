@@ -30,7 +30,7 @@ mod impls {
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
-pub mod host {
+pub mod entry_host {
     use super::{Address, U};
 
     use core::{ptr::copy_nonoverlapping, slice::from_raw_parts};
@@ -119,7 +119,7 @@ pub mod host {
 }
 
 #[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
-pub use host as impls;
+pub use entry_host as impls;
 
 #[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
 mod impls {
