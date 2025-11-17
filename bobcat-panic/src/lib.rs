@@ -108,10 +108,9 @@ macro_rules! panic_on_err_bad_decoding_bool {
     }};
 }
 
-#[cfg(feature = "panic-revert")]
+#[allow(unused)]
 struct SliceWriter<'a>(&'a mut [u8], usize);
 
-#[cfg(feature = "panic-revert")]
 impl<'a> Write for SliceWriter<'a> {
     fn write_str(&mut self, s: &str) -> FmtResult {
         if self.1 + s.len() > self.0.len() {
@@ -126,7 +125,7 @@ impl<'a> Write for SliceWriter<'a> {
 /// Revert buffer size that's used to write the panic. We can afford to
 /// use a large page here since a panic will consume all the gas anyway,
 /// and a user will see this during simulation hopefully.
-#[cfg(feature = "panic-revert")]
+#[allow(unused)]
 const REVERT_BUF_SIZE: usize = 1024 * 10;
 
 #[cfg(all(feature = "panic", target_arch = "wasm32"))]
