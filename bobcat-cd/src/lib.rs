@@ -389,12 +389,11 @@ pub const fn const_keccak_sel(x: &[u8]) -> [u8; 4] {
 
 #[test]
 fn test_access() {
-    use bobcat_maths::Address;
     let cd = const_hex_decode_to_array::<{ 32 * 2 + 4 }>(b"a9059cbb0000000000000000000000006221a9c005f6e47eb398fd867784cacfdcfff4e7ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap();
     let a = const_hex_decode_to_array::<20>(b"6221a9c005f6e47eb398fd867784cacfdcfff4e7")
         .unwrap();
     let (addr, amt) = read_words!(&cd[4..], 2);
-    assert_eq!((a, U::MAX), (Address::from(U::from(*addr)), U::from(*amt)));
+    assert_eq!((a, U::MAX), (U::from(*addr).into(), U::from(*amt)));
 }
 
 #[test]

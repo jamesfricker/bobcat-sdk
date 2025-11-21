@@ -1,6 +1,6 @@
 #!/bin/sh
 
-features=std,proptest-enabled,alloy-enabled,alloc
+features=std,proptest,alloy-enabled,alloc
 
 export PROPTEST_CASES=10
 
