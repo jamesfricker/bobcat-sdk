@@ -129,10 +129,7 @@ impl<'a> Write for SliceWriter<'a> {
 const REVERT_BUF_SIZE: usize = 1024 * 10;
 
 #[cfg(target_arch = "wasm32")]
-#[cfg_attr(
-    all(feature = "panic", not(feature = "std"), target_arch = "wasm32"),
-    panic_handler
-)]
+#[cfg_attr(all(feature = "panic", not(feature = "std")), panic_handler)]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     #[cfg(feature = "console")]
     {
