@@ -31,8 +31,8 @@ Use `panic` if you're deploying to production and codesize is an issue. Don't be
 use `panic-loc` in production if you want a location if you have a revert to simplify
 development for programmers identifying issues cropping up in practice. `panic-revert` is
 useful for a full stack trace and explanation of the revert, and might be better avoided
-in practice. Though, bobcat-sdk binaries are very small, so it could be safe to use this
-in practice.
+in practice due to how massive the binaries will become. Though, bobcat-sdk binaries are
+very small, so it could be safe to use this in practice.
 
 ## How to use?
 
