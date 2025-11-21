@@ -3,8 +3,8 @@
 
 This is a tiny collection of bobcat-sdk examples, including some tests to spot codesize
 regressions between releases. Examples that mirror the reference versions must remain
-functionally identical. They provide a comparison of each example's code profile because
-they do not require the allocator, unlike the tests.
+functionally identical. These bring in the allocator to be fair to the reference, but they
+don't have a need to do so.
 
 For a more complete illustration of what the SDK offers, check the end-to-end tests. Build
 each example from its own project directory.
