@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
@@ -128,7 +126,7 @@ impl<'a> Write for SliceWriter<'a> {
 #[allow(unused)]
 const REVERT_BUF_SIZE: usize = 1024 * 10;
 
-#[cfg(all(feature = "panic", target_arch = "wasm32"))]
+#[cfg(all(feature = "panic", not(feature = "std"), target_arch = "wasm32"))]
 #[panic_handler]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     #[cfg(feature = "console")]
