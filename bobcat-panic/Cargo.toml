@@ -15,6 +15,7 @@ alloc = []
 console = ["alloc"]
 std = []
 panic-revert = ["panic"]
+panic-loc = ["panic"]
 panic = []
 msg-on-sdk-err = ["panic-revert"]
 

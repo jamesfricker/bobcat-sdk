@@ -27,6 +27,7 @@ fn write_result_slice(s: &[u8]) {
     unsafe { wasm::write_result(s.as_ptr(), s.len()) }
 }
 
+//Panic(uint256)
 pub const PANIC_PREAMBLE_WORD: [u8; 32 + 4] = match const_hex::const_decode_to_array::<{ 32 + 4 }>(
     b"4e487b710000000000000000000000000000000000000000000000000000000000000000",
 ) {
@@ -34,6 +35,7 @@ pub const PANIC_PREAMBLE_WORD: [u8; 32 + 4] = match const_hex::const_decode_to_a
     Err(_) => panic!(),
 };
 
+//Error(string)
 pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to_array::<{ 4 + 32 }>(
     b"08c379a00000000000000000000000000000000000000000000000000000000000000020",
 ) {
@@ -128,6 +130,9 @@ impl<'a> Write for SliceWriter<'a> {
 #[allow(unused)]
 const REVERT_BUF_SIZE: usize = 1024 * 10;
 
+#[cfg(all(feature = "panic-revert", feature = "panic-loc"))]
+compile_error!("panic-revert and panic-loc simulaneously enabled");
+
 #[cfg(target_arch = "wasm32")]
 #[cfg_attr(all(feature = "panic", not(feature = "std")), panic_handler)]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
@@ -136,12 +141,19 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         let msg = alloc::format!("{_msg}");
         unsafe { wasm::log_txt(msg.as_ptr(), msg.len()) }
     }
-    #[cfg(feature = "panic-revert")]
+    #[cfg(any(feature = "panic-revert", feature = "panic-loc"))]
     {
         let mut buf = [0u8; REVERT_BUF_SIZE];
         buf[..ERROR_PREAMBLE_OFFSET.len()].copy_from_slice(&ERROR_PREAMBLE_OFFSET);
         let mut w = SliceWriter(&mut buf[ERROR_PREAMBLE_OFFSET.len() + 32..], 0);
-        write!(&mut w, "{_msg}").unwrap();
+        #[cfg(feature = "panic-revert")]
+        {
+            write!(&mut w, "{_msg}").unwrap();
+        }
+        #[cfg(feature = "panic-loc")]
+        if let Some(loc) = _msg.location() {
+            write!(&mut w, "panic: {}:{}", loc.file(), loc.line()).unwrap();
+        }
         let len_msg = w.1;
         let len_offset = ERROR_PREAMBLE_OFFSET.len();
         buf[len_offset + 28..len_offset + 32].copy_from_slice(&(len_msg as u32).to_be_bytes());
