@@ -2,7 +2,7 @@
 extern crate alloc;
 
 #[allow(unused)]
-use core::fmt::{Write, Result as FmtResult};
+use core::fmt::{Result as FmtResult, Write};
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
@@ -126,8 +126,11 @@ impl<'a> Write for SliceWriter<'a> {
 #[allow(unused)]
 const REVERT_BUF_SIZE: usize = 1024 * 10;
 
-#[cfg(all(feature = "panic", not(feature = "std"), target_arch = "wasm32"))]
-#[panic_handler]
+#[cfg(target_arch = "wasm32")]
+#[cfg_attr(
+    all(feature = "panic", not(feature = "std"), target_arch = "wasm32"),
+    panic_handler
+)]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     #[cfg(feature = "console")]
     {
