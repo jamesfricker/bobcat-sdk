@@ -3,6 +3,9 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[allow(unused)]
 use core::fmt::{Result as FmtResult, Write};
 
@@ -131,7 +134,7 @@ impl<'a> Write for SliceWriter<'a> {
 const REVERT_BUF_SIZE: usize = 1024 * 10;
 
 #[cfg(all(feature = "panic-revert", feature = "panic-loc"))]
-compile_error!("panic-revert and panic-loc simulaneously enabled");
+compile_error!("panic-revert and panic-loc simultaneously enabled");
 
 #[cfg(target_arch = "wasm32")]
 #[cfg_attr(all(feature = "panic", not(feature = "std")), panic_handler)]
@@ -143,7 +146,10 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     }
     #[cfg(any(feature = "panic-revert", feature = "panic-loc"))]
     {
+        #[cfg(not(feature = "alloc"))]
         let mut buf = [0u8; REVERT_BUF_SIZE];
+        #[cfg(feature = "alloc")]
+        let mut buf = Vec::new();
         buf[..ERROR_PREAMBLE_OFFSET.len()].copy_from_slice(&ERROR_PREAMBLE_OFFSET);
         let mut w = SliceWriter(&mut buf[ERROR_PREAMBLE_OFFSET.len() + 32..], 0);
         #[cfg(feature = "panic-revert")]
