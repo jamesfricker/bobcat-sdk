@@ -3,9 +3,6 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(all(feature = "alloc", target_arch = "wasm32"))]
-use alloc::vec::Vec;
-
 #[allow(unused)]
 use core::fmt::{Result as FmtResult, Write};
 
