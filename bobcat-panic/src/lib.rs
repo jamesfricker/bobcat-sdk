@@ -146,10 +146,7 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     }
     #[cfg(any(feature = "panic-revert", feature = "panic-loc"))]
     {
-        #[cfg(not(feature = "alloc"))]
         let mut buf = [0u8; REVERT_BUF_SIZE];
-        #[cfg(feature = "alloc")]
-        let mut buf = Vec::new();
         buf[..ERROR_PREAMBLE_OFFSET.len()].copy_from_slice(&ERROR_PREAMBLE_OFFSET);
         let mut w = SliceWriter(&mut buf[ERROR_PREAMBLE_OFFSET.len() + 32..], 0);
         #[cfg(feature = "panic-revert")]
@@ -159,6 +156,8 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         #[cfg(feature = "panic-loc")]
         if let Some(loc) = _msg.location() {
             write!(&mut w, "panic: {}:{}", loc.file(), loc.line()).unwrap();
+        } else {
+            write!(&mut w, "panic: unknown").unwrap();
         }
         let len_msg = w.1;
         let len_offset = ERROR_PREAMBLE_OFFSET.len();
