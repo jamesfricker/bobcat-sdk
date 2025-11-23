@@ -8,6 +8,9 @@ use bobcat_sdk::{
     storage::*,
 };
 
+#[global_allocator]
+static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
+
 const SEL_NUMBER: [u8; 4] = const_keccak_sel(b"number()");
 const SEL_SET_NUMBER: [u8; 4] = const_keccak_sel(b"setNumber(uint256)");
 const SEL_MUL_NUMBER: [u8; 4] = const_keccak_sel(b"mulNumber(uint256)");

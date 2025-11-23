@@ -1,6 +1,9 @@
 #![no_main]
 #![no_std]
 
+#[global_allocator]
+static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
+
 use bobcat_sdk::{cd::read_words, entry::*, maths::U};
 
 #[unsafe(no_mangle)]

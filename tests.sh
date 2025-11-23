@@ -6,12 +6,8 @@ cargo test --features $features -- --nocapture $@
 
 cd examples
 
-cargo build --target wasm32-unknown-unknown --release
+make
 
 cd ../e2e-test
 
 ./tests.sh
-
-cd ..
-
-./check-codesize.sh

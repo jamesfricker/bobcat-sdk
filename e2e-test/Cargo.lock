@@ -46,7 +46,7 @@ checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
 name = "bobcat-call"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "bobcat-entry",
  "bobcat-maths",
@@ -56,7 +56,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-cd"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -66,11 +66,11 @@ dependencies = [
 
 [[package]]
 name = "bobcat-console"
-version = "0.6.6"
+version = "0.6.8"
 
 [[package]]
 name = "bobcat-create"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -80,7 +80,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-entry"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "bobcat-cd",
  "bobcat-maths",
@@ -89,7 +89,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-events"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -97,7 +97,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-interfaces"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "array-concat",
  "bobcat-cd",
@@ -108,7 +108,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-maths"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "alloy-primitives",
  "array-concat",
@@ -118,18 +118,20 @@ dependencies = [
  "mutants",
  "num-traits",
  "paste",
+ "wasm-bindgen",
 ]
 
 [[package]]
 name = "bobcat-panic"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "const-hex",
+ "paste",
 ]
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "array-concat",
  "bobcat-interfaces",
@@ -139,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",
@@ -156,13 +158,19 @@ dependencies = [
 
 [[package]]
 name = "bobcat-storage"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "array-concat",
  "bobcat-maths",
  "keccak-const",
  "paste",
 ]
+
+[[package]]
+name = "bumpalo"
+version = "3.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46c5e41b57b8bba42a04676d81cb89e9ee8e859a1a66f80a5a72e1cb76b34d43"
 
 [[package]]
 name = "bytes"
@@ -317,6 +325,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "once_cell"
+version = "1.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
+
+[[package]]
 name = "panic-revert"
 version = "0.1.0"
 dependencies = [
@@ -458,6 +472,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48fd7bd8a6377e15ad9d42a8ec25371b94ddc67abe7c8b9127bec79bebaaae18"
 
 [[package]]
+name = "rustversion"
+version = "1.0.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
+
+[[package]]
 name = "serde_core"
 version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -528,6 +548,51 @@ name = "valuable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
+
+[[package]]
+name = "wasm-bindgen"
+version = "0.2.105"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da95793dfc411fbbd93f5be7715b0578ec61fe87cb1a42b12eb625caa5c5ea60"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+ "rustversion",
+ "wasm-bindgen-macro",
+ "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-macro"
+version = "0.2.105"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04264334509e04a7bf8690f2384ef5265f05143a4bff3889ab7a3269adab59c2"
+dependencies = [
+ "quote",
+ "wasm-bindgen-macro-support",
+]
+
+[[package]]
+name = "wasm-bindgen-macro-support"
+version = "0.2.105"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "420bc339d9f322e562942d52e115d57e950d12d88983a14c79b86859ee6c7ebc"
+dependencies = [
+ "bumpalo",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-shared"
+version = "0.2.105"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76f218a38c84bcb33c25ec7059b07847d465ce0e0a76b995e134a45adcb6af76"
+dependencies = [
+ "unicode-ident",
+]
 
 [[package]]
 name = "zerocopy"

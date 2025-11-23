@@ -20,13 +20,6 @@ use bobcat_panic::{panic_on_err_div_by_zero, panic_on_err_overflow};
 
 use num_traits::{One, Zero};
 
-#[cfg(all(
-    feature = "alloc",
-    target_os = "wasi",
-    any(target_env = "p1", target_env = "p2")
-))]
-use wasm_bindgen::describe::WasmDescribe;
-
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
 
@@ -39,7 +32,10 @@ pub mod strategies;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "alloc")]
+#[cfg(all(
+    any(feature = "wasm-bindgen", feature = "wasm-bindgen-wasi"),
+    target_arch = "wasm32"
+))]
 use alloc::boxed::Box;
 
 type Address = [u8; 20];
@@ -56,8 +52,18 @@ unsafe extern "C" {
 #[cfg(feature = "ruint-enabled")]
 use alloy_primitives::{ruint, U256};
 
-#[allow(unused)]
-use wasm_bindgen::convert::{FromWasmAbi, IntoWasmAbi, WasmAbi};
+#[cfg(any(
+    all(
+        feature = "wasm-bindgen-wasi",
+        target_os = "wasi",
+        any(target_env = "p1", target_env = "p2")
+    ),
+    all(feature = "wasm-bindgen", target_arch = "wasm32")
+))]
+use wasm_bindgen::{
+    convert::{FromWasmAbi, IntoWasmAbi},
+    describe::WasmDescribe,
+};
 
 #[cfg(feature = "alloy-enabled")]
 mod alloy {
@@ -165,10 +171,13 @@ impl TypedValueParser for UValueParser {
     }
 }
 
-#[cfg(all(
-    feature = "alloc",
-    target_os = "wasi",
-    any(target_env = "p1", target_env = "p2")
+#[cfg(any(
+    all(
+        feature = "wasm-bindgen-wasi",
+        target_os = "wasi",
+        any(target_env = "p1", target_env = "p2")
+    ),
+    all(feature = "wasm-bindgen", target_arch = "wasm32")
 ))]
 impl WasmDescribe for U {
     fn describe() {
@@ -176,10 +185,13 @@ impl WasmDescribe for U {
     }
 }
 
-#[cfg(all(
-    feature = "alloc",
-    target_os = "wasi",
-    any(target_env = "p1", target_env = "p2")
+#[cfg(any(
+    all(
+        feature = "wasm-bindgen-wasi",
+        target_os = "wasi",
+        any(target_env = "p1", target_env = "p2")
+    ),
+    all(feature = "wasm-bindgen", target_arch = "wasm32")
 ))]
 impl FromWasmAbi for U {
     type Abi = u32;
@@ -193,10 +205,13 @@ impl FromWasmAbi for U {
     }
 }
 
-#[cfg(all(
-    feature = "alloc",
-    target_os = "wasi",
-    any(target_env = "p1", target_env = "p2")
+#[cfg(any(
+    all(
+        feature = "wasm-bindgen-wasi",
+        target_os = "wasi",
+        any(target_env = "p1", target_env = "p2")
+    ),
+    all(feature = "wasm-bindgen", target_arch = "wasm32")
 ))]
 impl IntoWasmAbi for U {
     type Abi = u32;
