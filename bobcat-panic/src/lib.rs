@@ -92,7 +92,10 @@ macro_rules! define_panic_macros {
     };
 }
 
-define_panic_macros!((overflow, OverflowOrUnderflow), (div_by_zero, DivByZero),);
+define_panic_macros!(
+    ("overflow", OverflowOrUnderflow),
+    ("div_by_zero", DivByZero),
+);
 
 #[macro_export]
 macro_rules! panic_on_err_bad_decoding_bool {
