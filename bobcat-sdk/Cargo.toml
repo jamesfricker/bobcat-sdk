@@ -22,7 +22,7 @@ bobcat-interfaces = { version = "0.6.8", path = "../bobcat-interfaces" }
 bobcat-call = { version = "0.6.8", path = "../bobcat-call" }
 bobcat-console = { version = "0.6.8", path = "../bobcat-console", optional = true }
 bobcat-events = { version = "0.6.8", path = "../bobcat-events" }
-bobcat-precompiles = { version = "0.1.0", path = "../bobcat-precompiles" }
+bobcat-precompiles = { version = "0.6.8", path = "../bobcat-precompiles" }
 
 [features]
 std = [
