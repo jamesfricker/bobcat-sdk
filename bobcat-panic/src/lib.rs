@@ -8,7 +8,7 @@ use core::fmt::{Result as FmtResult, Write};
 
 use paste::paste;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 mod wasm {
     #[link(wasm_import_module = "console")]
     #[cfg(feature = "console")]
@@ -16,6 +16,7 @@ mod wasm {
         pub(crate) fn log_txt(ptr: *const u8, len: usize);
     }
 
+    #[cfg(all(target_family = "wasm", target_os = "unknown"))]
     #[link(wasm_import_module = "vm_hooks")]
     #[allow(unused)]
     unsafe extern "C" {
@@ -24,7 +25,7 @@ mod wasm {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 fn write_result_slice(s: &[u8]) {
     unsafe { wasm::write_result(s.as_ptr(), s.len()) }
 }
@@ -53,7 +54,7 @@ pub enum PanicCodes {
     DecodingError = 0x22,
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 pub fn panic_with_code(x: PanicCodes) -> ! {
     let mut b = PANIC_PREAMBLE_WORD;
     b[4 + 32 - 1] = x as u8;
@@ -61,7 +62,7 @@ pub fn panic_with_code(x: PanicCodes) -> ! {
     unsafe { wasm::exit_early(1) }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 pub fn panic_with_code(x: PanicCodes) -> ! {
     panic!("panicked with code: {x:?}");
 }

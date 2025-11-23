@@ -4,7 +4,7 @@ use bobcat_maths::U;
 
 use array_concat::concat_arrays;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 mod impls {
     #[link(wasm_import_module = "vm_hooks")]
     unsafe extern "C" {
@@ -12,7 +12,7 @@ mod impls {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 mod impls {
     pub(crate) unsafe fn emit_log(_: *const u8, _: usize, _: usize) {}
 }

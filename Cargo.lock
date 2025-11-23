@@ -549,6 +549,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bobcat-precompiles"
+version = "0.1.0"
+dependencies = [
+ "array-concat",
+ "bobcat-call",
+ "bobcat-maths",
+]
+
+[[package]]
 name = "bobcat-proxy"
 version = "0.6.8"
 dependencies = [
@@ -571,6 +580,7 @@ dependencies = [
  "bobcat-interfaces",
  "bobcat-maths",
  "bobcat-panic",
+ "bobcat-precompiles",
  "bobcat-proxy",
  "bobcat-storage",
 ]

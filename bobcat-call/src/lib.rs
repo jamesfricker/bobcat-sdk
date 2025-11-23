@@ -182,13 +182,13 @@ macro_rules! generate_call_variants {
                 let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
                 // When it comes to a revert, we don't cut it up like we do a normal slice.
                 let size = if rc {
-                    rd_len
-                } else {
                     panic_on_err_bad_decoding_bool!(
                         rd_len > offset,
                         "offset greater than rd len ok"
                     );
                     rd_len - offset
+                } else {
+                    rd_len
                 };
                 // Capacity errors if the contract was in error where the revert value
                 // size isn't known and we want to show it to the user should use err_vec

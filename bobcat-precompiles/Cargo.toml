@@ -1,0 +1,9 @@
+[package]
+name = "bobcat-precompiles"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+array-concat.workspace = true
+bobcat-call = { version = "0.6.8", path = "../bobcat-call" }
+bobcat-maths = { version = "0.6.8", path = "../bobcat-maths" }

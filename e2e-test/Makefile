@@ -13,7 +13,8 @@ PROJECTS := \
 	panic-revert \
 	eip1967-proxy \
 	reverts-bubbling-up \
-	proxy-predicts-create2
+	proxy-predicts-create2 \
+	precompiles
 
 all: wasm
 
@@ -32,7 +33,8 @@ wasm: \
 	panic-revert.wasm \
 	eip1967-proxy.wasm \
 	reverts-bubbling-up.wasm \
-	proxy-predicts-create2.wasm
+	proxy-predicts-create2.wasm \
+	precompiles.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -74,6 +76,10 @@ proxy-predicts-create2.wasm: ${BUILT}
 	@rm -f proxy-predicts-create2.wasm
 	@./wasm-post.sh ${RELEASE}/proxy-predicts-create2.wasm proxy-predicts-create2.wasm
 
+precompiles.wasm: ${BUILT}
+	@rm -f precompiles.wasm
+	@./wasm-post.sh ${RELEASE}/precompiles.wasm precompiles.wasm
+
 clean:
 	@rm -rf \
 		target \
@@ -86,4 +92,5 @@ clean:
 		panic-revert.wasm \
 		eip1967-proxy.wasm \
 		reverts-bubbling-up.wasm \
-		proxy-predicts-create2.wasm
+		proxy-predicts-create2.wasm \
+		precompiles.wasm

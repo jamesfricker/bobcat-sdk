@@ -12,7 +12,7 @@ type Address = [u8; 20];
 
 pub use bobcat_cd::read_words;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 mod impls {
     #[link(wasm_import_module = "vm_hooks")]
     unsafe extern "C" {
@@ -29,7 +29,10 @@ mod impls {
     }
 }
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
+#[cfg(all(
+    not(all(target_family = "wasm", target_os = "unknown")),
+    feature = "std"
+))]
 pub mod entry_host {
     use super::{Address, U};
 
@@ -110,7 +113,7 @@ pub mod entry_host {
     pub(crate) unsafe fn account_codehash(_: *const u8, _: *mut u8) {}
 
     pub fn set_block_timestamp(n: u64) {
-        BLOCK_TIMESTAMP.with(|s| { *s.borrow_mut() = n })
+        BLOCK_TIMESTAMP.with(|s| *s.borrow_mut() = n)
     }
 
     pub(crate) unsafe fn block_timestamp() -> u64 {
@@ -118,11 +121,18 @@ pub mod entry_host {
     }
 }
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
+#[cfg(all(
+    not(all(target_family = "wasm", target_os = "unknown")),
+    feature = "std"
+))]
 pub use entry_host as impls;
 
-#[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
+#[cfg(all(
+    not(all(target_family = "wasm", target_os = "unknown")),
+    not(feature = "std")
+))]
 mod impls {
+    #[allow(unused)]
     pub(crate) unsafe fn pay_for_memory_grow(_: u16) {}
 
     pub(crate) unsafe fn write_result(_: *const u8, _: usize) {}
@@ -147,7 +157,11 @@ mod impls {
 }
 
 #[unsafe(no_mangle)]
-#[cfg(not(feature = "dont-define-symbols"))]
+#[cfg(all(
+    target_family = "wasm",
+    target_os = "unknown",
+    not(feature = "dont-define-symbols")
+))]
 pub unsafe fn mark_used() {
     unsafe { impls::pay_for_memory_grow(0) }
     panic!();

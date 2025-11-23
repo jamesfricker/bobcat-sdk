@@ -1021,6 +1021,10 @@ impl U {
         }
     }
 
+    pub const fn const_addr(self) -> Address {
+        self.const_20_slice()
+    }
+
     pub const fn is_max(&self) -> bool {
         let mut i = 0;
         while i < 32 {
@@ -1177,12 +1181,17 @@ impl U {
     }
 
     pub fn from_hex(x: &str) -> Option<U> {
-        let mut out = U::ZERO;
-        match const_hex::decode_to_slice(x, &mut out.0) {
-            Ok(_) => (),
-            Err(_) => return None,
+        match const_hex::decode_to_array::<_, 32>(x) {
+            Ok(v) => Some(U(v)),
+            Err(_) => None
         }
-        Some(out)
+    }
+
+    pub const fn const_from_hex(x: &[u8; 64]) -> Option<U> {
+        match const_hex::const_decode_to_array::<32>(x) {
+            Ok(v) => Some(U(v)),
+            Err(_) => None
+        }
     }
 }
 
@@ -1334,23 +1343,37 @@ impl I {
 macro_rules! from_slices {
     ($($n:expr),+ $(,)?) => {
         $(
-            impl From<&[u8; $n]> for U {
-                fn from(x: &[u8; $n]) -> Self {
-                    let mut b = [0u8; 32];
-                    b[32 - $n..].copy_from_slice(x);
-                    U(b)
+            paste::paste! {
+                impl From<&[u8; $n]> for U {
+                    fn from(x: &[u8; $n]) -> Self {
+                        let mut b = [0u8; 32];
+                        b[32 - $n..].copy_from_slice(x);
+                        U(b)
+                    }
                 }
-            }
 
-            impl From<[u8; $n]> for U {
-                fn from(x: [u8; $n]) -> Self {
-                    U::from(&x)
+                impl From<[u8; $n]> for U {
+                    fn from(x: [u8; $n]) -> Self {
+                        U::from(&x)
+                    }
                 }
-            }
 
-            impl From<U> for [u8; $n] {
-                fn from(x: U) -> Self {
-                    unsafe { *(x.as_ptr().add(32 - $n) as *const [u8; $n]) }
+                impl U {
+                    pub const fn [<const_ $n _slice>](self) -> [u8; $n] {
+                        let mut b = [0u8; $n];
+                        let mut i = 0;
+                        while i < $n {
+                            b[i] = self.0[32-$n+i];
+                            i += 1;
+                        }
+                        b
+                    }
+                }
+
+                impl From<U> for [u8; $n] {
+                    fn from(x: U) -> Self {
+                        unsafe { *(x.as_ptr().add(32 - $n) as *const [u8; $n]) }
+                    }
                 }
             }
         )+
@@ -1856,6 +1879,11 @@ mod test {
                 v,
                 "{x} != {v}",
             )
+        }
+
+        #[test]
+        fn array_truncate(x in any::<[u8; 20]>()) {
+            assert_eq!(x, U::from(x).const_addr());
         }
     }
 }

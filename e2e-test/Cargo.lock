@@ -129,6 +129,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bobcat-precompiles"
+version = "0.1.0"
+dependencies = [
+ "array-concat",
+ "bobcat-call",
+ "bobcat-maths",
+]
+
+[[package]]
 name = "bobcat-proxy"
 version = "0.6.8"
 dependencies = [
@@ -151,6 +160,7 @@ dependencies = [
  "bobcat-interfaces",
  "bobcat-maths",
  "bobcat-panic",
+ "bobcat-precompiles",
  "bobcat-proxy",
  "bobcat-storage",
 ]
@@ -338,6 +348,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
 dependencies = [
  "zerocopy",
+]
+
+[[package]]
+name = "precompiles"
+version = "0.1.0"
+dependencies = [
+ "bobcat-sdk",
+ "mini-alloc",
 ]
 
 [[package]]

@@ -10,7 +10,8 @@ members = [
 	"panic-revert",
 	"eip1967-proxy",
 	"reverts-bubbling-up",
-	"proxy-predicts-create2"
+	"proxy-predicts-create2",
+	"precompiles"
 ]
 
 [workspace.dependencies]

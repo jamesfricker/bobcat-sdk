@@ -6,8 +6,8 @@ use array_concat::concat_arrays;
 
 pub use bobcat_maths::U;
 
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 #[link(wasm_import_module = "vm_hooks")]
-#[cfg(target_arch = "wasm32")]
 unsafe extern "C" {
     fn storage_load_bytes32(key: *const u8, out: *mut u8);
     fn storage_cache_bytes32(key: *const u8, from: *const u8);
@@ -17,7 +17,10 @@ unsafe extern "C" {
     pub fn storage_flush_cache(clear: bool);
 }
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
+#[cfg(all(
+    not(all(target_family = "wasm", target_os = "unknown")),
+    feature = "std"
+))]
 pub mod storage_host {
     use super::*;
 
@@ -85,7 +88,10 @@ pub mod storage_host {
     pub unsafe fn storage_flush_cache(_: bool) {}
 }
 
-#[cfg(all(not(target_arch = "wasm32"), not(feature = "std")))]
+#[cfg(all(
+    not(all(target_family = "wasm", target_os = "unknown")),
+    not(feature = "std")
+))]
 mod storage_host {
     pub(crate) unsafe fn storage_load_bytes32(_: *const u8, _: *mut u8) {}
 
@@ -98,10 +104,10 @@ mod storage_host {
     pub unsafe fn storage_flush_cache(_: bool) {}
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 use storage_host::*;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 pub use storage_host::storage_flush_cache;
 
 macro_rules! storage_ops {
@@ -217,7 +223,7 @@ macro_rules! storage_mutate_ops {
 storage_mutate_ops!(storage, add, sub, mul, div);
 storage_mutate_ops!(transient, add, sub, mul, div);
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 pub fn slot_map_slot(k: &U, p: &U) -> U {
     const_slot_map(k, p)
 }
@@ -255,7 +261,7 @@ pub fn slot_off_curve(b: &[u8]) -> U {
     bobcat_maths::checked_sub_opt(&keccak256(b), &U::ONE).unwrap()
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 pub fn keccak256(b: &[u8]) -> U {
     let mut out = [0u8; 32];
     unsafe {
@@ -268,7 +274,7 @@ pub const fn const_keccak256(b: &[u8]) -> U {
     U(Keccak256::new().update(b).finalize())
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 pub fn keccak256(b: &[u8]) -> U {
     const_keccak256(b)
 }
@@ -288,13 +294,13 @@ pub const fn const_slot_map(k: &U, p: &U) -> U {
     const_keccak256(&a)
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 pub fn slot_map(k: &U, p: &U) -> U {
     let b: [u8; 32 * 2] = concat_arrays!(k.0, p.0);
     keccak256(&b)
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 pub fn slot_map(k: &U, p: &U) -> U {
     const_slot_map(k, p)
 }
