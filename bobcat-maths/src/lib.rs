@@ -10,12 +10,22 @@ use core::{
     str::FromStr,
 };
 
+#[allow(unused)]
+use core::ptr::copy_nonoverlapping;
+
 #[cfg(feature = "std")]
 use clap::builder::TypedValueParser;
 
 use bobcat_panic::{panic_on_err_div_by_zero, panic_on_err_overflow};
 
 use num_traits::{One, Zero};
+
+#[cfg(all(
+    feature = "alloc",
+    target_os = "wasi",
+    any(target_env = "p1", target_env = "p2")
+))]
+use wasm_bindgen::describe::WasmDescribe;
 
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -28,6 +38,9 @@ pub mod strategies;
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
+
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
 
 type Address = [u8; 20];
 
@@ -43,9 +56,12 @@ unsafe extern "C" {
 #[cfg(feature = "ruint-enabled")]
 use alloy_primitives::{ruint, U256};
 
+#[allow(unused)]
+use wasm_bindgen::convert::{FromWasmAbi, IntoWasmAbi, WasmAbi};
+
 #[cfg(feature = "alloy-enabled")]
 mod alloy {
-    use core::ptr::copy_nonoverlapping;
+    use super::copy_nonoverlapping;
 
     pub(crate) use alloy_primitives::U256;
 
@@ -137,12 +153,9 @@ impl TypedValueParser for UValueParser {
         _: Option<&clap::Arg>,
         value: &std::ffi::OsStr,
     ) -> Result<Self::Value, clap::Error> {
-        let s = value.to_str().ok_or_else(|| {
-            clap::Error::raw(
-                clap::error::ErrorKind::InvalidUtf8,
-                "bad utf8",
-            )
-        })?;
+        let s = value
+            .to_str()
+            .ok_or_else(|| clap::Error::raw(clap::error::ErrorKind::InvalidUtf8, "bad utf8"))?;
         U::from_str(s).map_err(|e| {
             clap::Error::raw(
                 clap::error::ErrorKind::ValueValidation,
@@ -152,6 +165,48 @@ impl TypedValueParser for UValueParser {
     }
 }
 
+#[cfg(all(
+    feature = "alloc",
+    target_os = "wasi",
+    any(target_env = "p1", target_env = "p2")
+))]
+impl WasmDescribe for U {
+    fn describe() {
+        <Box<[u8]> as WasmDescribe>::describe()
+    }
+}
+
+#[cfg(all(
+    feature = "alloc",
+    target_os = "wasi",
+    any(target_env = "p1", target_env = "p2")
+))]
+impl FromWasmAbi for U {
+    type Abi = u32;
+
+    #[inline]
+    unsafe fn from_abi(js: u32) -> Self {
+        let ptr = js as *const u8;
+        let mut bytes = [0u8; 32];
+        unsafe { copy_nonoverlapping(ptr, bytes.as_mut_ptr(), 32) }
+        U(bytes)
+    }
+}
+
+#[cfg(all(
+    feature = "alloc",
+    target_os = "wasi",
+    any(target_env = "p1", target_env = "p2")
+))]
+impl IntoWasmAbi for U {
+    type Abi = u32;
+
+    #[inline]
+    fn into_abi(self) -> u32 {
+        let ptr = Box::into_raw(Box::new(self.0)) as *const u8;
+        ptr as u32
+    }
+}
 
 pub fn wrapping_div(x: &U, y: &U) -> U {
     assert!(y.is_some(), "divide by zero");
@@ -201,10 +256,7 @@ pub fn checked_div_opt(x: &U, y: &U) -> Option<U> {
 
 #[cfg_attr(test, mutants::skip)]
 pub fn checked_div(x: &U, y: &U) -> U {
-    panic_on_err_div_by_zero!(
-        checked_div_opt(x, y),
-        "Division by zero: {x}"
-    )
+    panic_on_err_div_by_zero!(checked_div_opt(x, y), "Division by zero: {x}")
 }
 
 pub fn modd(x: &U, y: &U) -> U {
@@ -254,10 +306,7 @@ pub fn checked_add_opt(x: &U, y: &U) -> Option<U> {
 
 #[cfg_attr(test, mutants::skip)]
 pub fn checked_add(x: &U, y: &U) -> U {
-    panic_on_err_overflow!(
-        checked_add_opt(x, y),
-        "Checked add overflow: {x}, y: {y}"
-    )
+    panic_on_err_overflow!(checked_add_opt(x, y), "Checked add overflow: {x}, y: {y}")
 }
 
 #[cfg_attr(test, mutants::skip)]
@@ -305,10 +354,7 @@ pub fn checked_sub_opt(x: &U, y: &U) -> Option<U> {
 
 #[cfg_attr(test, mutants::skip)]
 pub fn checked_sub(x: &U, y: &U) -> U {
-    panic_on_err_overflow!(
-        checked_sub_opt(x, y),
-        "Checked sub overflow: {x}, y: {y}"
-    )
+    panic_on_err_overflow!(checked_sub_opt(x, y), "Checked sub overflow: {x}, y: {y}")
 }
 
 pub const fn wrapping_mul_b<const C: usize>(x: &[u8; C], y: &[u8; C]) -> [u8; C] {
@@ -905,6 +951,8 @@ impl Display for UFromStrErr {
         write!(f, "{self:?}")
     }
 }
+
+impl core::error::Error for UFromStrErr {}
 
 impl FromStr for U {
     type Err = UFromStrErr;

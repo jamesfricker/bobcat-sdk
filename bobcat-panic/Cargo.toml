@@ -21,3 +21,4 @@ msg-on-sdk-err = ["panic"]
 
 [dependencies]
 const-hex.workspace = true
+paste.workspace = true

@@ -25,6 +25,7 @@ array-concat.workspace = true
 serde = { version = ">=1.0.0", default-features = false, features = ["derive"], optional = true }
 bobcat-panic = { version = "0.6.8", path = "../bobcat-panic" }
 clap = { version = ">=4.0.0", optional = true }
+wasm-bindgen = { version = ">=0.2.0", default-features = false }
 
 [dev-dependencies]
 proptest = { workspace = true }

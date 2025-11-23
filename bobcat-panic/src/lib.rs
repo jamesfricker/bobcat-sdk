@@ -6,6 +6,8 @@ extern crate alloc;
 #[allow(unused)]
 use core::fmt::{Result as FmtResult, Write};
 
+use paste::paste;
+
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     #[link(wasm_import_module = "console")]
@@ -47,7 +49,6 @@ pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to
 #[repr(u8)]
 pub enum PanicCodes {
     OverflowOrUnderflow = 0x11,
-    NoMemory = 0x41,
     DivByZero = 0x12,
     DecodingError = 0x22,
 }
@@ -66,34 +67,32 @@ pub fn panic_with_code(x: PanicCodes) -> ! {
 }
 
 #[macro_export]
-macro_rules! panic_on_err_overflow {
-    ($e:expr, $msg:expr) => {{
-        match $e {
-            Some(v) => v,
-            None => {
-                #[cfg(feature = "msg-on-sdk-err")]
-                panic!("overflow: {}", $msg);
-                #[cfg(not(feature = "msg-on-sdk-err"))]
-                $crate::panic_with_code($crate::PanicCodes::OverflowOrUnderflow);
+macro_rules! define_panic_macros {
+    (
+        $(($error_msg:expr, $panic_code:ident)),* $(,)?
+    ) => {
+        $(
+            paste! {
+                #[macro_export]
+                macro_rules! [<panic_on_err_ $error_msg>] {
+                    ($e:expr, $msg:expr) => {{
+                        match $e {
+                            Some(v) => v,
+                            None => {
+                                #[cfg(feature = "msg-on-sdk-err")]
+                                panic!("{}: {}", $error_msg, $msg);
+                                #[cfg(not(feature = "msg-on-sdk-err"))]
+                                $crate::panic_with_code($crate::PanicCodes::$panic_code);
+                            }
+                        }
+                    }};
+                }
             }
-        }
-    }};
+        )*
+    };
 }
 
-#[macro_export]
-macro_rules! panic_on_err_div_by_zero {
-    ($e:expr, $msg:expr) => {{
-        match $e {
-            Some(v) => v,
-            None => {
-                #[cfg(feature = "msg-on-sdk-err")]
-                panic!("division by zero: {}", $msg);
-                #[cfg(not(feature = "msg-on-sdk-err"))]
-                $crate::panic_with_code($crate::PanicCodes::DivByZero);
-            }
-        }
-    }}
-}
+define_panic_macros!((overflow, OverflowOrUnderflow), (div_by_zero, DivByZero),);
 
 #[macro_export]
 macro_rules! panic_on_err_bad_decoding_bool {
@@ -115,11 +114,9 @@ struct SliceWriter<'a>(&'a mut [u8], usize);
 
 impl<'a> Write for SliceWriter<'a> {
     fn write_str(&mut self, s: &str) -> FmtResult {
-        if self.1 + s.len() > self.0.len() {
-            panic_with_code(PanicCodes::NoMemory);
-        }
-        self.0[self.1..self.1 + s.len()].copy_from_slice(s.as_bytes());
-        self.1 += s.len();
+        let v = s.len().min(REVERT_BUF_SIZE.saturating_sub(self.1));
+        self.0[self.1..self.1 + v].copy_from_slice(&s.as_bytes()[..v]);
+        self.1 += v;
         Ok(())
     }
 }
@@ -128,12 +125,12 @@ impl<'a> Write for SliceWriter<'a> {
 /// use a large page here since a panic will consume all the gas anyway,
 /// and a user will see this during simulation hopefully.
 #[allow(unused)]
-const REVERT_BUF_SIZE: usize = 1024 * 10;
+const REVERT_BUF_SIZE: usize = 1024;
 
 #[cfg(all(feature = "panic-revert", feature = "panic-loc"))]
 compile_error!("panic-revert and panic-loc simultaneously enabled");
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
 #[cfg_attr(all(feature = "panic", not(feature = "std")), panic_handler)]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     #[cfg(feature = "console")]
