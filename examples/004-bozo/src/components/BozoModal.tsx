@@ -28,7 +28,6 @@ import { formatUnits, parseUnits, keccak256, stringToHex } from 'viem';
 import { config as appConfig } from '../lib/config';
 import { bozoAbi } from '../lib/bozoAbi';
 import { makeEpochCookieName, writeCookie } from '../lib/cookies';
-import { RelaySwapSection } from './RelaySwapSection';
 
 interface BozoModalProps {
   open: boolean;
@@ -86,7 +85,6 @@ export function BozoModal({
   const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [hasPromptedChain, setHasPromptedChain] = useState(false);
-  const [showRelaySwap, setShowRelaySwap] = useState(false);
 
   const { data: balanceData, refetch: refetchBalance } = useBalance({
     address,
@@ -236,17 +234,6 @@ export function BozoModal({
 
     setAmountToken(maxAmount);
   }, [hasBalance, maxAmount]);
-
-  const handleRelayPrefill = useCallback(
-    (value: string) => {
-      setAmountToken(value);
-      if (!open) {
-        onOpenChange(true);
-      }
-      setShowRelaySwap(false);
-    },
-    [onOpenChange, open],
-  );
 
   const handleApprove = async () => {
     if (!address || !poolAssetAddress) {
@@ -408,12 +395,6 @@ export function BozoModal({
   }, [open, poolAssetAddress, address, refetchBalance]);
 
   useEffect(() => {
-    if (!open) {
-      setShowRelaySwap(false);
-    }
-  }, [open]);
-
-  useEffect(() => {
     if (!open || !isWrongChain) {
       setHasPromptedChain(false);
       return;
@@ -531,16 +512,7 @@ export function BozoModal({
               step="0.000001"
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Want to pay with another asset?</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 px-3 border-[#2ED4B7]/50 text-[#2ED4B7] hover:bg-[#2ED4B7]/10"
-                onClick={() => setShowRelaySwap((current) => !current)}
-              >
-                {showRelaySwap ? 'Hide Relay swap' : 'Swap with Relay'}
-              </Button>
+              <span>Use {game.homeToken} to make your deposit.</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">
@@ -575,19 +547,6 @@ export function BozoModal({
               </AlertDescription>
             </Alert>
           )}
-
-          <RelaySwapSection
-            enabled={showRelaySwap}
-            poolAssetAddress={poolAssetAddress}
-            assetDecimals={assetDecimals}
-            destinationSymbol={game.homeToken}
-            accountAddress={address}
-            defaultOriginChainId={typeof chainId === 'number' ? chainId : undefined}
-            depositAmount={amountToken}
-            depositAmountWei={amountWei}
-            comment={comment}
-            onPrefillAmount={handleRelayPrefill}
-          />
 
           {needsApproval && (
             <Alert className="bg-[#F6C445]/10 border-[#F6C445]">
