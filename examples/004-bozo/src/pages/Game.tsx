@@ -22,6 +22,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useComments } from '../providers/CommentsProvider';
 import { useFarcasterMiniApp } from '../providers/FarcasterMiniAppProvider';
 import { formatUnits } from 'viem';
+import { bozoAbi } from '../lib/bozoAbi';
 import {
   DEPOSIT_LOOKBACK_BLOCKS,
   WINNER_LOOKBACK_BLOCKS,
@@ -35,65 +36,6 @@ const HARD_CODED_MIN_RESET_TOKENS = 1;
 const DEFAULT_HOME_TOKEN = 'ARB';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
 const MIN_RESET_PREMIUM_MULTIPLIER = 1.05;
-
-const bozoAbi = [
-  {
-    type: 'function',
-    name: 'poolSize',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'poolAsset',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'address' }],
-  },
-  {
-    type: 'function',
-    name: 'lastBettorAmount',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'minDeposit',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'lastBettorAddress',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'deadline',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'currentEpoch',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'wasEpochCollected',
-    stateMutability: 'view',
-    inputs: [{ name: 'epoch', type: 'uint256' }],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-] as const;
 
 const erc20Abi = [
   {

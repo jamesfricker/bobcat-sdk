@@ -21,9 +21,11 @@ import {
   type RelayChain,
   type ProgressData,
 } from '@relayprotocol/relay-sdk';
-import { formatUnits, parseUnits, zeroAddress } from 'viem';
+import { formatUnits, zeroAddress, keccak256, stringToHex } from 'viem';
 import { arbitrum } from 'wagmi/chains';
 import { useWalletClient } from 'wagmi';
+import { config as appConfig } from '../lib/config';
+import { bozoAbi } from '../lib/bozoAbi';
 
 type ChainCurrency = NonNullable<RelayChain['currency']>;
 type ChainToken = NonNullable<RelayChain['featuredTokens']>[0];
@@ -55,10 +57,15 @@ interface RelaySwapSectionProps {
   destinationSymbol: string;
   accountAddress?: `0x${string}`;
   defaultOriginChainId?: number;
+  depositAmount: string;
+  depositAmountWei: bigint | null;
+  comment: string;
   onPrefillAmount: (amount: string) => void;
 }
 
 const ZERO_TOKEN_KEY = `${zeroAddress.toLowerCase()}`;
+const ZERO_BYTES32 =
+  '0x0000000000000000000000000000000000000000000000000000000000000000' as const;
 
 const getTokenKey = (chainId: number, tokenAddress?: string | null) => {
   const address = (tokenAddress ?? zeroAddress).toLowerCase();
@@ -101,6 +108,9 @@ export function RelaySwapSection({
   destinationSymbol,
   accountAddress,
   defaultOriginChainId,
+  depositAmount,
+  depositAmountWei,
+  comment,
   onPrefillAmount,
 }: RelaySwapSectionProps) {
   const { data: walletClient } = useWalletClient();
@@ -113,15 +123,27 @@ export function RelaySwapSection({
   const [customTokenAddress, setCustomTokenAddress] = useState('');
   const [customTokenSymbol, setCustomTokenSymbol] = useState('');
   const [customTokenDecimals, setCustomTokenDecimals] = useState('18');
-  const [amountIn, setAmountIn] = useState('');
   const [quote, setQuote] = useState<RelayExecute | null>(null);
   const [isFetchingQuote, setIsFetchingQuote] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [progressAction, setProgressAction] = useState<string | null>(null);
 
+  const normalizedCommentHash = useMemo(() => {
+    const trimmed = comment.trim();
+    if (!trimmed) {
+      return ZERO_BYTES32;
+    }
+
+    try {
+      return keccak256(stringToHex(trimmed));
+    } catch (error) {
+      console.error('Failed to hash comment for Relay execution:', error);
+      return ZERO_BYTES32;
+    }
+  }, [comment]);
+
   const resetForm = useCallback(() => {
-    setAmountIn('');
     setQuote(null);
     setQuoteError(null);
     setProgressAction(null);
@@ -327,8 +349,8 @@ export function RelaySwapSection({
       return;
     }
 
-    if (!amountIn || Number.parseFloat(amountIn) <= 0) {
-      toast.error('Enter an amount to purchase.');
+    if (!depositAmountWei || depositAmountWei === 0n) {
+      toast.error('Enter a deposit amount above before requesting a Relay quote.');
       return;
     }
 
@@ -337,28 +359,34 @@ export function RelaySwapSection({
       setQuoteError(null);
       setProgressAction(null);
 
-      const decimals = resolvedToken.type === 'list' ? resolvedToken.decimals : resolvedToken.decimals;
-      const amountWei = parseUnits(amountIn, decimals);
-
       const quoteResponse = await getQuote(
         {
           chainId: selectedChainId,
           currency: normalizedOriginCurrency,
           toChainId: arbitrum.id,
           toCurrency: poolAssetAddress ?? zeroAddress,
-          tradeType: 'EXACT_INPUT',
-          amount: amountWei.toString(),
+          tradeType: 'EXACT_OUTPUT',
+          amount: depositAmountWei.toString(),
           recipient: accountAddress,
           user: accountAddress,
           wallet: walletClient,
+          txs: [
+            {
+              abi: bozoAbi,
+              address: appConfig.contracts.bozo as `0x${string}`,
+              functionName: 'play',
+              args: [depositAmountWei, accountAddress, normalizedCommentHash],
+            },
+          ],
         },
         true,
       );
 
       setQuote(quoteResponse);
-      const expected = quoteResponse.details?.currencyOut?.amountFormatted;
-      if (expected) {
-        toast.success(`Quote ready. Expected ${expected} ${destinationSymbol}.`);
+      const spendAmount = quoteResponse.details?.currencyIn?.amountFormatted;
+      const spendSymbol = quoteResponse.details?.currencyIn?.currency?.symbol;
+      if (spendAmount && spendSymbol) {
+        toast.success(`Quote ready. Estimated spend ${spendAmount} ${spendSymbol}.`);
       } else {
         toast.success('Quote ready.');
       }
@@ -373,9 +401,9 @@ export function RelaySwapSection({
     }
   }, [
     accountAddress,
-    amountIn,
-    destinationSymbol,
+    depositAmountWei,
     enabled,
+    normalizedCommentHash,
     normalizedOriginCurrency,
     poolAssetAddress,
     resolvedToken,
@@ -390,6 +418,11 @@ export function RelaySwapSection({
 
     if (!quote) {
       toast.error('Generate a quote before executing.');
+      return;
+    }
+
+    if (!depositAmountWei || depositAmountWei === 0n) {
+      toast.error('Enter a deposit amount above before executing.');
       return;
     }
 
@@ -415,12 +448,8 @@ export function RelaySwapSection({
 
       setQuote(execution.data);
 
-      const amountOut = execution.data.details?.currencyOut?.amountFormatted;
-      if (amountOut) {
-        onPrefillAmount(amountOut);
-      }
-
-      toast.success('Relay swap submitted. You can now finish your Bozo deposit.');
+      toast.success('Relay deposit submitted. Your Bozo play is being executed on Relay.');
+      onPrefillAmount('');
       resetForm();
     } catch (error) {
       console.error('Relay execution failed:', error);
@@ -430,7 +459,7 @@ export function RelaySwapSection({
       setIsExecuting(false);
       setProgressAction(null);
     }
-  }, [enabled, onPrefillAmount, quote, resetForm, walletClient]);
+  }, [depositAmountWei, enabled, onPrefillAmount, quote, resetForm, walletClient]);
 
   const estimatedOutput = useMemo(() => {
     if (!quote?.details?.currencyOut?.amountFormatted) {
@@ -439,6 +468,26 @@ export function RelaySwapSection({
 
     return `${quote.details.currencyOut.amountFormatted} ${quote.details.currencyOut.currency?.symbol ?? destinationSymbol}`;
   }, [destinationSymbol, quote?.details?.currencyOut]);
+
+  const estimatedInput = useMemo(() => {
+    if (!quote?.details?.currencyIn?.amountFormatted) {
+      return null;
+    }
+
+    const symbol = quote.details.currencyIn.currency?.symbol;
+    return symbol
+      ? `${quote.details.currencyIn.amountFormatted} ${symbol}`
+      : quote.details.currencyIn.amountFormatted;
+  }, [quote?.details?.currencyIn]);
+
+  const depositAmountDisplay = useMemo(() => {
+    const trimmed = depositAmount.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    return `${trimmed} ${destinationSymbol}`;
+  }, [depositAmount, destinationSymbol]);
 
   const minimumOutput = useMemo(() => {
     if (!quote?.details?.currencyOut?.minimumAmount) {
@@ -454,7 +503,9 @@ export function RelaySwapSection({
     }
   }, [assetDecimals, quote?.details?.currencyOut?.currency?.decimals, quote?.details?.currencyOut?.minimumAmount]);
 
-  const disabledExecute = !quote || isExecuting;
+  const disabledExecute =
+    !quote || isExecuting || !depositAmountWei || depositAmountWei === 0n;
+  const hasDepositAmount = Boolean(depositAmountWei && depositAmountWei > 0n);
   const destinationReady = Boolean(poolAssetAddress);
 
   if (!enabled) {
@@ -466,10 +517,10 @@ export function RelaySwapSection({
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 text-foreground">
           <Sparkles className="h-4 w-4 text-[#F6C445]" />
-          <h4 className="text-sm font-semibold">Swap with Relay</h4>
+          <h4 className="text-sm font-semibold">Play with Relay</h4>
         </div>
         <p className="text-xs text-muted-foreground">
-          Swap from another asset and we&apos;ll prefill your {destinationSymbol} deposit once the swap is complete.
+          Swap from another asset and Relay will execute your Bozo play automatically, calling the contract on your behalf.
         </p>
       </div>
 
@@ -591,14 +642,17 @@ export function RelaySwapSection({
       )}
 
       <div className="space-y-2">
-        <Label className="text-sm text-muted-foreground">Amount to swap</Label>
-        <Input
-          value={amountIn}
-          onChange={(event) => setAmountIn(event.target.value)}
-          placeholder="0.0"
-          className="bg-[#252840] border-0"
-          inputMode="decimal"
-        />
+        <Label className="text-sm text-muted-foreground">Bozo deposit amount</Label>
+        <div className="rounded-lg border border-border/40 bg-[#252840]/60 px-3 py-2 text-sm">
+          {hasDepositAmount && depositAmountDisplay ? (
+            <span className="text-foreground font-medium">{depositAmountDisplay}</span>
+          ) : (
+            <span className="text-muted-foreground">Set a deposit amount above to continue</span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Relay will bridge your selected asset to {destinationSymbol} and call <code>play()</code> with this amount.
+        </p>
       </div>
 
       {quoteError && (
@@ -610,6 +664,12 @@ export function RelaySwapSection({
 
       {quote && (
         <div className="rounded-lg border border-border/40 bg-[#252840]/60 p-4 space-y-3 text-sm">
+          {estimatedInput && (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Estimated spend</span>
+              <span className="text-foreground font-medium">{estimatedInput}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Estimated output</span>
             <span className="text-foreground font-medium">
@@ -642,7 +702,7 @@ export function RelaySwapSection({
           variant="outline"
           className="w-full border-[#2ED4B7]/50 text-[#2ED4B7] hover:bg-[#2ED4B7]/10"
           onClick={handleGetQuote}
-          disabled={isFetchingQuote || isExecuting || !destinationReady}
+          disabled={isFetchingQuote || isExecuting || !destinationReady || !hasDepositAmount}
         >
           {isFetchingQuote ? (
             <>
@@ -670,7 +730,7 @@ export function RelaySwapSection({
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Powered by Relay. After the swap confirms, your purchased {destinationSymbol} will be ready for Bozo.
+        Powered by Relay. The bridge, swap, and Bozo play happen in a single flow.
       </p>
     </div>
   );

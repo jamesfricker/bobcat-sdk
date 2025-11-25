@@ -26,6 +26,7 @@ import {
 import { arbitrum } from 'wagmi/chains';
 import { formatUnits, parseUnits, keccak256, stringToHex } from 'viem';
 import { config as appConfig } from '../lib/config';
+import { bozoAbi } from '../lib/bozoAbi';
 import { makeEpochCookieName, writeCookie } from '../lib/cookies';
 import { RelaySwapSection } from './RelaySwapSection';
 
@@ -42,30 +43,6 @@ interface BozoModalProps {
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
 const ZERO_BYTES32 =
   '0x0000000000000000000000000000000000000000000000000000000000000000' as const;
-
-const bozoAbi = [
-  {
-    type: 'function',
-    name: 'play',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'amount', type: 'uint256' },
-      { name: 'recipient', type: 'address' },
-      { name: 'comment', type: 'bytes32' },
-    ],
-    outputs: [
-      { name: 'epoch', type: 'uint256' },
-      { name: 'deposited', type: 'uint256' },
-    ],
-  },
-  {
-    type: 'function',
-    name: 'currentEpoch',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-] as const;
 
 const erc20Abi = [
   {
@@ -606,6 +583,9 @@ export function BozoModal({
             destinationSymbol={game.homeToken}
             accountAddress={address}
             defaultOriginChainId={typeof chainId === 'number' ? chainId : undefined}
+            depositAmount={amountToken}
+            depositAmountWei={amountWei}
+            comment={comment}
             onPrefillAmount={handleRelayPrefill}
           />
 
