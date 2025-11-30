@@ -7,30 +7,68 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/stylus-developers-guild/bobcat-sdk/examples/004-bozo/graph/model"
 )
 
 // PostComment is the resolver for the postComment field.
-func (r *mutationResolver) PostComment(ctx context.Context, content string, rr string, ss string, v int32) (*bool, error) {
-	panic(fmt.Errorf("not implemented: PostComment - postComment"))
-}
-
-// GameInfo is the resolver for the gameInfo field.
-func (r *queryResolver) GameInfo(ctx context.Context) (*model.GameInfo, error) {
-	panic(fmt.Errorf("not implemented: GameInfo - gameInfo"))
+func (r *mutationResolver) PostComment(ctx context.Context, epoch int32, content string, transactionHash string) (*bool, error) {
+	// We simply add this to the database, and hope later it comes out correct:
+	_, err := r.Db.ExecContext(ctx, `
+SELECT bozo_insert_comment_1($1, $2, $3)`,
+		epoch,
+		content,
+		transactionHash,
+	)
+	if err != nil {
+		slog.Error("post comment failed",
+			"epoch", epoch,
+			"content", content,
+			"transaction hash", transactionHash,
+			"err", err,
+		)
+		return nil, fmt.Errorf("post failed: %v", err)
+	}
+	v := true
+	return &v, nil
 }
 
 // Comments is the resolver for the comments field.
-func (r *queryResolver) Comments(ctx context.Context) ([]*model.Comment, error) {
-	return []*model.Comment{
-		{"Hello", "world", "0x8b62653ba29d21922e140f9df6747eea6f2e6cf8facba3e96469d4931269b57f"},
-	}, nil
-}
-
-// Players is the resolver for the players field.
-func (r *queryResolver) Players(ctx context.Context) ([]*model.Player, error) {
-	panic(fmt.Errorf("not implemented: Players - players"))
+func (r *queryResolver) Comments(ctx context.Context, epoch int32, from int32, limit int32) ([]*model.Comment, error) {
+	var comments []*model.Comment
+	limit = min(limit, 50)
+	rows, err := r.Db.QueryContext(ctx, `
+SELECT content, transaction_hash FROM bozo_comments_1
+WHERE epoch = $1 AND epoch_seq >= from
+LIMIT $2`,
+		epoch,
+		limit,
+	)
+	if err != nil {
+		slog.Error("query comments failed",
+			"epoch", epoch,
+			"from", from,
+			"limit", limit,
+			"err", err,
+		)
+		return nil, fmt.Errorf("comments query failed: %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var content, transactionHash string
+		if err := rows.Scan(&content, &transactionHash); err != nil {
+			slog.Error("scan comments failed",
+				"epoch", epoch,
+				"from", from,
+				"limit", limit,
+				"err", err,
+			)
+			return nil, fmt.Errorf("comments scan failed: %v", err)
+		}
+		comments = append(comments, &model.Comment{content, transactionHash})
+	}
+	return comments, nil
 }
 
 // Mutation returns MutationResolver implementation.

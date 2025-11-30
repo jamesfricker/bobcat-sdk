@@ -1,30 +1,33 @@
 
-type GameInfo {
-    asset: String!
-}
-
 type Comment {
-    wallet: String!
     content: String!
     txHash: String!
 }
 
-type Player {
-    wallet: String!
-    amountDeposited: String!
-}
-
 type Query {
-    gameInfo: GameInfo!
-    comments: [Comment!]!
-    players: [Player!]!
+    comments(epoch: Int!, from: Int!, limit: Int!): [Comment!]!
 }
 
 type Mutation {
-    postComment(
-        content: String!,
-        rr: String!,
-        ss: String!,
-        v: Int!
-    ): Boolean
+  """
+  Comment posting works with the following system:
+
+  1. A user transmits a transaction that has the hash of the comment.
+  2. A user sends to the graph the comment hash preimage.
+  3. It gets added to the database.
+
+  The issue of all of this is that it's not possible to have this work without a round of
+  checking on-chain. In a serious production application (BOZO is not serious), you might
+  take either a signature from a user and do some ingesting, or you might take the raw
+  transaction and then decode the input. BOZO does unfortunately none of these things,
+  and instead stores a list of recorded comment preimages and the hash associated. It then
+  transmits to the client side the computed hash for each, and it lets the end user decide
+  what to render based on what's actually seen on-chain. This is because I hate frontend
+  programming.
+  """
+  postComment(
+      epoch: Int!,
+      content: String!,
+      transactionHash: String!
+  ): Boolean
 }

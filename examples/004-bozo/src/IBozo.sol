@@ -31,6 +31,11 @@ interface IBozo {
 
     function changeAdmin(address newAdmin) external;
 
+    event CommentPosted(
+        address indexed poster,
+        bytes32 indexed hash
+    );
+
     event DepositMade(
         address indexed recipient,
         uint256 indexed amount,

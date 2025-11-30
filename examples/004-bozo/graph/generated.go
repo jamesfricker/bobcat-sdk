@@ -50,36 +50,22 @@ type ComplexityRoot struct {
 	Comment struct {
 		Content func(childComplexity int) int
 		TxHash  func(childComplexity int) int
-		Wallet  func(childComplexity int) int
-	}
-
-	GameInfo struct {
-		Asset func(childComplexity int) int
 	}
 
 	Mutation struct {
-		PostComment func(childComplexity int, content string, rr string, ss string, v int32) int
-	}
-
-	Player struct {
-		AmountDeposited func(childComplexity int) int
-		Wallet          func(childComplexity int) int
+		PostComment func(childComplexity int, epoch int32, content string, transactionHash string) int
 	}
 
 	Query struct {
-		Comments func(childComplexity int) int
-		GameInfo func(childComplexity int) int
-		Players  func(childComplexity int) int
+		Comments func(childComplexity int, epoch int32, from int32, limit int32) int
 	}
 }
 
 type MutationResolver interface {
-	PostComment(ctx context.Context, content string, rr string, ss string, v int32) (*bool, error)
+	PostComment(ctx context.Context, epoch int32, content string, transactionHash string) (*bool, error)
 }
 type QueryResolver interface {
-	GameInfo(ctx context.Context) (*model.GameInfo, error)
-	Comments(ctx context.Context) ([]*model.Comment, error)
-	Players(ctx context.Context) ([]*model.Player, error)
+	Comments(ctx context.Context, epoch int32, from int32, limit int32) ([]*model.Comment, error)
 }
 
 type executableSchema struct {
@@ -113,19 +99,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Comment.TxHash(childComplexity), true
-	case "Comment.wallet":
-		if e.complexity.Comment.Wallet == nil {
-			break
-		}
-
-		return e.complexity.Comment.Wallet(childComplexity), true
-
-	case "GameInfo.asset":
-		if e.complexity.GameInfo.Asset == nil {
-			break
-		}
-
-		return e.complexity.GameInfo.Asset(childComplexity), true
 
 	case "Mutation.postComment":
 		if e.complexity.Mutation.PostComment == nil {
@@ -137,39 +110,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.PostComment(childComplexity, args["content"].(string), args["rr"].(string), args["ss"].(string), args["v"].(int32)), true
-
-	case "Player.amountDeposited":
-		if e.complexity.Player.AmountDeposited == nil {
-			break
-		}
-
-		return e.complexity.Player.AmountDeposited(childComplexity), true
-	case "Player.wallet":
-		if e.complexity.Player.Wallet == nil {
-			break
-		}
-
-		return e.complexity.Player.Wallet(childComplexity), true
+		return e.complexity.Mutation.PostComment(childComplexity, args["epoch"].(int32), args["content"].(string), args["transactionHash"].(string)), true
 
 	case "Query.comments":
 		if e.complexity.Query.Comments == nil {
 			break
 		}
 
-		return e.complexity.Query.Comments(childComplexity), true
-	case "Query.gameInfo":
-		if e.complexity.Query.GameInfo == nil {
-			break
+		args, err := ec.field_Query_comments_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
 		}
 
-		return e.complexity.Query.GameInfo(childComplexity), true
-	case "Query.players":
-		if e.complexity.Query.Players == nil {
-			break
-		}
-
-		return e.complexity.Query.Players(childComplexity), true
+		return e.complexity.Query.Comments(childComplexity, args["epoch"].(int32), args["from"].(int32), args["limit"].(int32)), true
 
 	}
 	return 0, false
@@ -297,26 +250,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_postComment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "content", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "epoch", ec.unmarshalNInt2int32)
 	if err != nil {
 		return nil, err
 	}
-	args["content"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "rr", ec.unmarshalNString2string)
+	args["epoch"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "content", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["rr"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "ss", ec.unmarshalNString2string)
+	args["content"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "transactionHash", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["ss"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "v", ec.unmarshalNInt2int32)
-	if err != nil {
-		return nil, err
-	}
-	args["v"] = arg3
+	args["transactionHash"] = arg2
 	return args, nil
 }
 
@@ -328,6 +276,27 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_comments_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "epoch", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["epoch"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "from", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["from"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg2
 	return args, nil
 }
 
@@ -382,35 +351,6 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
-
-func (ec *executionContext) _Comment_wallet(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Comment_wallet,
-		func(ctx context.Context) (any, error) {
-			return obj.Wallet, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Comment_wallet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Comment",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
 
 func (ec *executionContext) _Comment_content(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -470,35 +410,6 @@ func (ec *executionContext) fieldContext_Comment_txHash(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _GameInfo_asset(ctx context.Context, field graphql.CollectedField, obj *model.GameInfo) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_GameInfo_asset,
-		func(ctx context.Context) (any, error) {
-			return obj.Asset, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_GameInfo_asset(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "GameInfo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_postComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -507,7 +418,7 @@ func (ec *executionContext) _Mutation_postComment(ctx context.Context, field gra
 		ec.fieldContext_Mutation_postComment,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().PostComment(ctx, fc.Args["content"].(string), fc.Args["rr"].(string), fc.Args["ss"].(string), fc.Args["v"].(int32))
+			return ec.resolvers.Mutation().PostComment(ctx, fc.Args["epoch"].(int32), fc.Args["content"].(string), fc.Args["transactionHash"].(string))
 		},
 		nil,
 		ec.marshalOBoolean2ᚖbool,
@@ -540,97 +451,6 @@ func (ec *executionContext) fieldContext_Mutation_postComment(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Player_wallet(ctx context.Context, field graphql.CollectedField, obj *model.Player) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Player_wallet,
-		func(ctx context.Context) (any, error) {
-			return obj.Wallet, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Player_wallet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Player",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Player_amountDeposited(ctx context.Context, field graphql.CollectedField, obj *model.Player) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Player_amountDeposited,
-		func(ctx context.Context) (any, error) {
-			return obj.AmountDeposited, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Player_amountDeposited(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Player",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_gameInfo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_gameInfo,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().GameInfo(ctx)
-		},
-		nil,
-		ec.marshalNGameInfo2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐGameInfo,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_gameInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "asset":
-				return ec.fieldContext_GameInfo_asset(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type GameInfo", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -638,7 +458,8 @@ func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Query_comments,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().Comments(ctx)
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Comments(ctx, fc.Args["epoch"].(int32), fc.Args["from"].(int32), fc.Args["limit"].(int32))
 		},
 		nil,
 		ec.marshalNComment2ᚕᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐCommentᚄ,
@@ -647,7 +468,7 @@ func (ec *executionContext) _Query_comments(ctx context.Context, field graphql.C
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_comments(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_comments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -655,8 +476,6 @@ func (ec *executionContext) fieldContext_Query_comments(_ context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "wallet":
-				return ec.fieldContext_Comment_wallet(ctx, field)
 			case "content":
 				return ec.fieldContext_Comment_content(ctx, field)
 			case "txHash":
@@ -665,40 +484,16 @@ func (ec *executionContext) fieldContext_Query_comments(_ context.Context, field
 			return nil, fmt.Errorf("no field named %q was found under type Comment", field.Name)
 		},
 	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_players(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_players,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Query().Players(ctx)
-		},
-		nil,
-		ec.marshalNPlayer2ᚕᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayerᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_players(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "wallet":
-				return ec.fieldContext_Player_wallet(ctx, field)
-			case "amountDeposited":
-				return ec.fieldContext_Player_amountDeposited(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
-		},
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_comments_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -2276,11 +2071,6 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Comment")
-		case "wallet":
-			out.Values[i] = ec._Comment_wallet(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "content":
 			out.Values[i] = ec._Comment_content(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -2288,45 +2078,6 @@ func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "txHash":
 			out.Values[i] = ec._Comment_txHash(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var gameInfoImplementors = []string{"GameInfo"}
-
-func (ec *executionContext) _GameInfo(ctx context.Context, sel ast.SelectionSet, obj *model.GameInfo) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, gameInfoImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("GameInfo")
-		case "asset":
-			out.Values[i] = ec._GameInfo_asset(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -2399,50 +2150,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
-var playerImplementors = []string{"Player"}
-
-func (ec *executionContext) _Player(ctx context.Context, sel ast.SelectionSet, obj *model.Player) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, playerImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Player")
-		case "wallet":
-			out.Values[i] = ec._Player_wallet(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "amountDeposited":
-			out.Values[i] = ec._Player_amountDeposited(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2462,28 +2169,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "gameInfo":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_gameInfo(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "comments":
 			field := field
 
@@ -2494,28 +2179,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_comments(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "players":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_players(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -2964,20 +2627,6 @@ func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋstylusᚑdeveloper
 	return ec._Comment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNGameInfo2githubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐGameInfo(ctx context.Context, sel ast.SelectionSet, v model.GameInfo) graphql.Marshaler {
-	return ec._GameInfo(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNGameInfo2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐGameInfo(ctx context.Context, sel ast.SelectionSet, v *model.GameInfo) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._GameInfo(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v any) (int32, error) {
 	res, err := graphql.UnmarshalInt32(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2992,60 +2641,6 @@ func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalNPlayer2ᚕᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayerᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Player) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNPlayer2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayer(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNPlayer2ᚖgithubᚗcomᚋstylusᚑdevelopersᚑguildᚋbobcatᚑsdkᚋexamplesᚋ004ᚑbozoᚋgraphᚋmodelᚐPlayer(ctx context.Context, sel ast.SelectionSet, v *model.Player) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Player(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {

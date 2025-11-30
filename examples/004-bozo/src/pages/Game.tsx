@@ -1156,7 +1156,7 @@ export function Game() {
             <span className="text-[#FF4B4B]">This project is not audited.</span>
           </div>
           <div className="text-muted-foreground/80">
-            This example was created for fun—please be careful and use your best judgment when interacting with it.
+            Please be careful and use your best judgment when interacting with this app!
           </div>
         </div>
       </div>
