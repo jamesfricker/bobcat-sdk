@@ -1,7 +1,7 @@
 
 .PHONY: build clean
 
-build: bozo.wasm bozo.out
+build: bozo.wasm bootstrap.zip
 
 bozo.wasm: $(shell find Cargo.* src -type f)
 	@rm -f bozo.wasm
