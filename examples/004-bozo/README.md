@@ -32,6 +32,8 @@ are on Arbitrum One. The token in use is USND
 (`0x4ecf61a6c2fab8a047ceb3b3b263b401763e9d49`), an algorithmic stablecoin by Nerite.
 
 The permit relayer is deployed at `0x503a8DD317791aF592B1C84B19eD20a6134ea02d`.
+The frontend routes deposits through this relayer, using a max permit when allowance to the
+relayer is insufficient (settable via `VITE_PERMIT_RELAYER`).
 
 These deployments are on the Arbitrum One mainnet network.
 

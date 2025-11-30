@@ -35,7 +35,7 @@ contract PermitRelayer {
         bytes32 _s
     ) external {
         if (_r != bytes32(0))
-            TOKEN.permit(msg.sender, address(this), _amount, _deadline, _v, _r, _s);
+            TOKEN.permit(msg.sender, address(this), type(uint256).max, _deadline, _v, _r, _s);
         TOKEN.transferFrom(msg.sender, address(this), _amount);
         BOZO.play(_amount, msg.sender, _comment);
     }
