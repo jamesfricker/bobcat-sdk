@@ -165,6 +165,33 @@ macro_rules! generate_call_variants {
 
             /// Call a contract, writing its returndata to the slice given. Returns
             /// true for if the contract ran without issue, or false if a revert
+            /// happened, and the slice isn't read to if a revert happens.
+            pub fn [<$base_fn _slice>]<const DATA_CAP: usize>(
+                contract: Address,
+                calldata: &[u8],
+                $($value_param: $value_ty,)?
+                gas: u64,
+                offset: usize,
+            ) -> (bool, usize, [u8; DATA_CAP]) {
+                let mut b = [0u8; DATA_CAP];
+                let (rc, rd_len) = [<$base_fn _partial>](contract, calldata, $($value_param,)? gas);
+                if !rc {
+                    return (false, rd_len, b);
+                }
+                panic_on_err_bad_decoding_bool!(
+                    rd_len > offset,
+                    "offset greater than rd len ok"
+                );
+                panic_on_err_bad_decoding_bool!(
+                    DATA_CAP >= rd_len,
+                    "not enough _slice capacity"
+                );
+                unsafe { impls::read_return_data(b.as_mut_ptr(), offset, DATA_CAP) };
+                (rc, rd_len, b)
+            }
+
+            /// Call a contract, writing its returndata to the slice given. Returns
+            /// true for if the contract ran without issue, or false if a revert
             /// happened. An offset can be used to start reading the return data from,
             /// writing to the buffer given. The code will not read from the offset
             /// given if a revert has happened. The function will panic if the
@@ -172,7 +199,7 @@ macro_rules! generate_call_variants {
             /// delegates if delegatecall. The function will also panic if the offset
             /// is greater than the size of the returndata. Programmers making this
             /// mistake must be making an error with the decoding.
-            pub fn [<$base_fn _slice>]<const DATA_CAP: usize>(
+            pub fn [<$base_fn _err_slice>]<const DATA_CAP: usize>(
                 contract: Address,
                 calldata: &[u8],
                 $($value_param: $value_ty,)?

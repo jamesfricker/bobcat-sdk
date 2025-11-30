@@ -26,7 +26,7 @@ proxy_bytecode="$(\
 	huffc -b src/eip1967-constructor-args.huff \
 		| sed "s/1000000000000000000000000000000000000001/$BOZO_IMPL/g")"
 
-create_code="$(echo $proxy_bytecode$(cast calldata 'initialise(address,address)' "$BOZO_ADMIN_ADDR" 0x0b8f1939481a337488aae1146063ecacd03462a1 | sed -s 's/^0x//g'))"
+create_code="$(echo $proxy_bytecode$(cast calldata 'initialise(address,address)' "$BOZO_ADMIN_ADDR" 0x4ecf61a6c2fab8a047ceb3b3b263b401763e9d49 | sed -s 's/^0x//g'))"
 
 cast send \
 	--rpc-url "$BOZO_ENDPOINT" \
