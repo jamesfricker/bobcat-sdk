@@ -3,9 +3,12 @@
 package main
 
 import (
+	"database/sql"
 	"context"
 	"net/http"
 	"strings"
+
+	_ "github.com/lib/pq"
 
 	"github.com/stylus-developers-guild/bobcat-sdk/examples/004-bozo/graph"
 
@@ -36,8 +39,13 @@ func (m corsMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	db, err := sql.Open(os.Getenv("BOZO_DATABASE_URI"))
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{
-		Resolvers: &graph.Resolver{},
+		Resolvers: &graph.Resolver{db},
 	}))
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
