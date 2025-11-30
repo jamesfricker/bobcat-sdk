@@ -3,6 +3,7 @@
 package main
 
 import (
+	"os"
 	"database/sql"
 	"context"
 	"net/http"
@@ -39,7 +40,7 @@ func (m corsMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	db, err := sql.Open(os.Getenv("BOZO_DATABASE_URI"))
+	db, err := sql.Open("postgres", os.Getenv("BOZO_DATABASE_URI"))
 	if err != nil {
 		panic(err)
 	}
