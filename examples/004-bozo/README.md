@@ -31,7 +31,7 @@ The proxy is hosted at `0x4f48b57abf53180da5c825a4a22bb6ba91c388d5`. Both of the
 are on Arbitrum One. The token in use is USND
 (`0x4ecf61a6c2fab8a047ceb3b3b263b401763e9d49`), an algorithmic stablecoin by Nerite.
 
-The permit relayer is deployed at `0x4dbb639b1A5bfa2a130987be85291bA5D3B2b3Dd`.
+The permit relayer is deployed at `0x503a8DD317791aF592B1C84B19eD20a6134ea02d`.
 
 These deployments are on the Arbitrum One mainnet network.
 
