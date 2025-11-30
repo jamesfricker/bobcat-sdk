@@ -37,4 +37,4 @@ proptest = "1.9.0"
 
 [dev-dependencies.bobcat-sdk]
 path = "../../bobcat-sdk"
-features = ["std", "alloc", "alloy-enabled", "proptest-enabled"]
+features = ["std", "alloc", "alloy-enabled", "proptest"]

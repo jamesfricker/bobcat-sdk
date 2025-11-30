@@ -26,7 +26,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 #[cfg(feature = "serde")]
 use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
 
-#[cfg(feature = "proptest-enabled")]
+#[cfg(feature = "proptest")]
 pub mod strategies;
 
 #[cfg(feature = "alloc")]
@@ -1603,7 +1603,7 @@ fn test_is_zeroes() {
 #[cfg(all(
     test,
     feature = "alloy-enabled",
-    feature = "proptest-enabled",
+    feature = "proptest",
     feature = "std",
     not(target_arch = "wasm32")
 ))]

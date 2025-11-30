@@ -13,7 +13,7 @@ ruint = { version = "1.12.4" }
 
 [dependencies.bobcat-maths]
 path = "../bobcat-maths"
-features = ["arbitrary-enabled", "alloc", "alloy-enabled"]
+features = ["arbitrary", "alloc", "alloy-enabled"]
 
 [[bin]]
 name = "add"

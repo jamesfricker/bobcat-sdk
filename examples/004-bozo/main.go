@@ -3,16 +3,22 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"strings"
-	"context"
+
+	"github.com/stylus-developers-guild/bobcat-sdk/examples/004-bozo/graph"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/stylus-developers-guild/bobcat-sdk/examples/004-bozo/graph"
+
 	"github.com/vektah/gqlparser/v2/ast"
+
+	"github.com/aws/aws-lambda-go/lambda"
+
+	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 )
 
 type corsMiddleware struct{ srv *handler.Server }
@@ -42,5 +48,5 @@ func main() {
 		Cache: lru.New[string](100),
 	})
 	http.Handle("/", corsMiddleware{srv})
-	panic(http.ListenAndServe(":8080", nil))
+	lambda.Start(httpadapter.NewV2(http.DefaultServeMux).ProxyWithContext)
 }

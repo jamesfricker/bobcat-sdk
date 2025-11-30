@@ -103,7 +103,7 @@ checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
 name = "bobcat-call"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "bobcat-entry",
  "bobcat-maths",
@@ -113,7 +113,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-cd"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -123,11 +123,11 @@ dependencies = [
 
 [[package]]
 name = "bobcat-console"
-version = "0.6.6"
+version = "0.6.9"
 
 [[package]]
 name = "bobcat-create"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-entry"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "bobcat-cd",
  "bobcat-maths",
@@ -146,7 +146,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-events"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -166,7 +166,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-interfaces"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "array-concat",
  "bobcat-cd",
@@ -177,7 +177,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-maths"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "alloy-primitives",
  "array-concat",
@@ -189,19 +189,28 @@ dependencies = [
  "num-traits",
  "paste",
  "proptest",
- "proptest-derive",
 ]
 
 [[package]]
 name = "bobcat-panic"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "const-hex",
+ "paste",
+]
+
+[[package]]
+name = "bobcat-precompiles"
+version = "0.6.9"
+dependencies = [
+ "array-concat",
+ "bobcat-call",
+ "bobcat-maths",
 ]
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "array-concat",
  "bobcat-interfaces",
@@ -211,7 +220,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",
@@ -222,13 +231,14 @@ dependencies = [
  "bobcat-interfaces",
  "bobcat-maths",
  "bobcat-panic",
+ "bobcat-precompiles",
  "bobcat-proxy",
  "bobcat-storage",
 ]
 
 [[package]]
 name = "bobcat-storage"
-version = "0.6.6"
+version = "0.6.9"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -489,17 +499,6 @@ dependencies = [
  "rusty-fork",
  "tempfile",
  "unarray",
-]
-
-[[package]]
-name = "proptest-derive"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "095a99f75c69734802359b682be8daaf8980296731f6470434ea2c652af1dd30"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.109",
 ]
 
 [[package]]
