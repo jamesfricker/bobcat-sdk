@@ -7,7 +7,8 @@ interface IBozo {
     function play(
         uint256 amount,
         address recipient,
-        bytes32 comment
+        bytes32 comment,
+        uint256 desiredEpoch
     ) external returns (uint256 epoch, uint256 deposited);
 
     function distributeRewards(
@@ -22,6 +23,7 @@ interface IBozo {
     function minDeposit() external view returns (uint256);
     function lastBettorAddress() external view returns (uint256);
     function deadline() external view returns (uint256);
+    function epochDeadline(uint256) external view returns (uint256);
     function playerCount() external view returns (uint256);
     function ticketCount() external view returns (uint256);
     function currentEpoch() external view returns (uint256);

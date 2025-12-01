@@ -15,4 +15,5 @@ fs_permissions = [
 	{ access = "read", path = "e2e-test/reverts-bubbling-up.wasm"},
 	{ access = "read", path = "e2e-test/proxy-predicts-create2.wasm"},
 	{ access = "read", path = "e2e-test/precompiles.wasm"},
+	{ access = "read", path = "e2e-test/slot-map.wasm"},
 ]

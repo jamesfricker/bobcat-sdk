@@ -182,9 +182,10 @@ macro_rules! generate_call_variants {
                     rd_len > offset,
                     "offset greater than rd len ok"
                 );
+                let size = rd_len - offset;
                 panic_on_err_bad_decoding_bool!(
-                    DATA_CAP >= rd_len,
-                    "not enough _slice capacity"
+                    DATA_CAP >= size,
+                    "not enough slice capacity"
                 );
                 unsafe { impls::read_return_data(b.as_mut_ptr(), offset, DATA_CAP) };
                 (rc, rd_len, b)

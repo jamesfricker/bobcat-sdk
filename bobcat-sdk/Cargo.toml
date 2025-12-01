@@ -36,14 +36,13 @@ alloc = [
 	"bobcat-create/alloc",
 	"bobcat-entry/alloc",
 	"bobcat-call/alloc",
-	"bobcat-console",
 	"bobcat-panic/alloc",
 	"bobcat-events/alloc",
 	"bobcat-maths/alloc"
 ]
 serde = ["bobcat-maths/serde"]
 borsh = ["bobcat-maths/borsh"]
-console = ["bobcat-panic/console"]
+console = ["dep:bobcat-console", "bobcat-panic/console"]
 arbitrary = ["bobcat-maths/arbitrary"]
 proptest = ["bobcat-maths/proptest", "bobcat-storage/proptest"]
 alloy-enabled = ["bobcat-maths/alloy-enabled"]

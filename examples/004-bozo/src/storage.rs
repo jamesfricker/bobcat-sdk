@@ -17,9 +17,7 @@ macro_rules! storage {
         pub mod $name {
             pub(crate) use bobcat_sdk::storage::*;
             use bobcat_sdk::maths::{u, U};
-
             const SLOT: U = u!($counter);
-
             storage!(@impl [$($param),*]);
         }
         $(
@@ -31,48 +29,57 @@ macro_rules! storage {
         )?
     };
     (@impl []) => {
+        pub fn slot() -> U {
+            SLOT
+        }
         pub fn get() -> U {
-            storage_load(&SLOT)
+            storage_load(&slot())
         }
         pub fn set(x: &U) {
-            storage_store(&SLOT, x)
+            storage_store(&slot(), x)
         }
         pub fn add(x: &U) -> Option<()> {
-            storage_checked_add(&SLOT, x)
+            storage_checked_add(&slot(), x)
         }
         pub fn sub(x: &U) -> Option<()> {
-            storage_checked_sub(&SLOT, x)
+            storage_checked_sub(&slot(), x)
         }
         pub fn clear() {
             set(&U::ZERO)
         }
     };
     (@impl [$param1:ident]) => {
+        pub fn slot($param1: &U) -> U {
+            slot_map(&SLOT, $param1)
+        }
         pub fn get($param1: &U) -> U {
-            storage_load(&slot_map(&SLOT, $param1))
+            storage_load(&slot($param1))
         }
         pub fn set($param1: &U, x: &U) {
-            storage_store(&slot_map(&SLOT, $param1), x)
+            storage_store(&slot($param1), x)
         }
         pub fn add($param1: &U, x: &U) -> Option<()> {
-            storage_checked_add(&slot_map(&SLOT, $param1), x)
+            storage_checked_add(&slot($param1), x)
         }
         pub fn sub($param1: &U, x: &U) -> Option<()> {
-            storage_checked_sub(&slot_map(&SLOT, $param1), x)
+            storage_checked_sub(&slot($param1), x)
         }
     };
     (@impl [$param1:ident, $param2:ident]) => {
+        pub fn slot($param1: &U, $param2: &U) -> U {
+            slot_map(&slot_map(&SLOT, $param1), $param2)
+        }
         pub fn get($param1: &U, $param2: &U) -> U {
-            storage_load(&slot_map(&slot_map(&SLOT, $param1), $param2))
+            storage_load(&slot($param1, $param2))
         }
         pub fn set($param1: &U, $param2: &U, x: &U) {
-            storage_store(&slot_map(&slot_map(&SLOT, $param1), $param2), x)
+            storage_store(&slot($param1, $param2), x)
         }
         pub fn add($param1: &U, $param2: &U, x: &U) -> Option<()> {
-            storage_checked_add(&slot_map(&slot_map(&SLOT, $param1), $param2), x)
+            storage_checked_add(&slot($param1, $param2), x)
         }
         pub fn sub($param1: &U, $param2: &U, x: &U) -> Option<()> {
-            storage_checked_sub(&slot_map(&slot_map(&SLOT, $param1), $param2), x)
+            storage_checked_sub(&slot($param1, $param2), x)
         }
     };
 }

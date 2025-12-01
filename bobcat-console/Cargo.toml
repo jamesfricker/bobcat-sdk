@@ -6,5 +6,3 @@ license = "MIT"
 description = "bobcat-sdk console makes printing easy with Arbitrum Stylus, using a macro."
 homepage = "https://bobcat.so"
 repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
-
-[dependencies]

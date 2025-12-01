@@ -1,11 +1,17 @@
 
 .PHONY: build clean
 
+CARGO_EXTRA_FEATURES := \
+	$(if ${BOZO_INLINE_MATHS},--features inline-maths)
+
 build: bozo.wasm bootstrap.zip
 
 bozo.wasm: $(shell find Cargo.* src -type f)
 	@rm -f bozo.wasm
-	@cargo build --release --target wasm32-unknown-unknown
+	@cargo build \
+		--release \
+		--target wasm32-unknown-unknown \
+		${CARGO_EXTRA_FEATURES}
 	@./wasm-post.sh \
 		target/wasm32-unknown-unknown/release/bobcat-examples-004.wasm \
 		bozo.wasm

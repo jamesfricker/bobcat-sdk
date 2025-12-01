@@ -49,9 +49,9 @@ pub const ERROR_PREAMBLE_OFFSET: [u8; 4 + 32] = match const_hex::const_decode_to
 #[derive(Clone, Debug, PartialEq)]
 #[repr(u8)]
 pub enum PanicCodes {
+    DecodingError = 0,
     OverflowOrUnderflow = 0x11,
     DivByZero = 0x12,
-    DecodingError = 0x22,
 }
 
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]

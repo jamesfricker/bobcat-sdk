@@ -14,7 +14,9 @@ PROJECTS := \
 	eip1967-proxy \
 	reverts-bubbling-up \
 	proxy-predicts-create2 \
-	precompiles
+	precompiles \
+	slot-map \
+	safe-erc20
 
 all: wasm
 
@@ -34,7 +36,9 @@ wasm: \
 	eip1967-proxy.wasm \
 	reverts-bubbling-up.wasm \
 	proxy-predicts-create2.wasm \
-	precompiles.wasm
+	precompiles.wasm \
+	slot-map.wasm \
+	safe-erc20.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -80,6 +84,14 @@ precompiles.wasm: ${BUILT}
 	@rm -f precompiles.wasm
 	@./wasm-post.sh ${RELEASE}/precompiles.wasm precompiles.wasm
 
+slot-map.wasm: ${BUILT}
+	@rm -f slot-map.wasm
+	@./wasm-post.sh ${RELEASE}/slot-map.wasm slot-map.wasm
+
+safe-erc20.wasm: ${BUILT}
+	@rm -f safe-erc20.wasm
+	@./wasm-post.sh ${RELEASE}/safe-erc20.wasm safe-erc20.wasm
+
 clean:
 	@rm -rf \
 		target \
@@ -93,4 +105,6 @@ clean:
 		eip1967-proxy.wasm \
 		reverts-bubbling-up.wasm \
 		proxy-predicts-create2.wasm \
-		precompiles.wasm
+		precompiles.wasm \
+		slot-map.wasm \
+		safe-erc20.wasm

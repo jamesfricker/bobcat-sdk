@@ -30,6 +30,7 @@ contract PermitRelayer {
         uint256 _amount,
         bytes32 _comment,
         uint256 _deadline,
+        uint256 _epoch,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
@@ -37,6 +38,6 @@ contract PermitRelayer {
         if (_r != bytes32(0))
             TOKEN.permit(msg.sender, address(this), _amount, _deadline, _v, _r, _s);
         TOKEN.transferFrom(msg.sender, address(this), _amount);
-        BOZO.play(_amount, msg.sender, _comment);
+        BOZO.play(_amount, msg.sender, _comment, _epoch);
     }
 }

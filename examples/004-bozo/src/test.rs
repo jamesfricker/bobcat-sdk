@@ -1,13 +1,13 @@
 use proptest::prelude::*;
 
 use bobcat_sdk::{
-    entry::{contract_address, host as entry_host, msg_sender},
+    entry::{contract_address, entry_host, msg_sender},
     maths::{
         mul_div_round_up,
         strategies::{strat_addr_not_empty, strat_small_u},
         U,
     },
-    storage::host as storage_host,
+    storage::storage_host,
 };
 
 use crate::{
@@ -68,7 +68,7 @@ proptest! {
                 round_pool += amt_with_fee;
                 eip20::give(addr, amt_with_fee);
                 entry_host::set_msg_sender(addr);
-                assert_eq!(0, crate::state_play(amt_with_fee, addr, &comment));
+                assert_eq!(0, crate::state_play(amt_with_fee, addr, &comment, &i.into()));
             }
             pool += round_pool;
             // We set the deadline to one, and we mock out the current timestamp as 2

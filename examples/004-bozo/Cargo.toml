@@ -1,13 +1,17 @@
 [workspace]
+exclude = ["fuzz"]
 
 [package]
 name = "bobcat-examples-004"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "libbozo"
+
 [dependencies]
 array-concat = "0.5.5"
-bobcat-sdk = { path = "../../bobcat-sdk", features = ["panic-revert", "alloc"] }
+bobcat-sdk = { path = "../../bobcat-sdk", features = ["panic-revert", "alloc", "console"] }
 concat-arrays = "0.1.2"
 const-hex = { version = "1.17.0", default-features = false, features = ["alloc"] }
 mini-alloc = "1.0.0"
@@ -31,9 +35,12 @@ incremental = true
 
 [features]
 std = ["bobcat-sdk/std"]
+inline-maths = ["bobcat-sdk/alloy-enabled"]
+arbitrary = ["bobcat-sdk/arbitrary"]
 
 [dev-dependencies]
 proptest = "1.9.0"
+proptest-derive = "0.7.0"
 
 [dev-dependencies.bobcat-sdk]
 path = "../../bobcat-sdk"

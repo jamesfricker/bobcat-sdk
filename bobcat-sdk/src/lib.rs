@@ -14,7 +14,7 @@ pub use bobcat_storage as storage;
 #[cfg(any(feature = "panic", feature = "panic-revert"))]
 pub use bobcat_panic as panic;
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "console")]
 pub use bobcat_console as console;
 
 pub mod prelude {
@@ -26,6 +26,6 @@ pub mod prelude {
     #[cfg(any(feature = "panic", feature = "panic-revert"))]
     pub use super::panic::*;
 
-    #[cfg(feature = "alloc")]
+    #[cfg(feature = "console")]
     pub use super::console::*;
 }
