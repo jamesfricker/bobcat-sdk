@@ -26,8 +26,8 @@ You can read a reference implementation at `src/reference.py`.
 
 ## Deployment
 
-The deployment implementation is hosted at `0x30b01180dbdb58f1e585b51e8fb676764896fd88`.
-The proxy is hosted at `0x4f48b57abf53180da5c825a4a22bb6ba91c388d5`. Both of these contracts
+The deployment implementation is hosted at `0x8a2de40f965ec4ece00a0e9ff3556b98c842b310`.
+The proxy is hosted at `0xd2c5cdeceaa85e9e44edcc63b207febaab8dcaf4`. Both of these contracts
 are on Arbitrum One. The token in use is USND
 (`0x4ecf61a6c2fab8a047ceb3b3b263b401763e9d49`), an algorithmic stablecoin by Nerite.
 

@@ -30,7 +30,7 @@ import {
   winnerEventAbi,
 } from '../lib/depositEvents';
 
-const BOZO_CONTRACT_ADDRESS = '0x4f48b57abf53180da5c825a4a22bb6ba91c388d5' as const;
+const BOZO_CONTRACT_ADDRESS = '0xd2c5cdeceaa85e9e44edcc63b207febaab8dcaf4' as const;
 const GAME_START_DELAY_MINUTES = 45;
 const HARD_CODED_MIN_RESET_TOKENS = 1;
 const DEFAULT_HOME_TOKEN = 'USND';
