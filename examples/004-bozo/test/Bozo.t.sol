@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import {Test} from "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
@@ -28,8 +29,13 @@ contract ERC20 {
     }
 
     function _transfer(address _from, address _to, uint256 _value) internal {
-        balanceOf[_from] -= _value;
+        if (_value > balanceOf[_from]) {
+            console.log("from trying to spend too much", _from);
+            console.log("transfer amount", _value);
+            revert("transfer too much");
+        }
         unchecked {
+            balanceOf[_from] -= _value;
             balanceOf[_to] += _value;
         }
         emit Transfer(_from, _to, _value);
@@ -66,31 +72,35 @@ contract Bozo is Test {
         token.approve(address(a), type(uint256).max);
     }
 
-    function test_fuzzGame(uint256 alexDeposit, uint256 erikDeposit) external {
-        vm.assumeNoRevert();
-        uint256 erikNeeded = alexDeposit + ((alexDeposit * 3) / 10);
-        vm.assume(erikDeposit > erikNeeded);
-        (IBozo a, ERC20 token) = createGame(alexDeposit, erikDeposit);
-        vm.assumeNoRevert();
+    function test_fuzzGame(uint256 alexDeposit) external {
+        vm.assume(alexDeposit > 100);
+        vm.assume(1e50 > alexDeposit);
+        uint256 erikDeposit = alexDeposit + ((alexDeposit * 3) / 10);
         uint256 pool = alexDeposit + erikDeposit;
+        (IBozo a, ERC20 token) = createGame(alexDeposit, erikDeposit);
         vm.warp(405611000);
         vm.prank(alex);
         a.play(alexDeposit, alex, 0, 0);
+        assertEq(0, token.balanceOf(alex));
         assertEq(0, a.currentEpoch());
+        console.log("about to invoke erik");
         vm.warp(405611745);
         vm.prank(erik);
         a.play(erikDeposit, erik, 0, 0);
+        assertEq(0, token.balanceOf(erik));
         //assertEq(0, a.currentEpoch());
         assertEq(block.timestamp + 2400, a.deadline());
+        console.log("distributing rewards");
         vm.warp(405910536);
         vm.prank(alex);
         a.distributeRewards(0, alex, 123);
         vm.assumeNoRevert();
         uint256 exp = pool - ((pool * 5) / 100);
-        vm.assertApproxEqRel(
+        vm.assertApproxEqAbsDecimal(
             exp,
             token.balanceOf(alex) + token.balanceOf(erik),
-            1e16
+            1000,
+            6
         );
     }
 }
