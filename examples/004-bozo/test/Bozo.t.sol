@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
@@ -30,8 +29,6 @@ contract ERC20 {
 
     function _transfer(address _from, address _to, uint256 _value) internal {
         if (_value > balanceOf[_from]) {
-            console.log("from trying to spend too much", _from);
-            console.log("transfer amount", _value);
             revert("transfer too much");
         }
         unchecked {
@@ -83,14 +80,11 @@ contract Bozo is Test {
         a.play(alexDeposit, alex, 0, 0);
         assertEq(0, token.balanceOf(alex));
         assertEq(0, a.currentEpoch());
-        console.log("about to invoke erik");
         vm.warp(405611745);
         vm.prank(erik);
         a.play(erikDeposit, erik, 0, 0);
         assertEq(0, token.balanceOf(erik));
-        //assertEq(0, a.currentEpoch());
         assertEq(block.timestamp + 2400, a.deadline());
-        console.log("distributing rewards");
         vm.warp(405910536);
         vm.prank(alex);
         a.distributeRewards(0, alex, 123);
