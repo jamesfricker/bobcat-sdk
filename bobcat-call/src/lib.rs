@@ -338,7 +338,8 @@ macro_rules! generate_call_variants {
 
             /// Check the codesize before invoking call, only reading a single byte
             /// at the location for a bool check. If the contract doesn't return anything,
-            /// then we assume everything went okay.
+            /// then we assume everything went okay. If it does, then we check for true.
+            /// We don't return anything.
             pub fn [<safe_ $base_fn _bool>](
                 contract: Address,
                 calldata: &[u8],
@@ -346,7 +347,16 @@ macro_rules! generate_call_variants {
                 gas: u64,
             ) -> bool {
                 if addr_has_code(contract) {
-                    [<$base_fn _bool>](contract, calldata, $($value_param,)? gas)
+                    match [<$base_fn _partial>](contract, calldata, $($value_param,)? gas) {
+                        (true, 32) => {
+                            let mut b = [0u8; 1];
+                            unsafe { impls::read_return_data(b.as_mut_ptr(), 31, 1) };
+                            b[0] == 1
+                        }
+                        (true, 0) => true,
+                        (true, _) => panic_on_err_bad_decoding_bool!("word not returned"),
+                        _ => false
+                    }
                 } else {
                     false
                 }

@@ -2,6 +2,6 @@
 
 make -B
 
-export FOUNDRY_FUZZ_RUNS=10000
+# export FOUNDRY_FUZZ_RUNS=10000
 
-arbos-forge test --gas-snapshot-check true $@
+arbos-forge test --gas-snapshot-check true --stylus-debug

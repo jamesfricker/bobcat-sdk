@@ -16,4 +16,5 @@ fs_permissions = [
 	{ access = "read", path = "e2e-test/proxy-predicts-create2.wasm"},
 	{ access = "read", path = "e2e-test/precompiles.wasm"},
 	{ access = "read", path = "e2e-test/slot-map.wasm"},
+	{ access = "read", path = "e2e-test/safe-erc20.wasm"}
 ]
