@@ -188,3 +188,7 @@ a `Makefile` that produces the optimized wasm artifact.
 ## Credits
 
 Credit to Marko (Blazeaster) for the logo!
+
+Bernard Wagner from iosiro has been an invaluable resource for developing this SDK. Thanks
+to his work with arbos-foundry, and for his hands on support, this wouldn't have been
+possible!
