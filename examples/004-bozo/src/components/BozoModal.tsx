@@ -294,6 +294,11 @@ export function BozoModal({
       return;
     }
 
+    if (!publicClient) {
+      toast.error('Network client unavailable. Please try again.');
+      return;
+    }
+
     if (!(await ensureCorrectChain())) {
       return;
     }
@@ -324,6 +329,30 @@ export function BozoModal({
       const commentHash: `0x${string}` = hasComment
         ? keccak256(stringToHex(comment))
         : ZERO_BYTES32;
+
+      let epochForTx: bigint;
+      let epochForCookie: bigint | null = null;
+
+      try {
+        const epochResult = await publicClient.readContract({
+          address: appConfig.contracts.bozo as `0x${string}`,
+          abi: bozoAbi,
+          functionName: 'currentEpoch',
+        });
+
+        if (typeof epochResult !== 'bigint') {
+          throw new Error('Invalid epoch value received');
+        }
+
+        epochForTx = epochResult;
+        epochForCookie = epochResult;
+      } catch (error) {
+        console.error('Failed to fetch current epoch before deposit:', error);
+        toast.error('Unable to fetch current epoch. Please try again.');
+        setIsDepositing(false);
+        return;
+      }
+
       const txHash = await writeContractAsync({
         address: appConfig.contracts.bozo as `0x${string}`,
         abi: bozoAbi,
@@ -332,6 +361,7 @@ export function BozoModal({
           amountWei,
           address,
           commentHash,
+          epochForTx,
         ],
         chainId: arbitrum.id,
       });
@@ -344,27 +374,9 @@ export function BozoModal({
 
       toast.success('Deposit confirmed. RIP BOZO! 🤡');
 
-      let epochForCookie: bigint | null = null;
-
       await refetchBalance().catch((error) => {
         console.error('Failed to refresh balance:', error);
       });
-
-      if (publicClient) {
-        try {
-          const epochResult = await publicClient.readContract({
-            address: appConfig.contracts.bozo as `0x${string}`,
-            abi: bozoAbi,
-            functionName: 'currentEpoch',
-          });
-
-          if (typeof epochResult === 'bigint') {
-            epochForCookie = epochResult;
-          }
-        } catch (error) {
-          console.error('Failed to read current epoch after deposit:', error);
-        }
-      }
 
       if (epochForCookie !== null) {
         const cookieName = makeEpochCookieName(address);

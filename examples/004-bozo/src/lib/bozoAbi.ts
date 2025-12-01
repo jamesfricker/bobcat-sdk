@@ -63,6 +63,7 @@ export const bozoAbi = [
       { name: 'amount', type: 'uint256' },
       { name: 'recipient', type: 'address' },
       { name: 'comment', type: 'bytes32' },
+      { name: 'epoch', type: 'uint256' },
     ],
     outputs: [
       { name: 'epoch', type: 'uint256' },
