@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
@@ -23,16 +22,12 @@ contract ERC20 {
     }
 
     function transferFrom(address _from, address _to, uint256 _value) external {
-        console.log("transfer from", _value);
-        console.log("balance for transfer from", balanceOf[_from]);
-        console.log("allowance for transfer from", allowance[_from][_to]);
         if (allowance[_from][msg.sender] != type(uint256).max)
             allowance[_from][msg.sender] -= _value;
         _transfer(_from, _to, _value);
     }
 
     function _transfer(address _from, address _to, uint256 _value) internal {
-        console.log("transfer", _value);
         balanceOf[_from] -= _value;
         unchecked {
             balanceOf[_to] += _value;
@@ -59,10 +54,11 @@ contract Bozo is Test {
         uint256 amount
     );
 
-    function createGame() internal returns (IBozo a) {
+    function createGame(uint256 alexBal, uint256 erikBal) internal returns (IBozo a, ERC20 token) {
         a = IBozo(IArbFoundry(address(vm)).deployStylusCode("bozo.wasm"));
-        ERC20 token = new ERC20();
-        token.transfer(alex, 1e18);
+        token = new ERC20();
+        token.transfer(alex, alexBal);
+        token.transfer(erik, erikBal);
         a.initialise(alex, address(token));
         vm.prank(alex);
         token.approve(address(a), type(uint256).max);
@@ -70,25 +66,31 @@ contract Bozo is Test {
         token.approve(address(a), type(uint256).max);
     }
 
-    function test_everything() external {
-        IBozo a = createGame();
-        console.log("current deadline before first player", a.deadline());
-        console.log("current block timestamp", block.timestamp);
+    function test_fuzzGame(uint256 alexDeposit, uint256 erikDeposit) external {
+        vm.assumeNoRevert();
+        uint256 erikNeeded = alexDeposit + ((alexDeposit * 3) / 10);
+        vm.assume(erikDeposit > erikNeeded);
+        (IBozo a, ERC20 token) = createGame(alexDeposit, erikDeposit);
+        vm.assumeNoRevert();
+        uint256 pool = alexDeposit + erikDeposit;
+        vm.warp(405611000);
         vm.prank(alex);
-        a.play(76293945312500, alex, 0, 0);
-        console.log("current deadline after first player", a.deadline());
+        a.play(alexDeposit, alex, 0, 0);
         assertEq(0, a.currentEpoch());
         vm.warp(405611745);
         vm.prank(erik);
-        a.play(6756406260067100922, erik, 0, 0);
-        console.log("current deadline before second player", a.deadline());
+        a.play(erikDeposit, erik, 0, 0);
         //assertEq(0, a.currentEpoch());
-        console.log(a.deadline());
         assertEq(block.timestamp + 2400, a.deadline());
         vm.warp(405910536);
         vm.prank(alex);
-        vm.expectEmit();
-        emit Transfer(address(a), alex, 10);
-        a.distributeRewards(1, alex, 123);
+        a.distributeRewards(0, alex, 123);
+        vm.assumeNoRevert();
+        uint256 exp = pool - ((pool * 5) / 100);
+        vm.assertApproxEqRel(
+            exp,
+            token.balanceOf(alex) + token.balanceOf(erik),
+            1e16
+        );
     }
 }

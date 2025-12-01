@@ -279,8 +279,9 @@ fn state_play(amt: U, recipient: Address, comment: &U, preferred_epoch: &U) -> u
 
 fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
     assert_eq!(ADDR_OPERATOR, msg_sender(), "operator only");
+    let deadline = storage::ts_deadline::get(&epoch);
     assert!(
-        U::from(block_timestamp()) > storage::ts_deadline::get(&epoch),
+        U::from(block_timestamp()) > deadline && deadline.is_some(),
         "not concluded"
     );
     // Take 80% of the pool, and send to the winning depositor:
@@ -289,7 +290,6 @@ fn state_distribute_rewards(epoch: &U, rng: &U) -> usize {
         - storage::user_lottery_tickets::get(&epoch, &last_bettor_addr.into());
     let addr_asset: Address = storage::asset::get().into();
     let full_pool = storage::pool_size::get(&epoch);
-    bobcat_sdk::console::console!("i made it here", ticket_count);
     if ticket_count.is_zero() {
         // We only had one player! Let's transfer them the full amount, and stop.
         if last_bettor_addr != [0u8; 20] {
