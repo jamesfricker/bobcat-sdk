@@ -8,55 +8,87 @@ import {IArbFoundry} from "./IArbFoundry.sol";
 
 import {IBozo} from "../src/IBozo.sol";
 
-contract Bozo is Test {
+contract ERC20 {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
     event Transfer(
         address indexed sender,
         address indexed recipient,
-        uint256 indexed amount
+        uint256 amount
     );
 
-    address impl;
-
-    function deployProxy(address _impl) internal returns (address deployed) {
-        // Proxy taken from the eip1967 code:
-        bytes memory bytecode = abi.encodePacked(
-            hex"73",
-            _impl,
-            hex"7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc55603a8060403d393df3365f5f375f5f365f7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545af45f3d5f5f3e3d9161003857fd5bf3"
-        );
-        assembly {
-            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
-        }
+    constructor() {
+        balanceOf[msg.sender] = type(uint256).max;
     }
 
+    function transferFrom(address _from, address _to, uint256 _value) external {
+        console.log("transfer from", _value);
+        console.log("balance for transfer from", balanceOf[_from]);
+        console.log("allowance for transfer from", allowance[_from][_to]);
+        if (allowance[_from][msg.sender] != type(uint256).max)
+            allowance[_from][msg.sender] -= _value;
+        _transfer(_from, _to, _value);
+    }
+
+    function _transfer(address _from, address _to, uint256 _value) internal {
+        console.log("transfer", _value);
+        balanceOf[_from] -= _value;
+        unchecked {
+            balanceOf[_to] += _value;
+        }
+        emit Transfer(_from, _to, _value);
+    }
+
+    function transfer(address _to, uint256 _value) external {
+        _transfer(msg.sender, _to, _value);
+    }
+
+    function approve(address _spender, uint256 _value) external {
+        allowance[msg.sender][_spender] = _value;
+    }
+}
+
+contract Bozo is Test {
+    address alex = 0x6221A9c005F6e47EB398fD867784CacfDcFFF4E7;
+    address erik = 0xdd50872400Fb1dA43FFfA87Be38b85AA79DFa0ae;
+
+    event Transfer(
+        address indexed sender,
+        address indexed recipient,
+        uint256 amount
+    );
+
     function createGame() internal returns (IBozo a) {
-        a = IBozo(deployProxy(impl));
+        a = IBozo(IArbFoundry(address(vm)).deployStylusCode("bozo.wasm"));
+        ERC20 token = new ERC20();
+        token.transfer(alex, 1e18);
+        a.initialise(alex, address(token));
+        vm.prank(alex);
+        token.approve(address(a), type(uint256).max);
+        vm.prank(erik);
+        token.approve(address(a), type(uint256).max);
     }
 
     function test_everything() external {
-        uint256 id = vm.createFork("https://arb1.arbitrum.io/rpc", 405609348);
-        vm.selectFork(id);
-        impl = IArbFoundry(address(vm)).deployStylusCode(
-            "bozo.wasm"
-        );
         IBozo a = createGame();
-        vm.prank(0x6221A9c005F6e47EB398fD867784CacfDcFFF4E7);
         console.log("current deadline before first player", a.deadline());
         console.log("current block timestamp", block.timestamp);
-        a.play(76293945312500, 0x6221A9c005F6e47EB398fD867784CacfDcFFF4E7, 0, 0);
+        vm.prank(alex);
+        a.play(76293945312500, alex, 0, 0);
         console.log("current deadline after first player", a.deadline());
         assertEq(0, a.currentEpoch());
         vm.warp(405611745);
-        vm.prank(0xdd50872400Fb1dA43FFfA87Be38b85AA79DFa0ae);
-        a.play(6756406260067100922, 0xdd50872400Fb1dA43FFfA87Be38b85AA79DFa0ae, 0, 0);
+        vm.prank(erik);
+        a.play(6756406260067100922, erik, 0, 0);
         console.log("current deadline before second player", a.deadline());
         //assertEq(0, a.currentEpoch());
         console.log(a.deadline());
         assertEq(block.timestamp + 2400, a.deadline());
         vm.warp(405910536);
-        vm.prank(0x6221A9c005F6e47EB398fD867784CacfDcFFF4E7);
+        vm.prank(alex);
         vm.expectEmit();
-        emit Transfer(address(a), 0x6221A9c005F6e47EB398fD867784CacfDcFFF4E7, 10);
-        a.distributeRewards(1, 0x6221A9c005F6e47EB398fD867784CacfDcFFF4E7, 123);
+        emit Transfer(address(a), alex, 10);
+        a.distributeRewards(1, alex, 123);
     }
 }

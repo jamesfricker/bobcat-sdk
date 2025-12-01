@@ -4,4 +4,4 @@
 
 make
 
-arbos-forge test --stylus-debug -vv
+arbos-forge test --stylus-debug -vvv
