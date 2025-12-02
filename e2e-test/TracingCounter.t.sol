@@ -6,7 +6,16 @@ import {Test} from "forge-std/Test.sol";
 import {IArbFoundry} from "./IArbFoundry.sol";
 
 interface ITracingCounter {
-    function hello() external;
+    function hello() external returns (uint256);
+}
+
+contract SetTransient {
+    function set(uint256 x) external {
+        uint256 id = uint256(keccak256(abi.encodePacked("bobcat.tracing.counter"))) - 1;
+        assembly {
+            tstore(id, x)
+        }
+    }
 }
 
 contract TracingCounter is Test {
@@ -19,15 +28,10 @@ contract TracingCounter is Test {
     }
 
     function testFuzz_counter(uint256 x) public {
-        vm.assume(x > uint256(type(uint32).max));
-        for(uint i = 0; i < x; i++) {
-            tracingCounter.hello();
-        }
-        uint256 counter;
-        uint256 id = uint256(keccak256(abi.encodePacked("bobcat.tracing.counter"))) - 1;
-        assembly {
-            counter := tload(id)
-        }
-        assertEq(x, counter);
+        vm.assume(uint256(type(uint32).max) > x);
+        SetTransient t = new SetTransient();
+        t.set(x);
+        vm.etch(address(t), address(tracingCounter).code);
+        assertEq(x + 1, ITracingCounter(address(t)).hello());
     }
 }

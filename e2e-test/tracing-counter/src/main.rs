@@ -9,5 +9,6 @@ static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn user_entrypoint(_: usize) -> usize {
     bump();
+    write_result_word(&transient_load(&U(SLOT_TRACING_COUNTER)));
     0
 }
