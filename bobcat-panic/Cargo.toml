@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-panic"
-version = "0.7.1"
+version = "0.7.2"
 edition = "2024"
 license = "MIT"
 description = "Bobcat utilities with a panic handler on Arbitrum Stylus."
@@ -13,12 +13,13 @@ name = "bobcat_panic"
 [features]
 alloc = []
 console = ["alloc"]
-std = ["dep:proptest"]
+std = ["proptest"]
 panic-revert = ["panic"]
 panic-loc = ["panic"]
 panic-trace = ["panic"]
 panic = []
 msg-on-sdk-err = ["panic"]
+proptest = ["dep:proptest"]
 
 [dependencies]
 const-hex.workspace = true

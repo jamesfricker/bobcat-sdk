@@ -16,7 +16,7 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "bobcat-call"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "bobcat-entry",
  "bobcat-maths",
@@ -26,7 +26,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-cd"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -36,7 +36,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-create"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -46,7 +46,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-entry"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "bobcat-cd",
  "bobcat-maths",
@@ -55,7 +55,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-events"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-maths",
@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-interfaces"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-cd",
@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-maths"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-panic",
@@ -87,7 +87,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-panic"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "const-hex",
  "paste",
@@ -95,7 +95,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-precompiles"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-call",
@@ -104,7 +104,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-proxy"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-interfaces",
@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-sdk"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "bobcat-call",
  "bobcat-cd",
@@ -131,7 +131,7 @@ dependencies = [
 
 [[package]]
 name = "bobcat-storage"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "array-concat",
  "bobcat-maths",
