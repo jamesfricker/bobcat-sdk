@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {console} from "forge-std/console.sol";
-
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
@@ -22,19 +20,19 @@ contract MulDiv is Test {
         ));
     }
 
-    function testFuzz_ruint(uint256 x, uint256 y, uint256 z) public {
+    function testFuzz_ruint(uint256 x, uint256 y, uint256 z) public view {
         mulDiv.ruint(x, y, z);
     }
 
-    function testFuzz_widening(uint256 x, uint256 y, uint256 z) public {
+    function testFuzz_widening(uint256 x, uint256 y, uint256 z) public view {
         mulDiv.widening(x, y, z);
     }
 
-    function testFuzz_uniswap(uint256 x, uint256 y, uint256 z) public {
+    function testFuzz_uniswap(uint256 x, uint256 y, uint256 z) public view {
         mulDiv.uniswap(x, y, z);
     }
 
-    function testFuzz_online(uint256 x, uint256 y, uint256 z) public {
+    function testFuzz_online(uint256 x, uint256 y, uint256 z) public view {
         uint256 ruint = mulDiv.ruint(x, y, z);
         uint256 online = mulDiv.uniswap(x, y, z);
         uint256 widening = mulDiv.widening(x, y, z);

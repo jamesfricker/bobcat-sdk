@@ -16,7 +16,8 @@ PROJECTS := \
 	proxy-predicts-create2 \
 	precompiles \
 	slot-map \
-	safe-erc20
+	safe-erc20 \
+	tracing-counter
 
 all: wasm
 
@@ -38,7 +39,8 @@ wasm: \
 	proxy-predicts-create2.wasm \
 	precompiles.wasm \
 	slot-map.wasm \
-	safe-erc20.wasm
+	safe-erc20.wasm \
+	tracing-counter.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -92,6 +94,10 @@ safe-erc20.wasm: ${BUILT}
 	@rm -f safe-erc20.wasm
 	@./wasm-post.sh ${RELEASE}/safe-erc20.wasm safe-erc20.wasm
 
+tracing-counter.wasm: ${BUILT}
+	@rm -f safe-erc20.wasm
+	@./wasm-post.sh ${RELEASE}/tracing-counter.wasm tracing-counter.wasm
+
 clean:
 	@rm -rf \
 		target \
@@ -107,4 +113,5 @@ clean:
 		proxy-predicts-create2.wasm \
 		precompiles.wasm \
 		slot-map.wasm \
-		safe-erc20.wasm
+		safe-erc20.wasm \
+		tracing-counter.wasm

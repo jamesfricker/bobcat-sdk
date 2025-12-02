@@ -14,7 +14,7 @@ members = [
 	"precompiles",
 	"slot-map",
 	"safe-erc20"
-]
+, "tracing-counter"]
 
 [workspace.dependencies]
 bobcat-sdk = { path = "../bobcat-sdk", features = ["alloc", "panic-revert", "msg-on-sdk-err", "console"] }
