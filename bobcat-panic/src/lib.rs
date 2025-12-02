@@ -262,6 +262,14 @@ pub fn trace(k: &str) {
     unsafe { impls::transient_store_bytes32(SLOT_TRACING_COUNTER.as_ptr(), v.as_ptr()) }
 }
 
+#[macro_export]
+macro_rules! trace_guard {
+    ($($body:tt)*) => {{
+        trace(concat!(file!(), ":", line!()));
+        $($body)*
+    }};
+}
+
 #[cfg(all(test, feature = "std"))]
 mod test {
     use proptest::prelude::*;
