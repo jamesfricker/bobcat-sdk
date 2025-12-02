@@ -192,7 +192,7 @@ pub fn bump() {
     // so the upper part of the word could be dirty!
     let mut b = [0u8; 32];
     unsafe { impls::transient_load_bytes32(p, b.as_mut_ptr()) };
-    let v = u32::from_be_bytes(b[32-size_of::<u32>()..].try_into().unwrap()) + 1;
-    b[32-size_of::<u32>()..].copy_from_slice(&v.to_be_bytes());
+    let v = u32::from_be_bytes(b[32 - size_of::<u32>()..].try_into().unwrap()) + 1;
+    b[32 - size_of::<u32>()..].copy_from_slice(&v.to_be_bytes());
     unsafe { impls::transient_store_bytes32(p, b.as_ptr()) }
 }

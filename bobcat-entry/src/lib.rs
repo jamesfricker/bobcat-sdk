@@ -23,7 +23,7 @@ mod impls {
         pub(crate) fn msg_sender(addr: *mut u8);
         pub(crate) fn contract_address(addr: *mut u8);
         pub(crate) fn msg_value(value: *mut u8);
-        pub fn chain_id() -> u64;
+        pub fn chainid() -> u64;
         pub(crate) fn account_codehash(address: *const u8, dest: *mut u8);
         pub(crate) fn block_timestamp() -> u64;
     }
@@ -106,7 +106,7 @@ pub mod entry_host {
         })
     }
 
-    pub(crate) unsafe fn chain_id() -> u64 {
+    pub(crate) unsafe fn chainid() -> u64 {
         CHAIN_ID.with(|s| s.borrow().clone())
     }
 
@@ -145,7 +145,7 @@ mod impls {
 
     pub(crate) unsafe fn msg_value(_: *mut u8) {}
 
-    pub(crate) unsafe fn chain_id() -> u64 {
+    pub(crate) unsafe fn chainid() -> u64 {
         0
     }
 
@@ -322,7 +322,7 @@ pub fn code_hash(addr: Address) -> [u8; 32] {
 }
 
 pub fn chain_id() -> u64 {
-    unsafe { impls::chain_id() }
+    unsafe { impls::chainid() }
 }
 
 pub fn block_timestamp() -> u64 {
