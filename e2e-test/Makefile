@@ -17,7 +17,8 @@ PROJECTS := \
 	precompiles \
 	slot-map \
 	safe-erc20 \
-	tracing-counter
+	tracing-counter \
+	panic-trace
 
 all: wasm
 
@@ -40,7 +41,8 @@ wasm: \
 	precompiles.wasm \
 	slot-map.wasm \
 	safe-erc20.wasm \
-	tracing-counter.wasm
+	tracing-counter.wasm \
+	panic-trace.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -95,8 +97,12 @@ safe-erc20.wasm: ${BUILT}
 	@./wasm-post.sh ${RELEASE}/safe-erc20.wasm safe-erc20.wasm
 
 tracing-counter.wasm: ${BUILT}
-	@rm -f safe-erc20.wasm
+	@rm -f tracing-counter.wasm
 	@./wasm-post.sh ${RELEASE}/tracing-counter.wasm tracing-counter.wasm
+
+panic-trace.wasm: $(shell find panic-trace/src -type f)
+	@cd panic-trace && cargo build --release --target wasm32-unknown-unknown
+	@./wasm-post.sh panic-trace/target/wasm32-unknown-unknown/release/panic-trace.wasm panic-trace.wasm
 
 clean:
 	@rm -rf \
@@ -114,4 +120,5 @@ clean:
 		precompiles.wasm \
 		slot-map.wasm \
 		safe-erc20.wasm \
-		tracing-counter.wasm
+		tracing-counter.wasm \
+		panic-trace.wasm

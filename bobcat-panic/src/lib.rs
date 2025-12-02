@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -133,6 +133,12 @@ impl<'a> Write for SliceWriter<'a> {
     }
 }
 
+//uint256(keccak256(abi.encodePacked("bobcat.tracing.counter"))) - 1
+pub const SLOT_TRACING_COUNTER: [u8; 32] = [
+    0xad, 0x59, 0xcd, 0x5c, 0xcd, 0xcd, 0x00, 0x59, 0x2c, 0xd2, 0x06, 0xdc, 0x3b, 0xce, 0x83, 0xac,
+    0xe6, 0x1b, 0x8c, 0x80, 0xcb, 0xe9, 0xfd, 0x0d, 0x70, 0x09, 0x34, 0xba, 0x13, 0x78, 0x92, 0x22,
+];
+
 /// Revert buffer size that's used to write the panic. We can afford to
 /// use a large page here since a panic will consume all the gas anyway,
 /// and a user will see this during simulation hopefully.
@@ -142,6 +148,19 @@ const REVERT_BUF_SIZE: usize = 1024;
 #[cfg(all(feature = "panic-revert", feature = "panic-loc"))]
 compile_error!("panic-revert and panic-loc simultaneously enabled");
 
+#[cfg(all(feature = "panic-revert", feature = "panic-trace"))]
+compile_error!("panic-revert and panic-trace simultaneously enabled");
+
+#[cfg(all(feature = "panic-loc", feature = "panic-trace"))]
+compile_error!("panic-loc and panic-trace simultaneously enabled");
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u8)]
+enum TracingDiscriminant {
+    Number = 0,
+    String = 1,
+}
+
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
 #[cfg_attr(all(feature = "panic", not(feature = "std")), panic_handler)]
 pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
@@ -150,7 +169,11 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
         let msg = alloc::format!("{_msg}");
         unsafe { impls::log_txt(msg.as_ptr(), msg.len()) }
     }
-    #[cfg(any(feature = "panic-revert", feature = "panic-loc"))]
+    #[cfg(any(
+        feature = "panic-revert",
+        feature = "panic-loc",
+        feature = "panic-trace"
+    ))]
     {
         let mut buf = [0u8; REVERT_BUF_SIZE];
         buf[..ERROR_PREAMBLE_OFFSET.len()].copy_from_slice(&ERROR_PREAMBLE_OFFSET);
@@ -164,6 +187,21 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
             write!(&mut w, "panic: {}:{}", loc.file(), loc.line()).unwrap();
         } else {
             write!(&mut w, "panic: unknown").unwrap();
+        }
+        #[cfg(feature = "panic-trace")]
+        {
+            let mut b = [0u8; 32];
+            unsafe { impls::transient_load_bytes32(SLOT_TRACING_COUNTER.as_ptr(), b.as_mut_ptr()) };
+            if b[0] == TracingDiscriminant::Number as u8 {
+                write!(
+                    &mut w,
+                    "trace no: {}",
+                    u32::from_be_bytes(b[1..32 - size_of::<u32>()].try_into().unwrap())
+                )
+            } else {
+                write!(&mut w, "trace str: {}", trace_key_to_str(&b))
+            }
+            .unwrap()
         }
         let len_msg = w.1;
         let len_offset = ERROR_PREAMBLE_OFFSET.len();
@@ -180,12 +218,6 @@ pub fn panic_handler(_msg: &core::panic::PanicInfo) -> ! {
     core::arch::wasm32::unreachable()
 }
 
-//uint256(keccak256(abi.encodePacked("bobcat.tracing.counter"))) - 1
-pub const SLOT_TRACING_COUNTER: [u8; 32] = [
-    0xad, 0x59, 0xcd, 0x5c, 0xcd, 0xcd, 0x00, 0x59, 0x2c, 0xd2, 0x06, 0xdc, 0x3b, 0xce, 0x83, 0xac,
-    0xe6, 0x1b, 0x8c, 0x80, 0xcb, 0xe9, 0xfd, 0x0d, 0x70, 0x09, 0x34, 0xba, 0x13, 0x78, 0x92, 0x22,
-];
-
 pub fn bump() {
     let p = SLOT_TRACING_COUNTER.as_ptr();
     // We assume the execution counter here is always less than u32,
@@ -194,5 +226,52 @@ pub fn bump() {
     unsafe { impls::transient_load_bytes32(p, b.as_mut_ptr()) };
     let v = u32::from_be_bytes(b[32 - size_of::<u32>()..].try_into().unwrap()) + 1;
     b[32 - size_of::<u32>()..].copy_from_slice(&v.to_be_bytes());
+    b[0] = TracingDiscriminant::Number as u8;
     unsafe { impls::transient_store_bytes32(p, b.as_ptr()) }
+}
+
+pub const fn trace_key_of_str(s: &str) -> [u8; 32] {
+    let bytes = s.as_bytes();
+    let mut b = [0u8; 32];
+    b[0] = TracingDiscriminant::String as u8;
+    let mut i = 0;
+    while i < bytes.len() && i < 31 {
+        b[i + 1] = bytes[i];
+        i += 1;
+    }
+    b
+}
+
+#[allow(unused)]
+const fn trace_key_to_str(b: &[u8; 32]) -> &str {
+    let mut i = 1;
+    while i < 32 {
+        if b[i] == 0 {
+            break;
+        }
+        i += 1;
+    }
+    unsafe {
+        let slice = core::slice::from_raw_parts(b.as_ptr().add(1), i - 1);
+        core::str::from_utf8_unchecked(slice)
+    }
+}
+
+pub fn trace(k: &str) {
+    let v = trace_key_of_str(k);
+    unsafe { impls::transient_store_bytes32(SLOT_TRACING_COUNTER.as_ptr(), v.as_ptr()) }
+}
+
+#[cfg(all(test, feature = "std"))]
+mod test {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn test_key_back_and_forth(x in proptest::string::string_regex("[0-9a-zA-Z]{0,31}").unwrap()) {
+            assert_eq!(&x, trace_key_to_str(&trace_key_of_str(&x)));
+        }
+    }
 }

@@ -5,20 +5,14 @@ import {Test} from "forge-std/Test.sol";
 
 import {IArbFoundry} from "./IArbFoundry.sol";
 
-interface IPanicRevert {
-    function panic() external;
-}
-
-contract PanicRevert is Test {
-    IPanicRevert panicRevert;
-
-    function setUp() public {
-        panicRevert = IPanicRevert(IArbFoundry(address(vm)).deployStylusCode(
-            "e2e-test/panic-revert.wasm"
-        ));
-    }
-
-    function testPanic() public {
-        /* panicRevert.panic(); */
+contract PanicTrace is Test {
+    function test_panicTrace() public {
+        address c = IArbFoundry(address(vm)).deployStylusCode(
+            "e2e-test/panic-trace.wasm"
+        );
+        (bool rc, bytes memory rd) = c.call("");
+        assert(!rc);
+        //trace str: hello
+        assertEq(hex"08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000107472616365207374723a2068656c6c6f000000000000000000000000", rd);
     }
 }

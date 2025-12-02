@@ -13,12 +13,14 @@ name = "bobcat_panic"
 [features]
 alloc = []
 console = ["alloc"]
-std = []
+std = ["dep:proptest"]
 panic-revert = ["panic"]
 panic-loc = ["panic"]
+panic-trace = ["panic"]
 panic = []
 msg-on-sdk-err = ["panic"]
 
 [dependencies]
 const-hex.workspace = true
 paste.workspace = true
+proptest = { workspace = true, optional = true }

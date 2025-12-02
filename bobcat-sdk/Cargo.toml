@@ -47,8 +47,9 @@ arbitrary = ["bobcat-maths/arbitrary"]
 proptest = ["bobcat-maths/proptest", "bobcat-storage/proptest"]
 alloy-enabled = ["bobcat-maths/alloy-enabled"]
 panic = ["bobcat-panic/panic"]
-panic-revert = ["bobcat-panic", "bobcat-panic/panic-revert"]
-panic-loc = ["bobcat-panic", "bobcat-panic/panic-loc"]
+panic-revert = ["panic", "bobcat-panic/panic-revert"]
+panic-loc = ["panic", "bobcat-panic/panic-loc"]
+panic-trace = ["panic", "bobcat-panic/panic-trace"]
 dont-define-symbols = [
 	"bobcat-entry/dont-define-symbols",
 	"bobcat-call/dont-define-symbols"
