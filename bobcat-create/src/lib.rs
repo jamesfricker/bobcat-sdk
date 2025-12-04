@@ -172,16 +172,20 @@ pub fn create2_slice_res<const REVERT_CAP: usize>(
     }
 }
 
-pub fn create2_unit(code: &[u8], endowment: U, salt: U) -> Option<Address> {
-    let (addr, _) = create2_partial(code, endowment, salt);
+pub fn create2_post_unit(code: &[u8], endowment: U, salt_digest: U) -> Option<Address> {
+    let (addr, _) = create2_partial(code, endowment, salt_digest);
     if addr == [0u8; 20] {
         return None;
     }
     Some(addr)
 }
 
+pub fn create2_pre_unit(code: &[u8], endowment: U, salt_pre: &[u8]) -> Option<Address> {
+    create2_post_unit(code, endowment, keccak256(salt_pre))
+}
+
 #[cfg(feature = "alloc")]
-pub fn create2_vec(code: &[u8], endowment: U, salt: U) -> (Address, Option<Vec<u8>>) {
+pub fn create2_post_vec(code: &[u8], endowment: U, salt: U) -> (Address, Option<Vec<u8>>) {
     let (addr, rd) = create2_partial(code, endowment, salt);
     if addr == [0u8; 20] {
         let mut b = Vec::with_capacity(rd);
@@ -189,12 +193,12 @@ pub fn create2_vec(code: &[u8], endowment: U, salt: U) -> (Address, Option<Vec<u
         unsafe {
             b.set_len(rd);
         }
-        return (addr, Some(b))
+        return (addr, Some(b));
     }
     (addr, None)
 }
 
-pub fn create2_slice_salt_keccak256<const REVERT_CAP: usize>(
+pub fn create2_slice_pre_keccak256<const REVERT_CAP: usize>(
     code: &[u8],
     endowment: U,
     salt_pre: &[u8],
@@ -203,34 +207,27 @@ pub fn create2_slice_salt_keccak256<const REVERT_CAP: usize>(
 }
 
 #[cfg(feature = "alloc")]
-pub fn create2_vec_salt_keccak256(
+pub fn create2_vec_pre_keccak256(
     code: &[u8],
     endowment: U,
     salt_pre: &[u8],
 ) -> (Address, Option<Vec<u8>>) {
-    create2_vec(code, endowment, keccak256(salt_pre))
+    create2_post_vec(code, endowment, keccak256(salt_pre))
+}
+
+pub fn const_estimate_addr_pre(factory: Address, initcode_pre: &[u8], salt_pre: &[u8]) -> Address {
+    const_estimate_addr_post(
+        factory,
+        const_keccak256(initcode_pre),
+        const_keccak256(salt_pre),
+    )
 }
 
 /// Estimate the address of the create2 deployment.
-pub const fn const_estimate_addr_pre(
-    factory: Address,
-    initcode_pre: &[u8],
-    salt_pre: &[u8],
-) -> Address {
-    let b: [u8; 1 + 20 + 32 * 2] = concat_arrays!(
-        [0xff],
-        factory,
-        const_keccak256(salt_pre).0,
-        const_keccak256(initcode_pre).0
-    );
-    let x = const_keccak256(&b);
-    let mut b = [0u8; 20];
-    let mut i = 0;
-    while i < 20 {
-        b[i] = x.0[i + 20];
-        i += 1;
-    }
-    b
+pub fn const_estimate_addr_post(factory: Address, initcode_digest: U, salt_digest: U) -> Address {
+    let b: [u8; 1 + 20 + 32 * 2] =
+        concat_arrays!([0xff], factory, salt_digest.0, initcode_digest.0);
+    const_keccak256(&b).into()
 }
 
 pub fn estimate_addr(factory: Address, initcode: U, salt: U) -> Address {
