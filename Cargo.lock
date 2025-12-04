@@ -543,6 +543,15 @@ dependencies = [
 [[package]]
 name = "bobcat-maths-zone"
 version = "0.7.2"
+dependencies = [
+ "bobcat-maths",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.108",
+]
 
 [[package]]
 name = "bobcat-panic"
