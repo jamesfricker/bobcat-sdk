@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { usePublicClient } from 'wagmi';
 import { config } from '../lib/config';
 import { DEPOSIT_LOOKBACK_BLOCKS, depositEventAbi } from '../lib/depositEvents';
+import { fetchComments } from '../lib/commentsApi';
+import { bozoAbi } from '../lib/bozoAbi';
 import type { BozoComment } from '../types';
 
 type CommentsContextValue = {
@@ -15,55 +17,8 @@ type CommentsContextValue = {
 
 const CommentsContext = createContext<CommentsContextValue | undefined>(undefined);
 
-const COMMENTS_QUERY = `
-  query Comments {
-    comments {
-      wallet
-      content
-      txHash
-    }
-  }
-`;
-
-async function performFetch(signal?: AbortSignal): Promise<BozoComment[]> {
-  const response = await fetch(config.graphqlUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ query: COMMENTS_QUERY }),
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch comments: ${response.status} ${response.statusText}`);
-  }
-
-  const payload = await response.json();
-
-  if (payload?.errors?.length) {
-    const firstMessage = payload.errors[0]?.message || 'GraphQL error fetching comments';
-    throw new Error(firstMessage);
-  }
-
-  const commentData = payload?.data?.comments;
-  if (!Array.isArray(commentData)) {
-    return [];
-  }
-
-  return commentData
-    .filter((entry: any): entry is BozoComment =>
-      entry &&
-      typeof entry.wallet === 'string' &&
-      typeof entry.content === 'string' &&
-      typeof entry.txHash === 'string'
-    )
-    .map((entry) => ({
-      wallet: entry.wallet,
-      content: entry.content,
-      txHash: entry.txHash,
-    }));
-}
+const COMMENTS_FROM = 0;
+const COMMENTS_LIMIT = 50;
 
 export function CommentsProvider({ children }: { children: ReactNode }) {
   const publicClient = usePublicClient();
@@ -73,11 +28,42 @@ export function CommentsProvider({ children }: { children: ReactNode }) {
 
   const loadComments = useCallback(
     async (signal?: AbortSignal) => {
-      const [graphComments, txHashes] = await Promise.all([
-        performFetch(signal),
+      const [graphComments, eventMetadata] = await Promise.all([
         (async () => {
           if (!publicClient) {
-            return new Set<string>();
+            return [] as BozoComment[];
+          }
+
+          try {
+            const epochResult = await publicClient.readContract({
+              address: config.contracts.bozo as `0x${string}`,
+              abi: bozoAbi,
+              functionName: 'currentEpoch',
+            });
+
+            const epochNumber =
+              typeof epochResult === 'bigint' ? Number(epochResult) : null;
+            if (epochNumber === null || !Number.isSafeInteger(epochNumber)) {
+              return [] as BozoComment[];
+            }
+
+            return fetchComments({
+              epoch: epochNumber,
+              from: COMMENTS_FROM,
+              limit: COMMENTS_LIMIT,
+              signal,
+            });
+          } catch (err) {
+            console.error('Failed to load comments from GraphQL:', err);
+            return [] as BozoComment[];
+          }
+        })(),
+        (async () => {
+          if (!publicClient) {
+            return {
+              txHashes: new Set<string>(),
+              txToWallet: new Map<string, string>(),
+            };
           }
 
           try {
@@ -94,24 +80,42 @@ export function CommentsProvider({ children }: { children: ReactNode }) {
             });
 
             const hashes = new Set<string>();
+            const txToWallet = new Map<string, string>();
             for (const event of events) {
               if (event.transactionHash) {
-                hashes.add(event.transactionHash.toLowerCase());
+                const txHash = event.transactionHash.toLowerCase();
+                hashes.add(txHash);
+                const recipient = event.args?.recipient as string | undefined;
+                if (recipient) {
+                  txToWallet.set(txHash, recipient);
+                }
               }
             }
-            return hashes;
+            return { txHashes: hashes, txToWallet };
           } catch (err) {
             console.error('Failed to load deposit events for comments reconciliation:', err);
-            return new Set<string>();
+            return {
+              txHashes: new Set<string>(),
+              txToWallet: new Map<string, string>(),
+            };
           }
         })(),
       ]);
 
+      const { txHashes, txToWallet } = eventMetadata;
+      const commentsWithWallet = graphComments.map((comment) => {
+        const txHash = comment.txHash.toLowerCase();
+        return {
+          ...comment,
+          wallet: comment.wallet || txToWallet.get(txHash),
+        };
+      });
+
       if (txHashes.size === 0) {
-        return graphComments;
+        return commentsWithWallet;
       }
 
-      return graphComments.filter((comment) => txHashes.has(comment.txHash.toLowerCase()));
+      return commentsWithWallet.filter((comment) => txHashes.has(comment.txHash.toLowerCase()));
     },
     [publicClient]
   );
@@ -169,7 +173,9 @@ export function CommentsProvider({ children }: { children: ReactNode }) {
   const commentsByWallet = useMemo(() => {
     const map = new Map<string, string>();
     for (const comment of comments) {
-      map.set(comment.wallet.toLowerCase(), comment.content);
+      if (comment.wallet) {
+        map.set(comment.wallet.toLowerCase(), comment.content);
+      }
     }
     return map;
   }, [comments]);

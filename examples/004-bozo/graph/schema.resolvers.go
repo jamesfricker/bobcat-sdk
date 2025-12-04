@@ -40,9 +40,11 @@ func (r *queryResolver) Comments(ctx context.Context, epoch int32, from int32, l
 	limit = min(limit, 50)
 	rows, err := r.Db.QueryContext(ctx, `
 SELECT content, transaction_hash FROM bozo_comments_1
-WHERE epoch = $1 AND epoch_seq >= from
-LIMIT $2`,
+WHERE epoch = $1 AND epoch_seq >= $2
+ORDER BY epoch_seq DESC
+LIMIT $3`,
 		epoch,
+		from,
 		limit,
 	)
 	if err != nil {

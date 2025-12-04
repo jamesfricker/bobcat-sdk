@@ -48,9 +48,9 @@ export interface PlayerActivityItem {
 }
 
 export interface BozoComment {
-  wallet: string;
   content: string;
   txHash: string;
+  wallet?: string;
 }
 
 export interface RouteQuote {

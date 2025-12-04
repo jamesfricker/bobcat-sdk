@@ -30,6 +30,8 @@ export const config = {
 
   contracts: {
     bozo: (env.VITE_BOZO_CONTRACT as `0x${string}`) || '0xd2c5cdeceaa85e9e44edcc63b207febaab8dcaf4',
+    permitRelayer:
+      (env.VITE_PERMIT_RELAYER as `0x${string}`) || '0x503a8dd317791af592b1c84b19ed20a6134ea02d',
   },
 
   // Testing flags

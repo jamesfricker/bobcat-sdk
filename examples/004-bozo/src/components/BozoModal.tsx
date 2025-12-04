@@ -22,12 +22,17 @@ import {
   useBalance,
   useSwitchChain,
   useWriteContract,
+  useSignTypedData,
 } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
 import { formatUnits, parseUnits, keccak256, stringToHex } from 'viem';
 import { config as appConfig } from '../lib/config';
 import { bozoAbi } from '../lib/bozoAbi';
 import { makeEpochCookieName, writeCookie } from '../lib/cookies';
+import { useComments } from '../providers/CommentsProvider';
+import { postComment } from '../lib/commentsApi';
+import { permitRelayerAbi } from '../lib/permitRelayerAbi';
+import { Switch } from './ui/switch';
 
 interface BozoModalProps {
   open: boolean;
@@ -42,6 +47,7 @@ interface BozoModalProps {
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
 const ZERO_BYTES32 =
   '0x0000000000000000000000000000000000000000000000000000000000000000' as const;
+const PERMIT_DEADLINE_SECONDS = 60 * 15;
 
 const erc20Abi = [
   {
@@ -66,6 +72,23 @@ const erc20Abi = [
   },
 ] as const;
 
+const permitAbi = [
+  {
+    type: 'function',
+    name: 'name',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'string' }],
+  },
+  {
+    type: 'function',
+    name: 'nonces',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+] as const;
+
 export function BozoModal({
   open,
   onOpenChange,
@@ -79,12 +102,24 @@ export function BozoModal({
   const publicClient = usePublicClient();
   const { writeContractAsync, isPending: isWriting } = useWriteContract();
   const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
+  const { signTypedDataAsync } = useSignTypedData();
+  const { refresh: refreshComments } = useComments();
+
+  const permitRelayerAddress = appConfig.contracts.permitRelayer as `0x${string}`;
+  const relayerSupported = Boolean(permitRelayerAddress);
 
   const [amountToken, setAmountToken] = useState('');
   const [comment, setComment] = useState('');
   const [isApproving, setIsApproving] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
   const [hasPromptedChain, setHasPromptedChain] = useState(false);
+  const [usePermitRelayer, setUsePermitRelayer] = useState(relayerSupported);
+
+  useEffect(() => {
+    if (!relayerSupported) {
+      setUsePermitRelayer(false);
+    }
+  }, [relayerSupported]);
 
   const { data: balanceData, refetch: refetchBalance } = useBalance({
     address,
@@ -143,17 +178,35 @@ export function BozoModal({
     ? `${formatTokenAmount(amountToken, 4)} ${game.homeToken}`
     : `0 ${game.homeToken}`;
 
+  const approvalSpender = useMemo(
+    () =>
+      (usePermitRelayer && relayerSupported
+        ? permitRelayerAddress
+        : (appConfig.contracts.bozo as `0x${string}`)),
+    [relayerSupported, usePermitRelayer, permitRelayerAddress],
+  );
+
+  const approvalTargetLabel = useMemo(
+    () => (usePermitRelayer && relayerSupported ? 'permit relayer' : 'Bozo contract'),
+    [relayerSupported, usePermitRelayer],
+  );
+
+  const executeViaRelayer = useMemo(
+    () => usePermitRelayer && relayerSupported,
+    [relayerSupported, usePermitRelayer],
+  );
+
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: poolAssetAddress ?? ZERO_ADDRESS,
     abi: erc20Abi,
     functionName: 'allowance',
     args:
       address && poolAssetAddress
-        ? [address, appConfig.contracts.bozo as `0x${string}`]
+        ? [address, approvalSpender]
         : undefined,
     chainId: arbitrum.id,
     query: {
-      enabled: Boolean(open && address && poolAssetAddress),
+      enabled: Boolean(open && address && poolAssetAddress && approvalSpender),
     },
   });
 
@@ -161,6 +214,8 @@ export function BozoModal({
   const needsApproval = Boolean(
     poolAssetAddress && amountWei && allowanceValue < amountWei,
   );
+  const shouldBlockForApproval = needsApproval && !executeViaRelayer;
+  const showApprovalWarning = needsApproval && !executeViaRelayer;
   const isWrongChain =
     typeof chainId === 'number' && chainId !== arbitrum.id && isConnected;
 
@@ -227,6 +282,85 @@ export function BozoModal({
     return false;
   }, [isWrongChain, switchChainAsync]);
 
+  const getCurrentEpoch = useCallback(async () => {
+    if (!publicClient) {
+      return null;
+    }
+
+    try {
+      const epochResult = await publicClient.readContract({
+        address: appConfig.contracts.bozo as `0x${string}`,
+        abi: bozoAbi,
+        functionName: 'currentEpoch',
+      });
+
+      return typeof epochResult === 'bigint' ? epochResult : null;
+    } catch (error) {
+      console.error('Failed to read current epoch:', error);
+      return null;
+    }
+  }, [publicClient]);
+
+  const buildPermitSignature = useCallback(
+    async (amount: bigint, deadline: bigint) => {
+      if (!executeViaRelayer || !address || !poolAssetAddress || !signTypedDataAsync || !publicClient) {
+        return null;
+      }
+
+      try {
+        const [nonce, tokenName] = await Promise.all([
+          publicClient.readContract({
+            address: poolAssetAddress,
+            abi: permitAbi,
+            functionName: 'nonces',
+            args: [address],
+          }),
+          publicClient.readContract({
+            address: poolAssetAddress,
+            abi: permitAbi,
+            functionName: 'name',
+          }),
+        ]);
+
+        const signature = await signTypedDataAsync({
+          domain: {
+            name: typeof tokenName === 'string' ? tokenName : 'USND',
+            version: '1',
+            chainId: arbitrum.id,
+            verifyingContract: poolAssetAddress,
+          },
+          types: {
+            Permit: [
+              { name: 'owner', type: 'address' },
+              { name: 'spender', type: 'address' },
+              { name: 'value', type: 'uint256' },
+              { name: 'nonce', type: 'uint256' },
+              { name: 'deadline', type: 'uint256' },
+            ],
+          },
+          primaryType: 'Permit',
+          message: {
+            owner: address,
+            spender: approvalSpender,
+            value: amount,
+            nonce: typeof nonce === 'bigint' ? nonce : BigInt(nonce ?? 0),
+            deadline,
+          },
+        });
+
+        const sig = signature.replace(/^0x/, '');
+        const r = `0x${sig.slice(0, 64)}` as `0x${string}`;
+        const s = `0x${sig.slice(64, 128)}` as `0x${string}`;
+        const v = Number.parseInt(sig.slice(128, 130), 16);
+        return { v, r, s };
+      } catch (error) {
+        console.error('Permit signing failed:', error);
+        return null;
+      }
+    },
+    [address, approvalSpender, executeViaRelayer, poolAssetAddress, publicClient, signTypedDataAsync],
+  );
+
   const handleSetMax = useCallback(() => {
     if (!hasBalance || !maxAmount) {
       return;
@@ -256,11 +390,11 @@ export function BozoModal({
         address: poolAssetAddress,
         abi: erc20Abi,
         functionName: 'approve',
-        args: [appConfig.contracts.bozo as `0x${string}`, amountWei],
+        args: [approvalSpender, amountWei],
         chainId: arbitrum.id,
       });
 
-      toast.success('Approval transaction submitted.');
+      toast.success(`Approval submitted to the ${approvalTargetLabel}.`);
 
       if (publicClient) {
         await publicClient.waitForTransactionReceipt({ hash: txHash });
@@ -313,26 +447,48 @@ export function BozoModal({
       return;
     }
 
-    if (needsApproval) {
-      toast.error('Approve the token before depositing.');
+    const epochForTx = await getCurrentEpoch();
+    if (epochForTx === null) {
+      toast.error('Could not load the current game epoch. Please try again.');
       return;
     }
 
+    const useRelayerPath = executeViaRelayer;
     try {
       setIsDepositing(true);
-      const hasComment = comment.trim().length > 0;
+      const trimmedComment = comment.trim();
+      const hasComment = trimmedComment.length > 0;
       const commentHash: `0x${string}` = hasComment
-        ? keccak256(stringToHex(comment))
+        ? keccak256(stringToHex(trimmedComment))
         : ZERO_BYTES32;
+      const permitDeadline = BigInt(Math.floor(Date.now() / 1000) + PERMIT_DEADLINE_SECONDS);
+      const permitSignature = useRelayerPath ? await buildPermitSignature(amountWei, permitDeadline) : null;
+
+      if (!permitSignature && shouldBlockForApproval) {
+        toast.error('Approve the token before depositing.');
+        return;
+      }
+
+      if (useRelayerPath && !permitSignature && needsApproval) {
+        toast.error('Approve the permit relayer or sign the permit before depositing.');
+        return;
+      }
+
       const txHash = await writeContractAsync({
-        address: appConfig.contracts.bozo as `0x${string}`,
-        abi: bozoAbi,
-        functionName: 'play',
-        args: [
-          amountWei,
-          address,
-          commentHash,
-        ],
+        address: useRelayerPath ? permitRelayerAddress : (appConfig.contracts.bozo as `0x${string}`),
+        abi: useRelayerPath ? permitRelayerAbi : bozoAbi,
+        functionName: useRelayerPath ? 'mint' : 'play',
+        args: useRelayerPath
+          ? [
+              amountWei,
+              commentHash,
+              permitSignature ? permitDeadline : 0n,
+              epochForTx,
+              permitSignature?.v ?? 0,
+              permitSignature?.r ?? ZERO_BYTES32,
+              permitSignature?.s ?? ZERO_BYTES32,
+            ]
+          : [amountWei, address, commentHash, epochForTx],
         chainId: arbitrum.id,
       });
 
@@ -344,7 +500,7 @@ export function BozoModal({
 
       toast.success('Deposit confirmed. RIP BOZO! 🤡');
 
-      let epochForCookie: bigint | null = null;
+      let epochForCookie: bigint | null = epochForTx;
 
       await refetchBalance().catch((error) => {
         console.error('Failed to refresh balance:', error);
@@ -363,6 +519,24 @@ export function BozoModal({
           }
         } catch (error) {
           console.error('Failed to read current epoch after deposit:', error);
+        }
+      }
+
+      if (hasComment && epochForCookie !== null) {
+        const epochNumber = Number(epochForCookie);
+        if (Number.isSafeInteger(epochNumber)) {
+          try {
+            await postComment({
+              epoch: epochNumber,
+              content: trimmedComment,
+              txHash,
+            });
+            await refreshComments().catch((error) => {
+              console.error('Failed to refresh comments after posting:', error);
+            });
+          } catch (error) {
+            console.error('Failed to post comment to backend:', error);
+          }
         }
       }
 
@@ -548,11 +722,11 @@ export function BozoModal({
             </Alert>
           )}
 
-          {needsApproval && (
+          {showApprovalWarning && (
             <Alert className="bg-[#F6C445]/10 border-[#F6C445]">
               <AlertCircle className="h-4 w-4 text-[#F6C445]" />
               <AlertDescription className="text-sm text-foreground">
-                Approve {game.homeToken} to the Bozo contract before depositing.
+                Approve {game.homeToken} to the {approvalTargetLabel} before depositing.
               </AlertDescription>
             </Alert>
           )}
@@ -578,6 +752,22 @@ export function BozoModal({
               <span className="text-foreground">45 MINUTES</span>
             </div>
           </div>
+
+          {relayerSupported && (
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-border/40 bg-[#252840]/60 p-3">
+              <div className="space-y-1">
+                <div className="text-sm text-foreground font-medium">Use permit relayer</div>
+                <p className="text-xs text-muted-foreground">
+                  Route deposits through the Nerite permit relayer. Sign a permit to skip approvals.
+                </p>
+              </div>
+              <Switch
+                checked={usePermitRelayer}
+                onCheckedChange={setUsePermitRelayer}
+                aria-label="Use permit relayer"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-sm text-muted-foreground">
@@ -615,7 +805,7 @@ export function BozoModal({
                     Approving...
                   </>
                 ) : (
-                  `Approve ${game.homeToken}`
+                  `Approve ${game.homeToken} (${approvalTargetLabel})`
                 )}
               </Button>
             )}
@@ -640,7 +830,7 @@ export function BozoModal({
 
             <Button
               onClick={handleBozo}
-              disabled={isActionDisabled || needsApproval || isWrongChain}
+              disabled={isActionDisabled || shouldBlockForApproval || isWrongChain}
               className="w-full bg-[#F6C445] hover:bg-[#F6C445]/90 text-[#0E1020]"
               size="lg"
             >

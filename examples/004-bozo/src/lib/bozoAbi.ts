@@ -32,7 +32,7 @@ export const bozoAbi = [
     name: 'lastBettorAddress',
     stateMutability: 'view',
     inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
+    outputs: [{ name: '', type: 'address' }],
   },
   {
     type: 'function',
@@ -63,6 +63,7 @@ export const bozoAbi = [
       { name: 'amount', type: 'uint256' },
       { name: 'recipient', type: 'address' },
       { name: 'comment', type: 'bytes32' },
+      { name: 'desiredEpoch', type: 'uint256' },
     ],
     outputs: [
       { name: 'epoch', type: 'uint256' },
@@ -70,4 +71,3 @@ export const bozoAbi = [
     ],
   },
 ] as const;
-
