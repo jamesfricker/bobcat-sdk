@@ -1241,6 +1241,13 @@ impl From<U> for bool {
     }
 }
 
+impl From<&[u8]> for U {
+    fn from(x: &[u8]) -> Self {
+        let x: &[u8; 32] = x.try_into().unwrap();
+        (*x).into()
+    }
+}
+
 impl From<&[u8; 32]> for &U {
     fn from(x: &[u8; 32]) -> Self {
         unsafe { &*(x as *const [u8; 32] as *const U) }
