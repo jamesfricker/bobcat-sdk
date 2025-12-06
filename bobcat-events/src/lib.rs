@@ -1,6 +1,6 @@
 #![no_std]
 
-use bobcat_maths::U;
+pub use bobcat_maths::U;
 
 use array_concat::concat_arrays;
 
@@ -132,125 +132,125 @@ macro_rules! emit {
     ($t0:expr) => {{
         const DATA_LEN: usize = 0;
         const ALL_LEN: usize = 32;
-        let t0: U = $t0.into();
+        let t0: $crate::U = $t0.into();
         $crate::emit_log_0_slice::<DATA_LEN, ALL_LEN>(&t0, [])
     }};
 
     ($t0:expr, data: $data:expr) => {{
-        let t0: U = $t0.into();
+        let t0: $crate::U = $t0.into();
         $crate::emit_log_0_vec(&t0, $data)
     }};
 
     ($t0:expr, data: $data:expr, $data_len:expr) => {{
         const DATA_LEN: usize = $data_len;
         const ALL_LEN: usize = DATA_LEN + 32;
-        let t0: U = $t0.into();
+        let t0: $crate::U = $t0.into();
         $crate::emit_log_0_slice::<DATA_LEN, ALL_LEN>(&t0, $data)
     }};
 
     ($t0:expr, $t1:expr) => {{
         const DATA_LEN: usize = 0;
         const ALL_LEN: usize = 32 * 2;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
         $crate::emit_log_1_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, [])
     }};
 
     ($t0:expr, $t1:expr, data: $data:expr) => {{
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
         $crate::emit_log_1_vec(&t0, &t1, $data)
     }};
 
     ($t0:expr, $t1:expr, data: $data:expr, $data_len:expr) => {{
         const DATA_LEN: usize = $data_len;
         const ALL_LEN: usize = DATA_LEN + 32 * 2;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
         $crate::emit_log_1_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, $data)
     }};
 
     ($t0:expr, $t1:expr, $t2:expr) => {{
         const DATA_LEN: usize = 0;
         const ALL_LEN: usize = 32 * 3;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
         $crate::emit_log_2_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, [])
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, data: $data:expr) => {{
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
         $crate::emit_log_2_vec(&t0, &t1, &t2, $data)
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, data: $data:expr, $data_len:expr) => {{
         const DATA_LEN: usize = $data_len;
         const ALL_LEN: usize = DATA_LEN + 32 * 3;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
         $crate::emit_log_2_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, $data)
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, $t3:expr) => {{
         const DATA_LEN: usize = 0;
         const ALL_LEN: usize = 32 * 4;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
-        let t3: U = $t3.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
+        let t3: $crate::U = $t3.into();
         $crate::emit_log_3_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, &t3, [])
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, $t3:expr, data: $data:expr) => {{
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
-        let t3: U = $t3.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
+        let t3: $crate::U = $t3.into();
         $crate::emit_log_3_vec(&t0, &t1, &t2, &t3, $data)
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, $t3:expr, data: $data:expr, $data_len:expr) => {{
         const DATA_LEN: usize = $data_len;
         const ALL_LEN: usize = DATA_LEN + 32 * 4;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
-        let t3: U = $t3.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
+        let t3: $crate::U = $t3.into();
         $crate::emit_log_3_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, &t3, $data)
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, $t3:expr, $t4:expr) => {{
         const DATA_LEN: usize = 0;
         const ALL_LEN: usize = 32 * 5;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
-        let t3: U = $t3.into();
-        let t4: U = $t4.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
+        let t3: $crate::U = $t3.into();
+        let t4: $crate::U = $t4.into();
         $crate::emit_log_4_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, &t3, &t4, [])
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, $t3:expr, $t4:expr, data: $data:expr) => {{
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
-        let t3: U = $t3.into();
-        let t4: U = $t4.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
+        let t3: $crate::U = $t3.into();
+        let t4: $crate::U = $t4.into();
         $crate::emit_log_4_vec(&t0, &t1, &t2, &t3, &t4, $data)
     }};
 
     ($t0:expr, $t1:expr, $t2:expr, $t3:expr, $t4:expr, data: $data:expr, $data_len:expr) => {{
         const DATA_LEN: usize = $data_len;
         const ALL_LEN: usize = DATA_LEN + 32 * 5;
-        let t0: U = $t0.into();
-        let t1: U = $t1.into();
-        let t2: U = $t2.into();
-        let t3: U = $t3.into();
-        let t4: U = $t4.into();
+        let t0: $crate::U = $t0.into();
+        let t1: $crate::U = $t1.into();
+        let t2: $crate::U = $t2.into();
+        let t3: $crate::U = $t3.into();
+        let t4: $crate::U = $t4.into();
         $crate::emit_log_4_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, &t3, &t4, $data)
     }};
 }
