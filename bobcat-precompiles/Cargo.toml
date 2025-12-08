@@ -10,4 +10,5 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 [dependencies]
 array-concat.workspace = true
 bobcat-call = { version = "0.7.4", path = "../bobcat-call" }
+bobcat-cd = { version = "0.7.4", path = "../bobcat-cd" }
 bobcat-maths = { version = "0.7.4", path = "../bobcat-maths" }

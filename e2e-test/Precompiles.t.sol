@@ -7,6 +7,22 @@ import {IArbFoundry} from "./IArbFoundry.sol";
 
 interface IPrecompiles {
     function ecrecover_(bytes32, uint8, bytes32, bytes32) external view returns (address);
+
+    function createEd25519(bytes32 key, bytes memory preimage) external pure returns (
+        bytes32 digestA,
+        bytes32 digestB,
+        bytes32 pubKey,
+        bytes32 sigA,
+        bytes32 sigB
+    );
+
+    function testEd25519(
+        bytes32 digestA,
+        bytes32 digestB,
+        bytes32 pubKey,
+        bytes32 sigA,
+        bytes32 sigB
+    ) external pure;
 }
 
 contract Ecrecover is Test {
@@ -16,6 +32,12 @@ contract Ecrecover is Test {
         precompiles = IPrecompiles(IArbFoundry(address(vm)).deployStylusCode(
             "e2e-test/precompiles.wasm"
         ));
+        vm.etch(
+            0xC3E443bE2Cfa4F41a5F5E4978D012847d355b419,
+            IArbFoundry(address(vm)).deployStylusCode(
+                "e2e-test/superposition-precompiles/precompiles-ed25519.wasm"
+            ).code
+        );
     }
 
     function test_fuzzEcrecover(bytes32 digest) public {
@@ -23,5 +45,19 @@ contract Ecrecover is Test {
         Vm.Wallet memory wallet = vm.createWallet(uint256(keccak256(bytes("1"))));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(wallet, digest);
         assertEq(wallet.addr, precompiles.ecrecover_(digest, v, r, s));
+    }
+
+    function test_fuzzEdverify(bytes32 key, bytes memory preimage) public {
+        // In the Rust code we don't do right truncation, so just assume:
+        vm.assume(preimage.length % 32 == 0);
+        (
+            bytes32 digestA,
+            bytes32 digestB,
+            bytes32 pubKey,
+            bytes32 sigA,
+            bytes32 sigB
+        ) = precompiles.createEd25519(key, preimage);
+        vm.resetGasMetering();
+        precompiles.testEd25519(digestA, digestB, pubKey, sigA, sigB);
     }
 }
