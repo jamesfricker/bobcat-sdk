@@ -25,3 +25,7 @@
 	RETURN:
 		return
 }
+
+#define macro CONSTRUCTOR() = takes(0) returns(0) {
+	codesize 0x20 sub calldataload [SLOT_IMPL] sstore
+}

@@ -1,6 +1,6 @@
 [package]
 name = "bobcat-precompiles"
-version = "0.7.6"
+version = "0.7.7"
 edition = "2024"
 license = "MIT"
 description = "bobcat-sdk utilities for using precompiles with Arbitrum Stylus."
@@ -9,6 +9,6 @@ repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
 
 [dependencies]
 array-concat.workspace = true
-bobcat-call = { version = "0.7.6", path = "../bobcat-call" }
-bobcat-cd = { version = "0.7.6", path = "../bobcat-cd" }
-bobcat-maths = { version = "0.7.6", path = "../bobcat-maths" }
+bobcat-call = { version = "0.7.7", path = "../bobcat-call" }
+bobcat-cd = { version = "0.7.7", path = "../bobcat-cd" }
+bobcat-maths = { version = "0.7.7", path = "../bobcat-maths" }

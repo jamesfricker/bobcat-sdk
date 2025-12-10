@@ -151,3 +151,19 @@ pub const fn make_metamorphic_proxy(deployer: Address) -> [u8; SIZE_METAMORPHIC_
         )
     )
 }
+
+pub const SIZE_METAMORPHIC_ON_FN_BEACON: usize = 35 + 20 + 69;
+
+/// Make a metamorphic with an opt-in migrate function proxy that calls
+/// to the beacon for the implementation address.
+pub const fn make_metamorphic_beacon_proxy(deployer: Address) -> [u8; SIZE_METAMORPHIC_ON_FN_BEACON] {
+    // Created from metamorphic-on-fn-beacon.huff .
+    concat_arrays!(
+        unpack_arr!(b"60738060093d393df35f3560e01c638fd3ab801461001357610036565b60205f5f5f73", 35),
+        deployer,
+        unpack_arr!(
+            b"5afa5f51610059565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc545b365f5f375f365f5f935af43d5f5f3e3d5f8261007157fd5bf3",
+            69
+        )
+    )
+}
