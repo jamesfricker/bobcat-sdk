@@ -1,12 +1,16 @@
+use bobcat_storage::keccak256;
+
+use bobcat_call::{static_call_slice, static_call_word};
 
 use bobcat_maths::U;
-use bobcat_call::static_call_slice;
 
 use array_concat::concat_arrays;
 
 type Address = [u8; 20];
 
 pub const ADDR_ECRECOVER: Address = U::ONE.const_addr();
+
+pub const ADDR_SECP256R1: Address = U::from_u32(256).const_addr();
 
 // Upper bound of S to prevent malleability.
 #[allow(unused)]
@@ -26,4 +30,17 @@ pub fn ecrecover(hash: U, v: u8, r: U, s: U, gas: u64) -> Option<Address> {
         return None;
     }
     Some(rd)
+}
+
+pub fn secp256r1_post(hash: U, r: U, s: U, qx: U, qy: U) -> Option<U> {
+    let cd: [u8; 32 * 5] = concat_arrays!(hash.0, r.0, s.0, qx.0, qy.0);
+    let (rc, rd) = static_call_word(ADDR_SECP256R1, &cd, u64::MAX, 0);
+    if !rc {
+        return None;
+    }
+    Some(rd)
+}
+
+pub fn secp256r1_pre(preimage: &[u8], r: U, s: U, qx: U, qy: U) -> Option<U> {
+    secp256r1_post(keccak256(preimage), r, s, qx, qy)
 }

@@ -4,7 +4,10 @@
 use bobcat_sdk::{
     cd::{const_keccak_sel, read_words},
     entry::*,
-    precompiles::{ethereum::ecrecover, superposition::edverify},
+    precompiles::{
+        ethereum::{ecrecover, secp256r1_post},
+        superposition::edphverify,
+    },
 };
 
 use ed25519_dalek::{Digest, Sha512, SigningKey};
@@ -17,6 +20,8 @@ use array_concat::concat_arrays;
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
 const SEL_ECRECOVER: [u8; 4] = const_keccak_sel(b"ecrecover_(bytes32,uint8,bytes32,bytes32)");
+const SEL_SECP256R1: [u8; 4] =
+    const_keccak_sel(b"secp256r1(bytes32,bytes32,bytes32,bytes32,bytes32)");
 
 const SEL_CREATE_ED25519: [u8; 4] = const_keccak_sel(b"createEd25519(bytes32,bytes)");
 const SEL_EDVERIFY: [u8; 4] =
@@ -35,6 +40,11 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             );
             0
         }
+        SEL_SECP256R1 => {
+            let (h, r, s, qx, qy) = read_words!(&args[4..], 5);
+            write_result_word(&secp256r1_post(*h, *r, *s, *qx, *qy).unwrap());
+            0
+        }
         SEL_CREATE_ED25519 => {
             let key = SigningKey::from_bytes(&args[4..4 + 32].try_into().unwrap());
             let mut d = Sha512::new();
@@ -50,7 +60,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
             let digest: [u8; 64] = args[4..4 + 64].try_into().unwrap();
             let key: U = args[4 + 64..4 + 64 + 32].try_into().unwrap();
             let sig: [u8; 64] = args[4 + 64 + 32..].try_into().unwrap();
-            edverify(digest, key, sig);
+            edphverify(digest, key, sig);
             0
         }
         _ => unimplemented!(),

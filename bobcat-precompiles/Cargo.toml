@@ -12,3 +12,4 @@ array-concat.workspace = true
 bobcat-call = { version = "0.7.7", path = "../bobcat-call" }
 bobcat-cd = { version = "0.7.7", path = "../bobcat-cd" }
 bobcat-maths = { version = "0.7.7", path = "../bobcat-maths" }
+bobcat-storage = { version = "0.7.7", path = "../bobcat-storage" }

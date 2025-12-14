@@ -561,6 +561,7 @@ dependencies = [
  "bobcat-call",
  "bobcat-cd",
  "bobcat-maths",
+ "bobcat-storage",
 ]
 
 [[package]]

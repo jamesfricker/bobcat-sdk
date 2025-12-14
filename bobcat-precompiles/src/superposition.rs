@@ -23,7 +23,7 @@ pub fn edphverify(digest: [u8; 64], pub_key: U, sig: [u8; 64]) -> bool {
     static_call_unit(ADDR_EDVERIFY, &cd, GAS_EDVERIFY)
 }
 
-pub fn edphverify(x: U, y: U, z: U) -> bool {
+pub fn mul_div(x: U, y: U, z: U) -> bool {
     let cd: [u8; 3 * 32] = concat_arrays!(x.0, y.0, z.0);
-    static_call_unit(ADDR_MUL_DIV, GAS_MUL_DIV, &cd, u64::MAX)
+    static_call_unit(ADDR_MUL_DIV, &cd, GAS_MUL_DIV)
 }

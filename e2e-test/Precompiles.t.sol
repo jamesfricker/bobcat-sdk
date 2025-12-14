@@ -23,6 +23,14 @@ interface IPrecompiles {
         bytes32 sigA,
         bytes32 sigB
     ) external pure;
+
+    function secp256r1(
+        bytes32 h,
+        bytes32 r,
+        bytes32 s,
+        bytes32 qx,
+        bytes32 qy
+    ) external returns (bytes32);
 }
 
 contract Ecrecover is Test {
@@ -59,5 +67,13 @@ contract Ecrecover is Test {
         ) = precompiles.createEd25519(key, preimage);
         vm.resetGasMetering();
         precompiles.testEd25519(digestA, digestB, pubKey, sigA, sigB);
+    }
+
+    function test_secp256r1(uint256 key, bytes memory preimage) public {
+        (uint256 qx, uint256 qy) = vm.publicKeyP256(key);
+        bytes32 d = keccak256(preimage);
+        (bytes32 r, bytes32 s) = vm.signP256(key, d);
+        vm.resetGasMetering();
+        precompiles.secp256r1(d, r, s, bytes32(qx), bytes32(qy));
     }
 }
