@@ -19,14 +19,14 @@ pub const ADDR_MUL_DIV: [u8; 20] = address!(b"6c483d05266cda72cfe72643a79ad531d9
 
 // Gas for the edverify function assumes the contract is a part of the
 // Stylus cache. If it's not, this may fail.
-const GAS_EDVERIFY: u64 = 95715;
+const GAS_EDPHVERIFY: u64 = 96273;
 
 const GAS_MUL_DIV: u64 = 9000;
 
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
 pub fn edphverify(digest: [u8; 64], pub_key: U, sig: [u8; 64]) -> bool {
     let cd: [u8; 64 * 2 + 32] = concat_arrays!(digest, pub_key.0, sig);
-    static_call_unit(ADDR_EDVERIFY, &cd, GAS_EDVERIFY)
+    static_call_unit(ADDR_EDVERIFY, &cd, GAS_EDPHVERIFY)
 }
 
 #[cfg(all(not(all(target_family = "wasm", target_os = "unknown")), feature = "ed25519-dalek"))]
