@@ -15,7 +15,7 @@ pub use crate::ed25519::const_edphverify;
 pub const ADDR_EDVERIFY: [u8; 20] = address!(b"c3e443be2cfa4f41a5f5e4978d012847d355b419");
 
 /// Muldiv is deployed at this address on Arbitrum One and Superposition.
-pub const ADDR_MUL_DIV: [u8; 20] = address!(b"6c483d05266cda72cfe72643a79ad531d9b52cd5");
+pub const ADDR_MUL_DIV: [u8; 20] = address!(b"7a9579a78d6ea3279b33d6d0f92a2fe8fd0e2662");
 
 // Gas for the edverify function assumes the contract is a part of the
 // Stylus cache. If it's not, this may fail.
