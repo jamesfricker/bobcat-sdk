@@ -545,6 +545,7 @@ name = "bobcat-maths-zone"
 version = "0.7.2"
 dependencies = [
  "bobcat-maths",
+ "bobcat-panic",
  "proc-macro2",
  "quote",
  "syn 2.0.108",

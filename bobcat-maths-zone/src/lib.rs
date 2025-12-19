@@ -794,7 +794,7 @@ fn generate_expr_code(
             let rhs_code = generate_expr_code(rhs, var_map, block, &format!("{}.rhs", path))?;
 
             let error_msg = if let Some(ref lbl) = block.label {
-                format!("{lbl} failed at {path}")
+                format!("{lbl} overflowed at {path}")
             } else {
                 format!("overflow or invalid operation at {path}")
             };
@@ -803,7 +803,10 @@ fn generate_expr_code(
                 BinaryOp::Add => {
                     if block.unwrap {
                         Ok(quote! {
-                            (#lhs_code).checked_add_opt(&#rhs_code).expect(#error_msg)
+                            ::bobcat_panic::panic_on_err_overflow!(
+                                (#lhs_code).checked_add_opt(&#rhs_code),
+                                #error_msg
+                            )
                         })
                     } else {
                         Ok(quote! {
@@ -814,7 +817,10 @@ fn generate_expr_code(
                 BinaryOp::Sub => {
                     if block.unwrap {
                         Ok(quote! {
-                            (#lhs_code).checked_sub_opt(&#rhs_code).expect(#error_msg)
+                            ::bobcat_panic::panic_on_err_overflow!(
+                                (#lhs_code).checked_sub_opt(&#rhs_code),
+                                #error_msg
+                            )
                         })
                     } else {
                         Ok(quote! {
@@ -825,7 +831,10 @@ fn generate_expr_code(
                 BinaryOp::Mul => {
                     if block.unwrap {
                         Ok(quote! {
-                            (#lhs_code).checked_mul_opt(&#rhs_code).expect(#error_msg)
+                            ::bobcat_panic::panic_on_err_overflow!(
+                                (#lhs_code).checked_mul_opt(&#rhs_code),
+                                #error_msg
+                            )
                         })
                     } else {
                         Ok(quote! {
@@ -836,7 +845,10 @@ fn generate_expr_code(
                 BinaryOp::FloorDiv => {
                     if block.unwrap {
                         Ok(quote! {
-                            (#lhs_code).checked_div_opt(&#rhs_code).expect(#error_msg)
+                            ::bobcat_panic::panic_on_err_div_by_zero!(
+                                (#lhs_code).checked_div_opt(&#rhs_code),
+                                #error_msg
+                            )
                         })
                     } else {
                         Ok(quote! {
@@ -849,9 +861,10 @@ fn generate_expr_code(
                         Ok(quote! {{
                             let lhs_val = #lhs_code;
                             let rhs_val = #rhs_code;
-                            if rhs_val.is_zero() {
-                                panic!(#error_msg);
-                            }
+                            ::bobcat_panic::panic_on_err_div_by_zero!(
+                                if rhs_val.is_zero() { None } else { Some(()) },
+                                #error_msg
+                            );
                             ::bobcat_maths::modd(&lhs_val, &rhs_val)
                         }})
                     } else {
@@ -871,9 +884,12 @@ fn generate_expr_code(
                             let lhs_val = #lhs_code;
                             let rhs_val = #rhs_code;
                             if lhs_val.is_zero() && rhs_val.is_zero() {
-                                panic!(#error_msg);
+                                ::bobcat_panic::panic_on_err_overflow!(None, #error_msg);
                             }
-                            lhs_val.checked_pow(&rhs_val).expect(#error_msg)
+                            ::bobcat_panic::panic_on_err_overflow!(
+                                lhs_val.checked_pow(&rhs_val),
+                                #error_msg
+                            )
                         }})
                     } else {
                         Ok(quote! {{
@@ -891,14 +907,17 @@ fn generate_expr_code(
                         quote! {{
                             let rhs_val = #rhs_code;
                             let rhs_bytes: [u8; 32] = rhs_val.into();
-                            if rhs_bytes[..28].iter().any(|&b| b != 0) {
-                                panic!(#error_msg);
-                            }
-                            let shift = u32::from_be_bytes([rhs_bytes[28], rhs_bytes[29], rhs_bytes[30], rhs_bytes[31]]);
-                            if shift > 256 {
-                                panic!(#error_msg);
-                            }
-                            shift as usize
+                            let shift = if rhs_bytes[..28].iter().any(|&b| b != 0) {
+                                None
+                            } else {
+                                let shift = u32::from_be_bytes([rhs_bytes[28], rhs_bytes[29], rhs_bytes[30], rhs_bytes[31]]);
+                                if shift > 256 {
+                                    None
+                                } else {
+                                    Some(shift as usize)
+                                }
+                            };
+                            ::bobcat_panic::panic_on_err_overflow!(shift, #error_msg)
                         }}
                     } else {
                         quote! {{
@@ -926,14 +945,17 @@ fn generate_expr_code(
                         quote! {{
                             let rhs_val = #rhs_code;
                             let rhs_bytes: [u8; 32] = rhs_val.into();
-                            if rhs_bytes[..28].iter().any(|&b| b != 0) {
-                                panic!(#error_msg);
-                            }
-                            let shift = u32::from_be_bytes([rhs_bytes[28], rhs_bytes[29], rhs_bytes[30], rhs_bytes[31]]);
-                            if shift > 256 {
-                                panic!(#error_msg);
-                            }
-                            shift as usize
+                            let shift = if rhs_bytes[..28].iter().any(|&b| b != 0) {
+                                None
+                            } else {
+                                let shift = u32::from_be_bytes([rhs_bytes[28], rhs_bytes[29], rhs_bytes[30], rhs_bytes[31]]);
+                                if shift > 256 {
+                                    None
+                                } else {
+                                    Some(shift as usize)
+                                }
+                            };
+                            ::bobcat_panic::panic_on_err_overflow!(shift, #error_msg)
                         }}
                     } else {
                         quote! {{
