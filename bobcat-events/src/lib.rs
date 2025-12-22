@@ -5,6 +5,12 @@ pub use bobcat_maths::U;
 #[cfg(not(feature = "shadow"))]
 use array_concat::concat_arrays;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
 mod impls {
     #[link(wasm_import_module = "vm_hooks")]
@@ -24,26 +30,53 @@ mod impls {
 // ShadowTable that's intended for the 32 wasm machine to do shadow event
 // logging with custom Nitro instances with a whitelisted pool of nodes
 // to log from.
+#[cfg(feature = "shadow")]
 #[derive(Debug, Clone, PartialEq)]
 #[repr(C)]
 struct ShadowTable<const DATA: usize> {
     magic: u8,
     topics_len: usize,
     data_len: usize,
-    topics: [U; 5],
+    topics: [U; 4],
     data: [u8; DATA],
 }
 
+#[cfg(all(feature = "shadow", feature = "alloc"))]
+#[derive(Debug, Clone, PartialEq)]
+#[repr(C)]
+struct ShadowTableVec {
+    magic: u8,
+    topics_len: usize,
+    data_len: usize,
+    topics: [U; 4],
+    data: Vec<u8>
+}
+
+#[cfg(feature = "shadow")]
 const SHADOW_MAGIC_BYTE: u8 = 0xee;
 
+#[cfg(feature = "shadow")]
 impl<const DATA: usize> Default for ShadowTable<DATA> {
     fn default() -> Self {
-        ShadowTable {
+        Self {
             magic: SHADOW_MAGIC_BYTE,
             topics_len: 0,
             data_len: 0,
-            topics: [U::ZERO; 5],
+            topics: [U::ZERO; 4],
             data: [0u8; DATA],
+        }
+    }
+}
+
+#[cfg(all(feature = "shadow", feature = "alloc"))]
+impl Default for ShadowTableVec {
+    fn default() -> Self {
+        Self {
+            magic: SHADOW_MAGIC_BYTE,
+            topics_len: 0,
+            data_len: 0,
+            topics: [U::ZERO; 4],
+            data: Vec::new()
         }
     }
 }
@@ -157,42 +190,30 @@ pub fn emit_log_3_slice<const D: usize, const ALL: usize>(
     }
 }
 
-#[cfg(not(feature = "shadow"))]
-pub fn emit_log_4_slice<const D: usize, const ALL: usize>(
-    t0: &U,
-    t1: &U,
-    t2: &U,
-    t3: &U,
-    t4: &U,
-    d: [u8; D],
-) {
-    assert_eq!(ALL, D + 32 * 5, "not properly sized: {}", D + 160);
-    let x: [u8; ALL] = concat_arrays!(t0.0, t1.0, t2.0, t3.0, t4.0, d);
+/// Emit a log with a variable amount of topics, with the topics provided
+/// by a slice with a fixed structure. Useful for glue to leverage the
+/// shadow feature with stylus-sdk.
+#[cfg(all(feature = "alloc", not(feature = "shadow")))]
+pub fn emit_log_count(topics: [U; 4], topics_len: usize, data: &[u8]) {
+    let mut d = Vec::with_capacity(topics_len * 32 + data.len());
+    for t in &topics[..topics_len] {
+        d.extend_from_slice(t.as_slice());
+    }
+    d.extend_from_slice(data);
     unsafe {
-        impls::emit_log(x.as_ptr(), x.len(), 5);
+        impls::emit_log(d.as_ptr(), data.len(), topics_len);
     }
 }
 
-#[cfg(feature = "shadow")]
-pub fn emit_log_4_slice<const D: usize, const ALL: usize>(
-    t0: &U,
-    t1: &U,
-    t2: &U,
-    t3: &U,
-    t4: &U,
-    d: [u8; D],
-) {
-    let mut t = ShadowTable {
-        topics_len: 4,
-        data_len: D,
-        data: d,
-        ..ShadowTable::<D>::default()
+#[cfg(all(feature = "alloc", feature = "shadow"))]
+pub fn emit_log_count(topics: [U; 4], topics_len: usize, data: &[u8]) {
+    let t = ShadowTableVec {
+        topics,
+        topics_len,
+        data_len: data.len(),
+        data: data.to_vec(),
+        ..ShadowTableVec::default()
     };
-    t.topics[0] = *t0;
-    t.topics[1] = *t1;
-    t.topics[2] = *t2;
-    t.topics[3] = *t3;
-    t.topics[4] = *t4;
     unsafe {
         impls::write_result(&t as *const _ as *const u8, 0);
     }
@@ -237,19 +258,6 @@ pub fn emit_log_3_vec(t0: &U, t1: &U, t2: &U, t3: &U, d: &[u8]) {
     x.extend_from_slice(d);
     unsafe {
         impls::emit_log(x.as_ptr(), x.len(), 4);
-    }
-}
-
-#[cfg(all(feature = "alloc", not(feature = "shadow")))]
-pub fn emit_log_4_vec(t0: &U, t1: &U, t2: &U, t3: &U, t4: &U, d: &[u8]) {
-    let mut x = t0.to_vec();
-    x.extend_from_slice(&t1.0);
-    x.extend_from_slice(&t2.0);
-    x.extend_from_slice(&t3.0);
-    x.extend_from_slice(&t4.0);
-    x.extend_from_slice(d);
-    unsafe {
-        impls::emit_log(x.as_ptr(), x.len(), 5);
     }
 }
 
@@ -349,36 +357,5 @@ macro_rules! emit {
         let t2: $crate::U = $t2.into();
         let t3: $crate::U = $t3.into();
         $crate::emit_log_3_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, &t3, $data)
-    }};
-
-    ($t0:expr, $t1:expr, $t2:expr, $t3:expr, $t4:expr) => {{
-        const DATA_LEN: usize = 0;
-        const ALL_LEN: usize = 32 * 5;
-        let t0: $crate::U = $t0.into();
-        let t1: $crate::U = $t1.into();
-        let t2: $crate::U = $t2.into();
-        let t3: $crate::U = $t3.into();
-        let t4: $crate::U = $t4.into();
-        $crate::emit_log_4_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, &t3, &t4, [])
-    }};
-
-    ($t0:expr, $t1:expr, $t2:expr, $t3:expr, $t4:expr, data: $data:expr) => {{
-        let t0: $crate::U = $t0.into();
-        let t1: $crate::U = $t1.into();
-        let t2: $crate::U = $t2.into();
-        let t3: $crate::U = $t3.into();
-        let t4: $crate::U = $t4.into();
-        $crate::emit_log_4_vec(&t0, &t1, &t2, &t3, &t4, $data)
-    }};
-
-    ($t0:expr, $t1:expr, $t2:expr, $t3:expr, $t4:expr, data: $data:expr, $data_len:expr) => {{
-        const DATA_LEN: usize = $data_len;
-        const ALL_LEN: usize = DATA_LEN + 32 * 5;
-        let t0: $crate::U = $t0.into();
-        let t1: $crate::U = $t1.into();
-        let t2: $crate::U = $t2.into();
-        let t3: $crate::U = $t3.into();
-        let t4: $crate::U = $t4.into();
-        $crate::emit_log_4_slice::<DATA_LEN, ALL_LEN>(&t0, &t1, &t2, &t3, &t4, $data)
     }};
 }
