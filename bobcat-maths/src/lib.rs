@@ -2,7 +2,7 @@
 
 use core::{
     cmp::{Eq, Ordering},
-    fmt::{Debug, Display, Error as FmtError, Formatter},
+    fmt::{Debug, Display, Error as FmtError, Formatter, LowerHex, UpperHex},
     ops::{
         Add, AddAssign, BitAnd, BitOr, BitOrAssign, BitXor, Deref, DerefMut, Div, Index, IndexMut,
         Mul, MulAssign, Neg, Not, Rem, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -917,13 +917,25 @@ impl Ord for U {
     }
 }
 
-impl Debug for U {
+impl LowerHex for U {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         let mut b = [0u8; 32 * 2];
-        let Ok(s) = const_hex::encode_to_str(self.0, &mut b) else {
-            return Err(FmtError);
-        };
+        let s = const_hex::encode_to_str(self.0, &mut b).unwrap();
         write!(f, "{s}")
+    }
+}
+
+impl UpperHex for U {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        let mut b = [0u8; 32 * 2];
+        let s = const_hex::encode_to_str_upper(self.0, &mut b).unwrap();
+        write!(f, "{s}")
+    }
+}
+
+impl Debug for U {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "{self:x}")
     }
 }
 
@@ -1183,14 +1195,14 @@ impl U {
     pub fn from_hex(x: &str) -> Option<U> {
         match const_hex::decode_to_array::<_, 32>(x) {
             Ok(v) => Some(U(v)),
-            Err(_) => None
+            Err(_) => None,
         }
     }
 
     pub const fn const_from_hex(x: &[u8; 64]) -> Option<U> {
         match const_hex::const_decode_to_array::<32>(x) {
             Ok(v) => Some(U(v)),
-            Err(_) => None
+            Err(_) => None,
         }
     }
 }
@@ -1238,6 +1250,13 @@ impl From<&U> for U {
 impl From<U> for bool {
     fn from(x: U) -> Self {
         x.0[31] == 1
+    }
+}
+
+impl From<&[u8]> for U {
+    fn from(x: &[u8]) -> Self {
+        let x: &[u8; 32] = x.try_into().unwrap();
+        (*x).into()
     }
 }
 

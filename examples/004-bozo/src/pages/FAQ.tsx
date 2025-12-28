@@ -24,7 +24,7 @@ export function FAQ() {
                 <span className="text-foreground tracking-wider">BOZO</span>
               </div>
               <nav className="flex items-center gap-6">
-                <button 
+                <button
                   onClick={() => navigate('/')}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -37,13 +37,13 @@ export function FAQ() {
                 >
                   LEADERBOARD
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/faq')}
                   className="text-sm text-foreground hover:text-[#F6C445] transition-colors"
                 >
                   FAQ
                 </button>
-                <button 
+                <button
                   onClick={() => setHowItWorksOpen(true)}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
@@ -52,7 +52,7 @@ export function FAQ() {
                 </button>
               </nav>
             </div>
-            
+
             <div className="w-32" />
           </div>
         </div>
@@ -84,7 +84,7 @@ export function FAQ() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>What is Bozo?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Bozo is a social crypto game where the last person to deposit before the timer runs out wins 80% of the pot. 
+                  Bozo is a social crypto game where the last person to deposit before the timer runs out wins 80% of the pot.
                   The remaining 20% is split evenly among 10 randomly selected participants. It&apos;s simple, fun, and built for the Farcaster community.
                 </AccordionContent>
               </AccordionItem>
@@ -100,7 +100,7 @@ export function FAQ() {
               <AccordionItem value="item-3">
                 <AccordionTrigger>What&apos;s the minimum deposit?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Every deposit must be at least 1% of the current pot value (in ARB). This ensures meaningful participation and prevents spam deposits.
+                  Every deposit must be at least 110% of the current pot value (in ARB). This ensures meaningful participation and prevents spam deposits.
                   The required minimum is clearly displayed in the game room.
                 </AccordionContent>
               </AccordionItem>
@@ -116,7 +116,7 @@ export function FAQ() {
               <AccordionItem value="item-5">
                 <AccordionTrigger>How are winners chosen?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  When the timer hits 0, the last depositor automatically wins 80% of the pot. The 10 community winners are randomly selected using Pyth Entropy (VRF) 
+                  When the timer hits 0, the last depositor automatically wins 80% of the pot. The 10 community winners are randomly selected using a random function
                   from all participants in that game. Each participant address can be selected multiple times, so your odds increase with more unique addresses playing.
                 </AccordionContent>
               </AccordionItem>
@@ -124,8 +124,7 @@ export function FAQ() {
               <AccordionItem value="item-6">
                 <AccordionTrigger>How do I claim my winnings?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  If you win, a claim button will appear in the game room. All payouts use a pull-based system, meaning you need to manually claim your prize. 
-                  The app will never auto-transfer funds. Claims are processed on the game&apos;s home chain.
+                  If you win, the rewards will be sent directly to your wallet!
                 </AccordionContent>
               </AccordionItem>
 
@@ -140,7 +139,7 @@ export function FAQ() {
               <AccordionItem value="item-8">
                 <AccordionTrigger>Is there a strategy to win?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  The best strategy is to deposit when you think others won&apos;t! But remember: every deposit resets the timer, so timing is everything. 
+                  The best strategy is to deposit when you think others won&apos;t! But remember: every deposit resets the timer, so timing is everything.
                   Depositing more than the minimum doesn&apos;t increase your chances—it just makes the pot bigger. The game is designed to be unpredictable and fun, not optimizable.
                 </AccordionContent>
               </AccordionItem>
@@ -148,7 +147,7 @@ export function FAQ() {
               <AccordionItem value="item-9">
                 <AccordionTrigger>What does &quot;RIP Bozo&quot; mean?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  &quot;RIP Bozo&quot; is the playful phrase we use when someone wins (or loses, depending on your perspective!). 
+                  &quot;RIP Bozo&quot; is the playful phrase we use when someone wins (or loses, depending on your perspective!).
                   It&apos;s a lighthearted meme that captures the spirit of the game—everyone&apos;s a clown until the timer runs out. 🤡
                 </AccordionContent>
               </AccordionItem>
@@ -156,8 +155,7 @@ export function FAQ() {
               <AccordionItem value="item-10">
                 <AccordionTrigger>Is Bozo safe?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
-                  Bozo uses audited smart contracts and decentralized oracles (Chainlink/Pyth) for price feeds and randomness. 
-                  However, as with any crypto game, only deposit what you can afford to lose. This is meant to be fun, not financial advice.
+                  Bozo is not audited, and should be treated with caution. With any crypto game, only deposit what you can afford to lose. This is meant to be fun!
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

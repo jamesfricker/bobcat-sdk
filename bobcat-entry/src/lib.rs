@@ -282,7 +282,7 @@ pub fn read_args<const CAP: usize>(len: usize) -> ([u8; CAP], usize) {
 #[macro_export]
 macro_rules! read_args_safe {
     ($len:expr, $max_len:expr) => {{
-        assert!($max_len >= $len);
+        assert!($max_len >= $len, "{} < {}", $max_len, $len);
         $crate::read_args::<$max_len>($len).0
     }};
 }
