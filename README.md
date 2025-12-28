@@ -125,11 +125,12 @@ interfaces.
 
 ## Maths
 
-With wasm, it is best to use either 32-bit numbers or go all-in with the entire 256-bit
-native EVM number. The machine is natively 32-bit, so operations involving those values do
-not require additional code generation. Like the wasm machine, the Stylus machine provides
-operations for 256-bit math that we can use to keep codesize down. The only reason to use
-other integer types is to keep calldata low when you encode with a different format.
+With wasm, for codesize, it is best to use either 32-bit numbers or go all-in with the
+entire 256-bit native EVM number. The machine is natively 32-bit, so operations involving
+those values do not require additional code generation. Like the wasm machine, the Stylus
+machine provides operations for 256-bit math that we can use to keep codesize down. A good
+reason to use other integer types is to keep calldata low when you encode with a different
+format.
 
 The native integer types in this SDK use Stylus functions for math whenever possible,
 keeping codesize (and gas, we imagine) very low. Some functions we use frequently in web3
