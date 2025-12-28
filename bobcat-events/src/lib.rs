@@ -14,6 +14,7 @@ use alloc::vec::Vec;
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
 mod impls {
     #[link(wasm_import_module = "vm_hooks")]
+    #[allow(unused)]
     unsafe extern "C" {
         pub(crate) fn emit_log(data: *const u8, len: usize, topics: usize);
         pub(crate) fn write_result(ptr: *const u8, len: usize);
@@ -49,7 +50,7 @@ struct ShadowTableVec {
     topics_len: usize,
     data_len: usize,
     topics: [U; 4],
-    data: Vec<u8>
+    data: Vec<u8>,
 }
 
 #[cfg(feature = "shadow")]
@@ -76,7 +77,7 @@ impl Default for ShadowTableVec {
             topics_len: 0,
             data_len: 0,
             topics: [U::ZERO; 4],
-            data: Vec::new()
+            data: Vec::new(),
         }
     }
 }

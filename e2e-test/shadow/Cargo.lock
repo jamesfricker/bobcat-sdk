@@ -214,9 +214,9 @@ checksum = "57d8d8ce877200136358e0bbff3a77965875db3af755a11e1fa6b1b3e2df13ea"
 
 [[package]]
 name = "libc"
-version = "0.2.177"
+version = "0.2.178"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2874a2af47a2325c2001a6e6fad9b16a53b802102b528163885171cf92b15976"
+checksum = "37c93d8daa9d8a012fd8ab92f088405fb202ea0b6ab73ee2482ae66af4f42091"
 
 [[package]]
 name = "mutants"
@@ -234,13 +234,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "panic-trace"
-version = "0.1.0"
-dependencies = [
- "bobcat-sdk",
-]
-
-[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -255,6 +248,13 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "shadow"
+version = "0.1.0"
+dependencies = [
+ "bobcat-sdk",
 ]
 
 [[package]]

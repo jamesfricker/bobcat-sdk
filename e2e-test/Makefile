@@ -18,7 +18,8 @@ PROJECTS := \
 	slot-map \
 	safe-erc20 \
 	tracing-counter \
-	panic-trace
+	panic-trace \
+	shadow
 
 all: wasm
 
@@ -42,7 +43,8 @@ wasm: \
 	slot-map.wasm \
 	safe-erc20.wasm \
 	tracing-counter.wasm \
-	panic-trace.wasm
+	panic-trace.wasm \
+	shadow.wasm
 
 chainlink-vrf-test.wasm: ${BUILT}
 	@rm -f chainlink-vrf-test.wasm
@@ -104,6 +106,10 @@ panic-trace.wasm: $(shell find panic-trace/src -type f)
 	@cd panic-trace && cargo build --release --target wasm32-unknown-unknown
 	@./wasm-post.sh panic-trace/target/wasm32-unknown-unknown/release/panic-trace.wasm panic-trace.wasm
 
+shadow.wasm: $(shell find shadow/src -type f)
+	@cd shadow && cargo build --release --target wasm32-unknown-unknown
+	@./wasm-post.sh shadow/target/wasm32-unknown-unknown/release/shadow.wasm shadow.wasm
+
 clean:
 	@rm -rf \
 		target \
@@ -121,4 +127,5 @@ clean:
 		slot-map.wasm \
 		safe-erc20.wasm \
 		tracing-counter.wasm \
-		panic-trace.wasm
+		panic-trace.wasm \
+		shadow.wasm

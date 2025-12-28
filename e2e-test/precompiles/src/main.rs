@@ -5,7 +5,7 @@ use bobcat_sdk::{
     cd::{const_keccak_sel, read_words},
     entry::*,
     precompiles::{
-        ethereum::{ecrecover, secp256r1_post},
+        ethereum::{ecrecover_post, secp256r1_post},
         superposition::edphverify,
     },
 };
@@ -33,11 +33,7 @@ pub unsafe extern "C" fn user_entrypoint(args_len: usize) -> usize {
     match args[..4].try_into().unwrap() {
         SEL_ECRECOVER => {
             let (hash, v, r, s) = read_words!(&args[4..], 4);
-            write_result_word(
-                &ecrecover(*hash, (*v).into(), *r, *s, u64::MAX)
-                    .unwrap()
-                    .into(),
-            );
+            write_result_word(&ecrecover_post(*hash, (*v).into(), *r, *s).unwrap().into());
             0
         }
         SEL_SECP256R1 => {
