@@ -294,14 +294,19 @@ fn parse_number_literal(s: &str) -> Result<U, String> {
     let cleaned: String = s.chars().filter(|c| *c != '_').collect();
 
     if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
-        // Parse hex: strip 0x prefix and use from_hex
+        // Parse hex: strip 0x prefix, left-pad to 32 bytes, and use from_hex.
         let hex_str = &cleaned[2..];
-        // Ensure even length for from_hex
-        let hex_str = if hex_str.len() % 2 == 1 {
-            format!("0{}", hex_str)
+        let mut hex_str = if hex_str.len() % 2 == 1 {
+            format!("0{hex_str}")
         } else {
             hex_str.to_string()
         };
+        if hex_str.len() > 64 {
+            return Err("hex literal exceeds 256 bits".to_string());
+        }
+        if hex_str.len() < 64 {
+            hex_str = format!("{hex_str:0>64}");
+        }
         U::from_hex(&hex_str).ok_or_else(|| "invalid hex literal".to_string())
     } else if cleaned.starts_with("0b") || cleaned.starts_with("0B") {
         // Parse binary: convert to decimal string and use from_str

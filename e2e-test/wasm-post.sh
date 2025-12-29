@@ -1,6 +1,7 @@
 #!/bin/sh -u
 
-f=$(mktemp --suffix .wasm1)
+tmpdir="${TMPDIR:-/tmp}"
+f=$(mktemp "${tmpdir%/}/bobcat-wasm.XXXXXX")
 
 wasm-opt \
 	--dce \

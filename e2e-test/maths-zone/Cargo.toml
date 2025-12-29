@@ -1,0 +1,14 @@
+[package]
+name = "maths-zone"
+version = "0.7.8"
+edition = "2024"
+
+[dependencies]
+bobcat-sdk = { workspace = true }
+bobcat-maths = { path = "../../bobcat-maths" }
+bobcat-maths-zone = { path = "../../bobcat-maths-zone" }
+mini-alloc.workspace = true
+
+[[bin]]
+name = "maths-zone"
+path = "src/main.rs"

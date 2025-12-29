@@ -9,6 +9,7 @@ PROJECTS := \
 	console-log-txt \
 	counter \
 	mul-div \
+	maths-zone \
 	beacon \
 	panic-revert \
 	eip1967-proxy \
@@ -34,6 +35,7 @@ wasm: \
 	console-log-txt.wasm \
 	counter.wasm \
 	mul-div.wasm \
+	maths-zone.wasm \
 	beacon.wasm \
 	panic-revert.wasm \
 	eip1967-proxy.wasm \
@@ -65,6 +67,10 @@ counter.wasm: ${BUILT}
 mul-div.wasm: ${BUILT}
 	@rm -f mul-div.wasm
 	@./wasm-post.sh ${RELEASE}/mul-div.wasm mul-div.wasm
+
+maths-zone.wasm: ${BUILT}
+	@rm -f maths-zone.wasm
+	@./wasm-post.sh ${RELEASE}/maths-zone.wasm maths-zone.wasm
 
 beacon.wasm: ${BUILT}
 	@rm -f beacon.wasm
@@ -116,10 +122,11 @@ clean:
 		chainlink-vrf-test.wasm \
 		transient-exchange.wasm \
 		console-log-txt.wasm \
-		counter.wasm \
-		mul-div.wasm \
-		beacon.wasm \
-		panic-revert.wasm \
+	counter.wasm \
+	mul-div.wasm \
+	maths-zone.wasm \
+	beacon.wasm \
+	panic-revert.wasm \
 		eip1967-proxy.wasm \
 		reverts-bubbling-up.wasm \
 		proxy-predicts-create2.wasm \
