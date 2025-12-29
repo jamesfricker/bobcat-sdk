@@ -6,6 +6,7 @@ members = [
 	"transient-exchange",
 	"counter",
 	"mul-div",
+	"maths-zone",
 	"beacon",
 	"panic-revert",
 	"eip1967-proxy",
