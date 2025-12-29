@@ -10,7 +10,7 @@ use syn::{LitStr, parse_macro_input};
 /// Evaluate a Python-style integer expression at compile time.
 ///
 /// Supported:
-/// - Decimal, hex (`0x`/`0X`), binary (`0b`/`0B`), octal (`0o`/`0O`) literals
+/// - Decimal literals
 /// - Underscores in literals (`1_000_000`)
 /// - Operators: +, -, *, //, %, **, <<, >>, &, |, ^ (bitwise xor)
 /// - Unary operators and parentheses
@@ -254,15 +254,7 @@ where
 {
     let mut buf = String::new();
     while let Some(&c) = chars.peek() {
-        if c.is_ascii_hexdigit()
-            || c == '_'
-            || c == 'x'
-            || c == 'X'
-            || c == 'b'
-            || c == 'B'
-            || c == 'o'
-            || c == 'O'
-        {
+        if c.is_ascii_digit() || c == '_' {
             buf.push(c);
             chars.next();
         } else {
@@ -292,47 +284,11 @@ where
 
 fn parse_number_literal(s: &str) -> Result<U, String> {
     let cleaned: String = s.chars().filter(|c| *c != '_').collect();
-
-    if cleaned.starts_with("0x") || cleaned.starts_with("0X") {
-        // Parse hex: strip 0x prefix and use from_hex
-        let hex_str = &cleaned[2..];
-        // Ensure even length for from_hex
-        let hex_str = if hex_str.len() % 2 == 1 {
-            format!("0{}", hex_str)
-        } else {
-            hex_str.to_string()
-        };
-        U::from_hex(&hex_str).ok_or_else(|| "invalid hex literal".to_string())
-    } else if cleaned.starts_with("0b") || cleaned.starts_with("0B") {
-        // Parse binary: convert to decimal string and use from_str
-        let bin_str = &cleaned[2..];
-        let mut result = U::ZERO;
-        for ch in bin_str.chars() {
-            let digit = match ch {
-                '0' => 0u8,
-                '1' => 1u8,
-                _ => return Err("invalid binary digit".to_string()),
-            };
-            result = bobcat_maths::wrapping_mul(&result, &U::from_u32(2));
-            result = bobcat_maths::wrapping_add(&result, &U::from_u32(digit as u32));
-        }
-        Ok(result)
-    } else if cleaned.starts_with("0o") || cleaned.starts_with("0O") {
-        // Parse octal: convert to decimal string and use from_str
-        let oct_str = &cleaned[2..];
-        let mut result = U::ZERO;
-        for ch in oct_str.chars() {
-            let digit = ch
-                .to_digit(8)
-                .ok_or_else(|| "invalid octal digit".to_string())?;
-            result = bobcat_maths::wrapping_mul(&result, &U::from_u32(8));
-            result = bobcat_maths::wrapping_add(&result, &U::from_u32(digit));
-        }
-        Ok(result)
-    } else {
-        // Parse decimal using from_str
-        U::from_str(cleaned.as_str()).map_err(|e| format!("invalid decimal literal: {:?}", e))
+    if cleaned.is_empty() {
+        return Err("empty number literal".into());
     }
+    // Parse decimal using from_str
+    U::from_str(cleaned.as_str()).map_err(|e| format!("invalid decimal literal '{}': {:?}", s, e))
 }
 
 #[derive(Debug, Clone)]
@@ -1017,16 +973,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn parses_hex_and_binary() {
-        assert_eq!(
-            eval_bytes("0xff + 0b1"),
-            [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 1, 0
-            ]
-        );
-    }
 
     #[test]
     fn rejects_negative_results() {
@@ -1045,14 +991,14 @@ mod tests {
     }
 
     #[test]
-    fn parses_uppercase_prefixes_and_underscores() {
-        assert_eq!(eval_bytes("0Xff + 0B1_0"), eval_bytes("255 + 2"));
-        assert_eq!(eval_bytes("0O7_7"), eval_bytes("63"));
+    fn parses_underscores() {
+        assert_eq!(eval_bytes("1_000_000"), eval_bytes("1000000"));
+        assert_eq!(eval_bytes("255 + 2"), eval_bytes("257"));
     }
 
     #[test]
     fn caret_is_bitwise_xor() {
-        assert_eq!(eval_bytes("0b1010 ^ 0b0011"), eval_bytes("0b1001"));
+        assert_eq!(eval_bytes("10 ^ 3"), eval_bytes("9"));
     }
 
     #[test]
