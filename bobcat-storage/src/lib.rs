@@ -19,6 +19,7 @@ unsafe extern "C" {
 
 #[cfg(all(
     not(all(target_family = "wasm", target_os = "unknown")),
+    not(feature = "mutex"),
     feature = "std"
 ))]
 pub mod storage_host {
@@ -85,7 +86,89 @@ pub mod storage_host {
         TRANSIENT.with(|s| s.borrow_mut().insert(k, v));
     }
 
-    pub unsafe fn storage_flush_cache(_: bool) {}
+    pub unsafe fn storage_flush_cache(clear: bool) {
+        if clear {
+            storage_clear()
+        }
+    }
+}
+
+#[cfg(all(
+    not(all(target_family = "wasm", target_os = "unknown")),
+    feature = "mutex",
+    feature = "std"
+))]
+pub mod storage_host {
+    use super::*;
+
+    use std::{
+        collections::HashMap,
+        ptr::copy_nonoverlapping,
+        sync::{LazyLock, Mutex},
+    };
+
+    type WordHashMap = HashMap<U, U>;
+
+    pub static STORAGE: LazyLock<Mutex<WordHashMap>> = LazyLock::new(|| Mutex::default());
+    pub static TRANSIENT: LazyLock<Mutex<WordHashMap>> = LazyLock::new(|| Mutex::default());
+
+    pub fn storage_clear() {
+        STORAGE.lock().unwrap().clear()
+    }
+
+    pub fn transient_clear() {
+        TRANSIENT.lock().unwrap().clear()
+    }
+
+    unsafe fn read_word(key: *const u8) -> U {
+        let mut r = [0u8; 32];
+        unsafe {
+            copy_nonoverlapping(key, r.as_mut_ptr(), 32);
+        }
+        U(r)
+    }
+
+    unsafe fn write_word(key: *mut u8, val: U) {
+        unsafe {
+            copy_nonoverlapping(val.as_ptr(), key, 32);
+        }
+    }
+
+    pub(crate) unsafe fn storage_load_bytes32(key: *const u8, out: *mut u8) {
+        let k = unsafe { read_word(key) };
+        let value = match STORAGE.lock().unwrap().get(&k) {
+            Some(v) => *v,
+            None => U::ZERO,
+        };
+        unsafe { write_word(out, value) };
+    }
+
+    pub(crate) unsafe fn storage_cache_bytes32(key: *const u8, value: *const u8) {
+        let k = unsafe { read_word(key) };
+        let v = unsafe { read_word(value) };
+        STORAGE.lock().unwrap().insert(k, v);
+    }
+
+    pub(crate) unsafe fn transient_load_bytes32(key: *const u8, out: *mut u8) {
+        let k = unsafe { read_word(key) };
+        let value = match TRANSIENT.lock().unwrap().get(&k) {
+            Some(v) => *v,
+            None => U::ZERO,
+        };
+        unsafe { write_word(out, value) };
+    }
+
+    pub(crate) unsafe fn transient_store_bytes32(key: *const u8, value: *const u8) {
+        let k = unsafe { read_word(key) };
+        let v = unsafe { read_word(value) };
+        TRANSIENT.lock().unwrap().insert(k, v);
+    }
+
+    pub unsafe fn storage_flush_cache(clear: bool) {
+        if clear {
+            storage_clear()
+        }
+    }
 }
 
 #[cfg(all(
