@@ -1069,6 +1069,19 @@ impl U {
         &self.0
     }
 
+    pub const fn from_slice_leftpad(x: &[u8]) -> Option<U> {
+        if x.len() > 32 {
+            return None;
+        }
+        let mut b = [0u8; 32];
+        let mut i = 0;
+        while i < x.len() {
+            b[32 - x.len() + i] = x[i];
+            i += 1;
+        }
+        Some(U(b))
+    }
+
     #[cfg(feature = "alloc")]
     pub fn as_vec(self) -> alloc::vec::Vec<u8> {
         self.0.to_vec()
