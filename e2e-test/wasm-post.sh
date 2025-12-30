@@ -1,6 +1,12 @@
-#!/bin/sh -u
+#!/bin/sh -eu
 
-f=$(mktemp --suffix .wasm1)
+tmp=$(mktemp "${TMPDIR:-/tmp}/wasm-post.XXXXXX")
+f="${tmp}.wasm1"
+
+cleanup() {
+	rm -f "$f" "$f.wat"
+}
+trap cleanup EXIT
 
 wasm-opt \
 	--dce \

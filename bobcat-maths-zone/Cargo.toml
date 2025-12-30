@@ -6,6 +6,7 @@ license = "MIT"
 description = "bobcat-sdk DSL for math that makes checked math with drop-in Python code easy."
 homepage = "https://bobcat.so"
 repository = "https://github.com/stylus-developers-guild/bobcat-sdk"
+readme = "README.md"
 
 [lib]
 proc-macro = true

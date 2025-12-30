@@ -1,0 +1,15 @@
+[package]
+name = "maths-zone"
+version = "0.6.0"
+edition = "2024"
+
+[dependencies]
+bobcat-sdk = { workspace = true, features = ["msg-on-sdk-err", "panic-revert"] }
+bobcat-maths = { path = "../../bobcat-maths" }
+bobcat-maths-zone = { path = "../../bobcat-maths-zone" }
+bobcat-panic = { path = "../../bobcat-panic" }
+mini-alloc.workspace = true
+
+[[bin]]
+name = "maths-zone"
+path = "src/main.rs"

@@ -1017,6 +1017,31 @@ mod tests {
     }
 
     #[test]
+    fn power_is_right_associative() {
+        assert_eq!(eval_bytes("2 ** 3 ** 2"), eval_bytes("512"));
+    }
+
+    #[test]
+    fn shift_has_lower_precedence_than_add() {
+        assert_eq!(eval_bytes("1 + 2 << 3"), eval_bytes("24"));
+    }
+
+    #[test]
+    fn rejects_zero_pow_zero() {
+        let err = evaluate_expression("0 ** 0").unwrap_err();
+        assert!(err.contains("undefined"), "unexpected error message: {err}");
+    }
+
+    #[test]
+    fn rejects_identifiers_in_math_zone() {
+        let err = evaluate_expression("foo + 1").unwrap_err();
+        assert!(
+            err.contains("identifiers"),
+            "unexpected error message: {err}"
+        );
+    }
+
+    #[test]
     fn parses_header_attributes_and_unwrap() {
         let lit = LitStr::new(
             "[label = \"demo\", unwrap]\na = 1\nreturn a",
@@ -1050,6 +1075,57 @@ mod tests {
             err.to_string()
                 .contains("return must be the final statement"),
             "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn bobcat_math_allows_semicolons() {
+        let lit = LitStr::new(
+            "[unwrap]\na = 1 + 2;\nreturn a;",
+            proc_macro2::Span::call_site(),
+        );
+        let block = parse_math_block(&lit).expect("should parse");
+        assert!(block.unwrap);
+        assert_eq!(block.statements.len(), 2);
+    }
+
+    #[test]
+    fn bobcat_math_rejects_duplicate_label() {
+        let lit = LitStr::new(
+            "[label = \"one\", label = \"two\"]\nreturn 1",
+            proc_macro2::Span::call_site(),
+        );
+        let err = parse_math_block(&lit).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("label attribute specified more than once"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn bobcat_math_rejects_unknown_attribute() {
+        let lit = LitStr::new("[wat]\nreturn 1", proc_macro2::Span::call_site());
+        let err = parse_math_block(&lit).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("unknown attribute"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn bobcat_math_lifts_external_variables() {
+        let lit = LitStr::new("a = ext + 1\nreturn a", proc_macro2::Span::call_site());
+        let tokens = parse_bobcat_math(&lit).expect("should parse");
+        let rendered = tokens.to_string();
+        assert!(
+            rendered.contains("U :: from"),
+            "missing U::from for external variable: {rendered}"
+        );
+        assert!(
+            rendered.contains("ext"),
+            "missing external variable in generated code: {rendered}"
         );
     }
 }

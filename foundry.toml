@@ -9,6 +9,7 @@ fs_permissions = [
 	{ access = "read", path = "e2e-test/console-log-txt.wasm"},
 	{ access = "read", path = "e2e-test/counter.wasm"},
 	{ access = "read", path = "e2e-test/mul-div.wasm"},
+	{ access = "read", path = "e2e-test/maths-zone.wasm"},
 	{ access = "read", path = "e2e-test/beacon.wasm"},
 	{ access = "read", path = "e2e-test/panic-revert.wasm"},
 	{ access = "read", path = "e2e-test/eip1967-proxy.wasm"},
